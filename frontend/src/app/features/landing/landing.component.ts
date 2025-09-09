@@ -13,7 +13,10 @@ import { RouterModule } from '@angular/router';
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="flex justify-between items-center py-6">
             <div class="flex items-center">
-              <div class="flex-shrink-0">
+              <div class="flex-shrink-0 flex items-center space-x-3">
+                <img src="assets/courseorganizerlogo.png" 
+                     alt="Course Organizer Logo" 
+                     class="h-12 w-auto">
                 <h1 class="text-2xl font-bold text-navy-500">Course Organizer</h1>
               </div>
             </div>
@@ -34,6 +37,11 @@ import { RouterModule } from '@angular/router';
       <!-- Hero Section -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center">
+          <div class="flex justify-center mb-6">
+            <img src="assets/courseorganizerlogo.png" 
+                 alt="Course Organizer Logo" 
+                 class="h-20 w-auto">
+          </div>
           <h1 class="text-4xl font-bold text-navy-500 mb-6">
             Welcome to Course Organizer
           </h1>

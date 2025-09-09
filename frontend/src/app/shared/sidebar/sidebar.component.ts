@@ -11,7 +11,10 @@ import { AuthService } from '../../core/auth.service';
     <!-- Desktop Sidebar -->
     <div class="hidden md:flex md:w-64 md:flex-col">
       <div class="flex flex-col flex-grow pt-5 bg-white overflow-y-auto border-r border-gray-200">
-        <div class="flex items-center flex-shrink-0 px-4">
+        <div class="flex items-center flex-shrink-0 px-4 space-x-3">
+          <img src="assets/courseorganizerlogo.png" 
+               alt="Course Organizer Logo" 
+               class="h-8 w-auto">
           <h2 class="text-xl font-bold text-navy-500">Course Organizer</h2>
         </div>
         <div class="mt-5 flex-grow flex flex-col">
@@ -84,7 +87,10 @@ import { AuthService } from '../../core/auth.service';
           </button>
         </div>
         <div class="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-          <div class="flex-shrink-0 flex items-center px-4">
+          <div class="flex-shrink-0 flex items-center px-4 space-x-3">
+            <img src="assets/courseorganizerlogo.png" 
+                 alt="Course Organizer Logo" 
+                 class="h-8 w-auto">
             <h2 class="text-xl font-bold text-navy-500">Course Organizer</h2>
           </div>
           <nav class="mt-5 px-2 space-y-1">

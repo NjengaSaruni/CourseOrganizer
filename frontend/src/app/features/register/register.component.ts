@@ -12,6 +12,11 @@ import { AuthService } from '../../core/auth.service';
     <div class="min-h-screen bg-gradient-to-br from-primary-50 to-navy-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div class="sm:mx-auto sm:w-full sm:max-w-md">
         <div class="text-center">
+          <div class="flex justify-center mb-4">
+            <img src="assets/courseorganizerlogo.png" 
+                 alt="Course Organizer Logo" 
+                 class="h-16 w-auto">
+          </div>
           <h2 class="text-3xl font-extrabold text-navy-500">
             Create your account
           </h2>
