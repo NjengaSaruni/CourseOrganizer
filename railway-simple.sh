@@ -23,7 +23,15 @@ fi
 
 # Create project if needed
 echo "📦 Setting up Railway project..."
-railway project new course-organizer 2>/dev/null || echo "Project already exists or using existing project"
+if ! railway status >/dev/null 2>&1; then
+    echo "Creating new Railway project..."
+    railway init course-organizer
+    echo "Adding PostgreSQL database..."
+    railway add postgresql
+    echo "Project created successfully!"
+else
+    echo "Project already linked to current directory"
+fi
 
 # Generate secret key
 echo "🔑 Generating secret key..."

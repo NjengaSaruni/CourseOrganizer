@@ -76,12 +76,13 @@ print_success "Railway authentication verified"
 
 # Create Railway project if it doesn't exist
 print_status "Setting up Railway project..."
-if [ -z "$RAILWAY_PROJECT_ID" ]; then
+if ! railway status >/dev/null 2>&1; then
     print_status "Creating new Railway project..."
-    railway project new course-organizer
-    print_success "Railway project created"
+    railway init course-organizer
+    print_success "Railway project created and linked"
 else
-    print_status "Using existing Railway project: $RAILWAY_PROJECT_ID"
+    print_status "Project already linked to current directory"
+    railway status
 fi
 
 # Set up environment variables
