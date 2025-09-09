@@ -1,22 +1,4 @@
-# Multi-stage build for Course Organizer
-FROM node:20-alpine AS frontend-builder
-
-# Set working directory
-WORKDIR /app/frontend
-
-# Copy frontend package files
-COPY frontend/package*.json ./
-
-# Install frontend dependencies
-RUN npm ci --only=production
-
-# Copy frontend source
-COPY frontend/ ./
-
-# Build frontend
-RUN npm run build:prod
-
-# Python backend stage
+# Simple Dockerfile for Railway deployment
 FROM python:3.11-slim
 
 # Set environment variables
@@ -28,25 +10,40 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js for frontend build
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs
 
 # Set working directory
 WORKDIR /app
 
-# Copy backend requirements
+# Copy backend requirements first (for better caching)
 COPY backend/requirements.txt ./
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy frontend package files
+COPY frontend/package*.json ./frontend/
+
+# Install frontend dependencies
+WORKDIR /app/frontend
+RUN npm ci --only=production
+
+# Copy frontend source and build
+COPY frontend/ ./
+RUN npm run build:prod
+
 # Copy backend source
+WORKDIR /app
 COPY backend/ ./
 
-# Copy built frontend from previous stage
-COPY --from=frontend-builder /app/frontend/dist/course-organizer ./static/
-
-# Create static files directory
+# Create static files directory and copy built frontend
 RUN mkdir -p static
+RUN cp -r frontend/dist/course-organizer/* static/
 
 # Run migrations and create demo data
 RUN python manage.py migrate

@@ -6,9 +6,8 @@ frontend/dist/
 *.log
 *.tmp
 
-# Docker files (not needed for Railway)
+# Docker files (exclude docker folder but keep root Dockerfile)
 docker/
-Dockerfile*
 docker-compose*
 
 # Development scripts
