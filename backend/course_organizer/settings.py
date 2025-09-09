@@ -47,7 +47,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -55,6 +54,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Add whitenoise middleware only in production
+if not DEBUG:
+    MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'course_organizer.urls'
 
@@ -81,10 +84,19 @@ WSGI_APPLICATION = 'course_organizer.wsgi.application'
 
 # Use PostgreSQL for production, SQLite for development
 if config('DATABASE_URL', default=None):
-    import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.parse(config('DATABASE_URL'))
-    }
+    try:
+        import dj_database_url
+        DATABASES = {
+            'default': dj_database_url.parse(config('DATABASE_URL'))
+        }
+    except ImportError:
+        # Fallback to SQLite if dj_database_url is not available
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
 else:
     DATABASES = {
         'default': {
