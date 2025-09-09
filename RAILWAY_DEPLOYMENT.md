@@ -81,7 +81,7 @@ railway init course-organizer
 
 ### 3. Add Database
 ```bash
-railway add postgresql
+railway add --database postgres
 ```
 
 ### 4. Set Environment Variables
@@ -168,7 +168,7 @@ railway logs
 Check the logs for detailed error messages.
 
 #### 2. Database Connection Issues
-- Ensure PostgreSQL service is added: `railway add postgresql`
+- Ensure PostgreSQL service is added: `railway add --database postgres`
 - Check `DATABASE_URL` is set: `railway variables`
 
 #### 3. CORS Issues

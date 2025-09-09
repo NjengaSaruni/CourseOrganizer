@@ -88,7 +88,7 @@ fi
 # Step 2: Add PostgreSQL database service
 print_status "Step 2: Adding PostgreSQL database service..."
 print_status "Adding PostgreSQL database to your project..."
-railway add postgresql
+railway add --database postgres
 print_success "PostgreSQL database service added"
 
 # Step 3: Set up environment variables

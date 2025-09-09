@@ -27,7 +27,7 @@ if ! railway status >/dev/null 2>&1; then
     echo "Creating new Railway project..."
     railway init course-organizer
     echo "Adding PostgreSQL database..."
-    railway add postgresql
+    railway add --database postgres
     echo "Project created successfully!"
 else
     echo "Project already linked to current directory"
