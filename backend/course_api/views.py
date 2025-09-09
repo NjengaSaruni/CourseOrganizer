@@ -5,12 +5,25 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth import login
 from django.db.models import Q
+from django.http import JsonResponse
 from .models import User, Course, TimetableEntry, CourseMaterial, Recording, Meeting
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, LoginSerializer,
     CourseSerializer, TimetableEntrySerializer, CourseMaterialSerializer,
     RecordingSerializer, MeetingSerializer
 )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """Health check endpoint for Railway deployment"""
+    return JsonResponse({
+        'status': 'healthy',
+        'message': 'Course Organizer API is running',
+        'version': '1.0.0',
+        'host': request.get_host()
+    })
 
 
 @api_view(['POST'])

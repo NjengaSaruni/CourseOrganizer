@@ -41,19 +41,18 @@ RUN npm run build:prod
 WORKDIR /app
 COPY backend/ ./
 
-# Create static files directory and copy built frontend
-RUN mkdir -p static
-RUN cp -r frontend/dist/course-organizer/* static/
-
 # Run migrations and create demo data
 RUN python manage.py migrate
 RUN python manage.py create_demo_data
 
-# Collect static files
+# Collect static files first
 RUN python manage.py collectstatic --noinput
 
-# Expose port
-EXPOSE $PORT
+# Copy Angular build to static directory (after collectstatic)
+RUN cp -r frontend/dist/course-organizer/* static/
 
-# Start command
+# Expose port (Railway provides PORT env var)
+EXPOSE 8080
+
+# Start command - Railway will set PORT automatically
 CMD gunicorn course_organizer.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120

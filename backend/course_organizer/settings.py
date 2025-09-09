@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,6 +28,13 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-+-n0(ej=g!bt*opntm8u3
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=lambda v: [s.strip() for s in v.split(',')])
+
+# Add Railway internal hostnames for health checks
+if not DEBUG:
+    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1'])
+
+    # Allow all hosts for Railway health checks
+    ALLOWED_HOSTS.append('*')
 
 
 # Application definition
@@ -64,7 +72,7 @@ ROOT_URLCONF = 'course_organizer.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'static')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -174,6 +182,9 @@ CORS_ALLOW_CREDENTIALS = True
 # Allow all origins in development, specific origins in production
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # In production, allow Railway domains
+    CORS_ALLOWED_ORIGINS.extend(['https://*.railway.app', 'http://*.railway.app'])
 
 # Email settings (for production)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
