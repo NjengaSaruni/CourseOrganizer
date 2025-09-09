@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=django-insecure-+-n0(ej=g!bt*opntm8u34m!&yud!wcth#**bgi8^ylg03rg(5
+      - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+    volumes:
+      - ../backend:/app
+      - backend_static:/app/static
+      - backend_media:/app/media
+    depends_on:
+      - db
+    networks:
+      - course_organizer_network
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    ports:
+      - "4200:4200"
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - course_organizer_network
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=course_organizer
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - course_organizer_network
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ../docker/nginx.conf:/etc/nginx/nginx.conf
+      - backend_static:/var/www/static
+      - backend_media:/var/www/media
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - course_organizer_network
+
+volumes:
+  postgres_data:
+  backend_static:
+  backend_media:
+
+networks:
+  course_organizer_network:
+    driver: bridge
