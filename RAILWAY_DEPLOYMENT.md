@@ -11,59 +11,34 @@ This guide covers deploying the Course Organizer application to Railway with mul
 
 ## Deployment Options
 
-### 🚀 Option 1: First-Time Deployment (Recommended)
-**Use this for your very first deployment to Railway**
-
-```bash
-./railway-first-deploy.sh
-```
-
-**What it does:**
-- ✅ Checks prerequisites
-- ✅ Logs you into Railway
-- ✅ Creates new Railway project
-- ✅ Adds PostgreSQL database service
-- ✅ Sets up all environment variables
-- ✅ Deploys the application
-- ✅ Provides monitoring instructions
-
-### ⚡ Option 2: Quick Deploy
-**Use this for subsequent deployments**
+### 🚀 Main Deployment Script (Recommended)
+**Use this for both first-time and subsequent deployments**
 
 ```bash
 ./railway-deploy.sh
 ```
 
 **What it does:**
-- ✅ Quick setup and deployment
-- ✅ Sets environment variables
-- ✅ Deploys to existing project
-
-### 🔧 Option 3: Comprehensive Deploy
-**Use this for full setup with validation**
-
-```bash
-./deploy-railway.sh
-```
-
-**What it does:**
-- ✅ Full validation and setup
-- ✅ Creates configuration files
-- ✅ Comprehensive error checking
-- ✅ Interactive deployment
-
-### 📝 Option 4: Simple Deploy (Manual Variables)
-**Use this if you prefer manual environment variable setup**
-
-```bash
-./railway-simple.sh
-```
-
-**What it does:**
-- ✅ Creates project and database
-- ✅ Shows environment variables to set manually
-- ✅ Waits for your confirmation
+- ✅ Checks prerequisites and authentication
+- ✅ Detects first-time vs existing project
+- ✅ Sets up project, database, and service (first-time only)
+- ✅ Configures Dockerfile deployment
+- ✅ Sets up all environment variables
 - ✅ Deploys the application
+- ✅ Provides monitoring instructions
+
+### 🔧 Service Fix Script
+**Use this if you have service linking issues**
+
+```bash
+./railway-fix-service.sh
+```
+
+**What it does:**
+- ✅ Fixes service linking problems
+- ✅ Adds missing services
+- ✅ Links to correct service
+- ✅ Verifies project setup
 
 ## Manual Deployment Steps
 
@@ -208,12 +183,11 @@ course-organizer/
 ├── backend/                 # Django backend
 ├── frontend/               # Angular frontend
 ├── railway.json           # Railway project config
-├── nixpacks.toml          # Build configuration
-├── .railwayignore         # Files to exclude
-├── railway-first-deploy.sh # First-time deployment
-├── railway-deploy.sh      # Quick deployment
-├── deploy-railway.sh      # Comprehensive deployment
-└── railway-simple.sh      # Manual variables deployment
+├── Dockerfile             # Docker build configuration
+├── .dockerignore          # Docker build exclusions
+├── .railwayignore         # Railway deployment exclusions
+├── railway-deploy.sh      # Main deployment script
+└── railway-fix-service.sh # Service linking fix script
 ```
 
 ## First-Time Deployment Checklist
@@ -222,7 +196,7 @@ course-organizer/
 - [ ] Logged into Railway account
 - [ ] In project root directory
 - [ ] All prerequisites installed (Python, Node.js)
-- [ ] Run `./railway-first-deploy.sh`
+- [ ] Run `./railway-deploy.sh`
 - [ ] Monitor deployment with `railway logs`
 - [ ] Test application at provided URL
 - [ ] Verify demo accounts work
