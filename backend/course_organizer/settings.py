@@ -66,6 +66,10 @@ MIDDLEWARE = [
 # Add whitenoise middleware only in production
 if not DEBUG:
     MIDDLEWARE.insert(2, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    
+    # Whitenoise configuration
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = True
 
 ROOT_URLCONF = 'course_organizer.urls'
 

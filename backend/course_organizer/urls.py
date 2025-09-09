@@ -19,11 +19,24 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
+from django.views.static import serve
+from django.http import HttpResponse
+import os
+
+def serve_static_file(request, path):
+    """Serve static files for Angular app"""
+    file_path = os.path.join(settings.STATIC_ROOT, path)
+    if os.path.exists(file_path):
+        return serve(request, path, document_root=settings.STATIC_ROOT)
+    else:
+        return HttpResponse("File not found", status=404)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('course_api.urls')),
-    # Serve Angular app at root
+    # Serve static files for Angular app
+    path('<path:path>', serve_static_file),
+    # Serve Angular app at root (catch-all)
     path('', TemplateView.as_view(template_name='index.html')),
 ]
 
