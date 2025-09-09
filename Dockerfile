@@ -49,7 +49,7 @@ RUN python manage.py create_demo_data
 RUN python manage.py collectstatic --noinput
 
 # Copy Angular build to static directory (after collectstatic)
-RUN cp -r frontend/dist/course-organizer/* static/
+RUN cp -r frontend/dist/course-organizer/browser/* static/
 
 # Expose port (Railway provides PORT env var)
 EXPOSE 8080

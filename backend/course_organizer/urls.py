@@ -19,16 +19,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
-from django.http import HttpResponse
-
-def test_root(request):
-    return HttpResponse("Django is working! This is the root path.")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('course_api.urls')),
-    # Test root path
-    path('', test_root),
+    # Serve Angular app at root
+    path('', TemplateView.as_view(template_name='index.html')),
 ]
 
 # Serve static files during development
