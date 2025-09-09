@@ -1,0 +1,48 @@
+services:
+  # Backend API Service
+  - type: web
+    name: course-organizer-backend
+    env: python
+    plan: free
+    buildCommand: |
+      cd backend
+      pip install -r requirements.txt
+      python manage.py migrate
+      python manage.py create_demo_data
+    startCommand: |
+      cd backend
+      gunicorn course_organizer.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: course-organizer-backend.onrender.com
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://course-organizer-frontend.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: course-organizer-db
+          property: connectionString
+
+  # Frontend Service
+  - type: web
+    name: course-organizer-frontend
+    env: static
+    plan: free
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    staticPublishPath: ./frontend/dist/course-organizer
+    envVars:
+      - key: API_URL
+        value: https://course-organizer-backend.onrender.com/api
+
+  # Database Service
+  - type: pserv
+    name: course-organizer-db
+    env: postgresql
+    plan: free
+    ipAllowList: []
