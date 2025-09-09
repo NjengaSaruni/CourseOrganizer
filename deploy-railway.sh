@@ -87,14 +87,25 @@ fi
 # Set up environment variables
 print_status "Configuring environment variables..."
 
-# Backend environment variables
-railway variables set SECRET_KEY="$(python3 -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())')"
-railway variables set DEBUG=false
-railway variables set ALLOWED_HOSTS="*.railway.app"
-railway variables set CORS_ALLOWED_ORIGINS="https://*.railway.app"
+# Generate a secure secret key without Django dependency
+SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))")
+
+# Backend environment variables using correct Railway CLI syntax
+print_status "Setting SECRET_KEY..."
+railway variables --set "SECRET_KEY=$SECRET_KEY"
+
+print_status "Setting DEBUG..."
+railway variables --set "DEBUG=false"
+
+print_status "Setting ALLOWED_HOSTS..."
+railway variables --set "ALLOWED_HOSTS=*.railway.app"
+
+print_status "Setting CORS_ALLOWED_ORIGINS..."
+railway variables --set "CORS_ALLOWED_ORIGINS=https://*.railway.app"
 
 # Frontend environment variables
-railway variables set API_URL="https://course-organizer-backend-production.up.railway.app/api"
+print_status "Setting API_URL..."
+railway variables --set "API_URL=https://course-organizer-backend-production.up.railway.app/api"
 
 print_success "Environment variables configured"
 

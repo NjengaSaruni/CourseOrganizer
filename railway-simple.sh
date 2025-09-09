@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# Quick Railway Deployment Script for Course Organizer
-# This is a simplified version for quick deployment
+# Simple Railway Deployment Script
+# Alternative approach using Railway's web interface for environment variables
 
 set -e
 
-echo "🚀 Quick Railway Deployment for Course Organizer"
+echo "🚀 Simple Railway Deployment for Course Organizer"
 echo "================================================"
 
 # Check if Railway CLI is installed
@@ -25,24 +25,25 @@ fi
 echo "📦 Setting up Railway project..."
 railway project new course-organizer 2>/dev/null || echo "Project already exists or using existing project"
 
-# Set environment variables
-echo "⚙️ Setting up environment variables..."
-
-# Generate a secure secret key without Django dependency
+# Generate secret key
+echo "🔑 Generating secret key..."
 SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))")
 
-# Set environment variables using correct Railway CLI syntax
-echo "Setting SECRET_KEY..."
-railway variables --set "SECRET_KEY=$SECRET_KEY"
-
-echo "Setting DEBUG..."
-railway variables --set "DEBUG=false"
-
-echo "Setting ALLOWED_HOSTS..."
-railway variables --set "ALLOWED_HOSTS=*.railway.app"
-
-echo "Setting CORS_ALLOWED_ORIGINS..."
-railway variables --set "CORS_ALLOWED_ORIGINS=https://*.railway.app"
+echo "⚙️ Environment variables to set manually:"
+echo "=========================================="
+echo "SECRET_KEY=$SECRET_KEY"
+echo "DEBUG=false"
+echo "ALLOWED_HOSTS=*.railway.app"
+echo "CORS_ALLOWED_ORIGINS=https://*.railway.app"
+echo ""
+echo "📝 Please set these environment variables in your Railway dashboard:"
+echo "   1. Go to: railway open"
+echo "   2. Click on your project"
+echo "   3. Go to Variables tab"
+echo "   4. Add each variable above"
+echo ""
+echo "Press Enter when you've set the environment variables..."
+read -r
 
 echo "🚀 Deploying to Railway..."
 railway up
