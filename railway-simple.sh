@@ -28,6 +28,10 @@ if ! railway status >/dev/null 2>&1; then
     railway init course-organizer
     echo "Adding PostgreSQL database..."
     railway add --database postgres
+    echo "Adding main application service..."
+    railway add --service course-organizer-backend
+    echo "Linking to main service..."
+    railway service course-organizer-backend
     echo "Project created successfully!"
 else
     echo "Project already linked to current directory"

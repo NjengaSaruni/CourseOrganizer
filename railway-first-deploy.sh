@@ -91,8 +91,19 @@ print_status "Adding PostgreSQL database to your project..."
 railway add --database postgres
 print_success "PostgreSQL database service added"
 
-# Step 3: Set up environment variables
-print_status "Step 3: Setting up environment variables..."
+# Step 3: Add main application service
+print_status "Step 3: Adding main application service..."
+print_status "Creating main application service..."
+railway add --service course-organizer-backend
+print_success "Main application service added"
+
+# Step 4: Link to the main service
+print_status "Step 4: Linking to main service..."
+railway service course-organizer-backend
+print_success "Linked to main service"
+
+# Step 5: Set up environment variables
+print_status "Step 5: Setting up environment variables..."
 
 # Generate a secure secret key without Django dependency
 SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))")
@@ -111,12 +122,12 @@ railway variables --set "CORS_ALLOWED_ORIGINS=https://*.railway.app"
 
 print_success "Environment variables configured"
 
-# Step 4: Verify project setup
-print_status "Step 4: Verifying project setup..."
+# Step 6: Verify project setup
+print_status "Step 6: Verifying project setup..."
 railway status
 
-# Step 5: Deploy the application
-print_status "Step 5: Deploying application to Railway..."
+# Step 7: Deploy the application
+print_status "Step 7: Deploying application to Railway..."
 print_warning "This will deploy your application to Railway. Press Enter to continue or Ctrl+C to cancel."
 read -r
 
@@ -125,7 +136,7 @@ railway up
 
 print_success "Deployment initiated!"
 
-# Step 6: Post-deployment information
+# Step 8: Post-deployment information
 echo ""
 echo "🎉 First-Time Railway Deployment Complete!"
 echo "=========================================="
