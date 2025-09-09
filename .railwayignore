@@ -1,0 +1,34 @@
+# Development files
+node_modules/
+backend/venv/
+backend/__pycache__/
+frontend/dist/
+*.log
+*.tmp
+
+# Docker files (not needed for Railway)
+docker/
+Dockerfile*
+docker-compose*
+
+# Development scripts
+start-dev.sh
+deploy-railway.sh
+check-status.sh
+
+# Git
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+DEPLOYMENT.md
+RAILWAY_DEPLOYMENT.md
+README.md
