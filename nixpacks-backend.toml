@@ -1,17 +1,18 @@
+# Simplified Nixpacks configuration for backend only
+# Use this if the full nixpacks.toml fails
+
 [phases.setup]
-nixPkgs = ["python3", "pip", "nodejs"]
+nixPkgs = ["python3", "pip"]
 
 [phases.install]
 cmds = [
-    "cd backend && pip install -r requirements.txt",
-    "cd frontend && npm install"
+    "cd backend && pip install -r requirements.txt"
 ]
 
 [phases.build]
 cmds = [
     "cd backend && python manage.py migrate",
-    "cd backend && python manage.py create_demo_data",
-    "cd frontend && npm run build:prod"
+    "cd backend && python manage.py create_demo_data"
 ]
 
 [start]
