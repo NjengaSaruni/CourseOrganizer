@@ -29,9 +29,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy frontend package files
 COPY frontend/package*.json ./frontend/
 
-# Install frontend dependencies
+# Install frontend dependencies (including dev dependencies for build)
 WORKDIR /app/frontend
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy frontend source and build
 COPY frontend/ ./
