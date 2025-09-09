@@ -14,7 +14,7 @@ import { LoaderComponent } from '../../shared/loader/loader.component';
       <div class="max-w-md w-full space-y-8">
         <div>
           <div class="flex justify-center mb-4">
-            <img src="assets/courseorganizerlogo.png" 
+            <img src="/courseorganizerlogo.png" 
                  alt="Course Organizer Logo" 
                  class="h-16 w-auto">
           </div>

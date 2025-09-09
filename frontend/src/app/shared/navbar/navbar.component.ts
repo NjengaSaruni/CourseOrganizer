@@ -13,7 +13,7 @@ import { AuthService, User } from '../../core/auth.service';
         <div class="flex justify-between h-16">
           <div class="flex items-center">
             <a routerLink="/dashboard" class="flex-shrink-0 flex items-center space-x-3">
-              <img src="assets/courseorganizerlogo.png" 
+              <img src="/courseorganizerlogo.png" 
                    alt="Course Organizer Logo" 
                    class="h-10 w-auto">
               <h1 class="text-xl font-bold text-primary-600">Course Organizer</h1>

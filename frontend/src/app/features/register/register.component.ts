@@ -13,7 +13,7 @@ import { AuthService } from '../../core/auth.service';
       <div class="sm:mx-auto sm:w-full sm:max-w-md">
         <div class="text-center">
           <div class="flex justify-center mb-4">
-            <img src="assets/courseorganizerlogo.png" 
+            <img src="/courseorganizerlogo.png" 
                  alt="Course Organizer Logo" 
                  class="h-16 w-auto">
           </div>

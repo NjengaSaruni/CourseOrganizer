@@ -14,7 +14,7 @@ import { RouterModule } from '@angular/router';
           <div class="flex justify-between items-center py-6">
             <div class="flex items-center">
               <div class="flex-shrink-0 flex items-center space-x-3">
-                <img src="assets/courseorganizerlogo.png" 
+                <img src="/courseorganizerlogo.png" 
                      alt="Course Organizer Logo" 
                      class="h-12 w-auto">
                 <h1 class="text-2xl font-bold text-navy-500">Course Organizer</h1>
@@ -38,7 +38,7 @@ import { RouterModule } from '@angular/router';
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div class="text-center">
           <div class="flex justify-center mb-6">
-            <img src="assets/courseorganizerlogo.png" 
+            <img src="/courseorganizerlogo.png" 
                  alt="Course Organizer Logo" 
                  class="h-20 w-auto">
           </div>
