@@ -41,9 +41,9 @@ RUN npm run build:prod
 WORKDIR /app
 COPY backend/ ./
 
-# Run migrations and create demo data
+# Run migrations and create UoN Law data
 RUN python manage.py migrate
-RUN python manage.py create_demo_data
+RUN python manage.py create_uon_law_data
 
 # Collect static files first
 RUN python manage.py collectstatic --noinput
