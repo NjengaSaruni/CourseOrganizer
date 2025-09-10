@@ -72,6 +72,8 @@ class TimetableEntry(models.Model):
     subject = models.CharField(max_length=200)
     time = models.CharField(max_length=50)
     location = models.CharField(max_length=200, blank=True)
+    group = models.CharField(max_length=50, blank=True)
+    lecturer = models.CharField(max_length=200, blank=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='timetable_entries')
     created_at = models.DateTimeField(auto_now_add=True)
 
