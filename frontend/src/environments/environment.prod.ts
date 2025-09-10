@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://course-organizer-backend.onrender.com/api'
+  apiUrl: 'https://course-organizer-backend-production.up.railway.app/api'
 };
