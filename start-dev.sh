@@ -48,23 +48,24 @@ fi
 # Activate virtual environment
 source venv/bin/activate
 
-# Install dependencies
+# Install dependencies (ensure venv Python is used)
 echo "📦 Installing Python dependencies..."
-pip install -r requirements.txt
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 
 # Reset database and create fresh data
 echo "🗄️ Resetting database with fresh academic year structure..."
-python3 manage.py reset_database
+python manage.py reset_database
 
 # Set up admin account
 echo "🔐 Setting up admin account..."
 echo "You need to set a password for the admin account (admin@uon.ac.ke)"
 echo "If the admin already exists, use --force to reset the password"
-python3 manage.py setup_admin --force
+python manage.py setup_admin --force
 
 # Start Django server in background
 echo "🚀 Starting Django server on http://localhost:8000"
-python3 manage.py runserver 0.0.0.0:8000 &
+python manage.py runserver 0.0.0.0:8000 &
 DJANGO_PID=$!
 
 cd ..

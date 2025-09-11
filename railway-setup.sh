@@ -54,8 +54,8 @@ print_status "Setting up admin account..."
 print_warning "You will be prompted to enter a password for admin@uon.ac.ke"
 echo ""
 
-# Run the admin setup command
-railway run python manage.py setup_admin --force
+# Run the admin setup command inside the Railway service at /app
+railway run --service course-organizer-backend bash -lc "cd /app && python3 manage.py setup_admin --force"
 
 print_success "Admin account setup complete!"
 

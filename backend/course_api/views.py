@@ -100,7 +100,21 @@ def approve_user(request, user_id):
         user.status = 'approved'
         user.is_active = True
         user.save()
-        return Response({'message': 'User approved successfully'}, status=status.HTTP_200_OK)
+        
+        # Send approval notification via SMS
+        from .sms_service import sms_service
+        sms_result = sms_service.send_approval_notification(
+            phone_number=user.phone_number,
+            student_name=user.get_full_name()
+        )
+        
+        response_data = {
+            'message': 'User approved successfully',
+            'sms_sent': sms_result['success'],
+            'sms_message': sms_result['message']
+        }
+        
+        return Response(response_data, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -169,25 +183,29 @@ def send_passcode_sms(request, user_id):
         if not passcode:
             return Response({'error': 'Passcode is required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # In a real implementation, you would integrate with an SMS service like Twilio
-        # For now, we'll just log the SMS content
-        sms_message = f"Your Course Organizer passcode is: {passcode}. Use this to complete your registration."
+        # Import SMS service
+        from .sms_service import sms_service
         
-        print(f"SMS to {user.phone_number}: {sms_message}")
+        # Send SMS using the service
+        result = sms_service.send_passcode(
+            phone_number=user.phone_number,
+            passcode=passcode,
+            student_name=user.get_full_name()
+        )
         
-        # TODO: Integrate with actual SMS service
-        # Example with Twilio:
-        # from twilio.rest import Client
-        # client = Client(account_sid, auth_token)
-        # message = client.messages.create(
-        #     body=sms_message,
-        #     from_='+1234567890',
-        #     to=user.phone_number
-        # )
-        
-        return Response({
-            'message': f'SMS sent to {user.phone_number} with passcode {passcode}'
-        }, status=status.HTTP_200_OK)
+        if result['success']:
+            return Response({
+                'message': result['message'],
+                'twilio_sid': result.get('twilio_sid'),
+                'status': result.get('status'),
+                'fallback': result.get('fallback', False)
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'error': result['message'],
+                'fallback': result.get('fallback', False)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
