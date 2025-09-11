@@ -1,136 +1,174 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
+import { Router } from '@angular/router';
+import { environment } from '../../environments/environment';
+
+export interface Course {
+  id: number;
+  name: string;
+  code: string;
+  description: string;
+  year: number;
+  semester: number;
+  credits: number;
+  is_core: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface CourseMaterial {
-  id: string;
+  id: number;
   title: string;
-  type: 'pdf' | 'doc' | 'ppt' | 'video' | 'link';
-  url: string;
   description: string;
-  uploadDate: Date;
-  subject: string;
+  file_url: string;
+  file_type: string;
+  course: number;
+  uploaded_by: number;
+  uploaded_by_name: string;
+  created_at: string;
 }
 
 export interface Meeting {
-  id: string;
+  id: number;
   title: string;
-  date: Date;
-  time: string;
-  duration: number; // in minutes
-  link: string;
-  subject: string;
   description: string;
+  meeting_url: string;
+  scheduled_time: string;
+  duration: string;
+  course: number;
+  created_by: number;
+  created_by_name: string;
+  created_at: string;
 }
 
 export interface Recording {
-  id: string;
+  id: number;
   title: string;
-  url: string;
-  duration: number; // in minutes
-  subject: string;
-  date: Date;
   description: string;
+  video_url: string;
+  duration: string;
+  course: number;
+  uploaded_by: number;
+  uploaded_by_name: string;
+  created_at: string;
 }
 
 export interface TimetableEntry {
-  id: string;
-  subject: string;
+  id: number;
   day: string;
-  startTime: string;
-  endTime: string;
+  subject: string;
+  time: string;
   location: string;
-  instructor: string;
+  group: string;
+  lecturer: string;
+  course: number;
+  created_at: string;
+}
+
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class CourseService {
-  private materials: CourseMaterial[] = [
-    {
-      id: '1',
-      title: 'Introduction to Programming',
-      type: 'pdf',
-      url: '#',
-      description: 'Basic concepts of programming',
-      uploadDate: new Date('2024-01-15'),
-      subject: 'Computer Science'
-    },
-    {
-      id: '2',
-      title: 'Data Structures Lecture Notes',
-      type: 'ppt',
-      url: '#',
-      description: 'Comprehensive notes on data structures',
-      uploadDate: new Date('2024-01-20'),
-      subject: 'Computer Science'
-    }
-  ];
+  private apiUrl = environment.apiUrl;
 
-  private meetings: Meeting[] = [
-    {
-      id: '1',
-      title: 'Weekly CS Discussion',
-      date: new Date('2024-01-25'),
-      time: '10:00',
-      duration: 60,
-      link: '#',
-      subject: 'Computer Science',
-      description: 'Weekly discussion session'
-    }
-  ];
+  constructor(private http: HttpClient, private router: Router) {}
 
-  private recordings: Recording[] = [
-    {
-      id: '1',
-      title: 'Introduction to Algorithms',
-      url: '#',
-      duration: 45,
-      subject: 'Computer Science',
-      date: new Date('2024-01-22'),
-      description: 'Recorded lecture on algorithm basics'
-    }
-  ];
+  private handleAuthError(error: any): Observable<never> {
+    // Just log the error and let the auth guard handle redirects
+    console.error('API Error:', error);
+    return throwError(() => error);
+  }
 
-  private timetable: TimetableEntry[] = [
-    {
-      id: '1',
-      subject: 'Computer Science',
-      day: 'Monday',
-      startTime: '09:00',
-      endTime: '10:30',
-      location: 'Room 101',
-      instructor: 'Dr. Smith'
-    },
-    {
-      id: '2',
-      subject: 'Mathematics',
-      day: 'Tuesday',
-      startTime: '11:00',
-      endTime: '12:30',
-      location: 'Room 102',
-      instructor: 'Prof. Johnson'
-    }
-  ];
+  getCourses(): Observable<Course[]> {
+    return this.http.get<PaginatedResponse<Course>>(`${this.apiUrl}/courses/`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
 
   getMaterials(): Observable<CourseMaterial[]> {
-    return of(this.materials);
+    return this.http.get<PaginatedResponse<CourseMaterial>>(`${this.apiUrl}/materials/`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
   }
 
   getMeetings(): Observable<Meeting[]> {
-    return of(this.meetings);
+    return this.http.get<PaginatedResponse<Meeting>>(`${this.apiUrl}/meetings/`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
   }
 
   getRecordings(): Observable<Recording[]> {
-    return of(this.recordings);
+    return this.http.get<PaginatedResponse<Recording>>(`${this.apiUrl}/recordings/`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
   }
 
   getTimetable(): Observable<TimetableEntry[]> {
-    return of(this.timetable);
+    return this.http.get<PaginatedResponse<TimetableEntry>>(`${this.apiUrl}/timetable/`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
   }
 
   getMaterialsBySubject(subject: string): Observable<CourseMaterial[]> {
-    const filtered = this.materials.filter(m => m.subject === subject);
-    return of(filtered);
+    return this.http.get<PaginatedResponse<CourseMaterial>>(`${this.apiUrl}/materials/?subject=${subject}`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  getRecordingsBySubject(subject: string): Observable<Recording[]> {
+    return this.http.get<PaginatedResponse<Recording>>(`${this.apiUrl}/recordings/?subject=${subject}`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  getMeetingsBySubject(subject: string): Observable<Meeting[]> {
+    return this.http.get<PaginatedResponse<Meeting>>(`${this.apiUrl}/meetings/?subject=${subject}`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  getCoursesByYear(year: number): Observable<Course[]> {
+    return this.http.get<PaginatedResponse<Course>>(`${this.apiUrl}/courses/?year=${year}`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  getCoursesByYearAndSemester(year: number, semester: number): Observable<Course[]> {
+    return this.http.get<PaginatedResponse<Course>>(`${this.apiUrl}/courses/?year=${year}&semester=${semester}`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  getTimetableByYear(year: number): Observable<TimetableEntry[]> {
+    return this.http.get<PaginatedResponse<TimetableEntry>>(`${this.apiUrl}/timetable/?year=${year}`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  getTimetableByYearAndSemester(year: number, semester: number): Observable<TimetableEntry[]> {
+    return this.http.get<PaginatedResponse<TimetableEntry>>(`${this.apiUrl}/timetable/?year=${year}&semester=${semester}`).pipe(
+      map(response => response.results),
+      catchError(this.handleAuthError.bind(this))
+    );
   }
 }

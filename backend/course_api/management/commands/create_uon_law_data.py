@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from course_api.models import Course, TimetableEntry, CourseMaterial, Recording, Meeting
 from datetime import datetime, timedelta
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -12,7 +13,33 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write('Creating UoN Law Module II data...')
 
-        # Create demo users (keep existing ones)
+        # Create demo student (read-only privileges for Class of 2029)
+        # Get the 2025/2026 academic year
+        from course_api.models import AcademicYear
+        academic_year = AcademicYear.get_or_create_2025_2026()
+        
+        demo_student, created = User.objects.get_or_create(
+            email='demo.student@uon.ac.ke',
+            defaults={
+                'first_name': 'Demo',
+                'last_name': 'Student',
+                'registration_number': 'GPR3/999999/2025',
+                'phone_number': '+254 700 000 999',
+                'status': 'approved',
+                'is_active': True,
+                'current_year': 1,
+                'current_semester': 1,
+                'class_of': 2029,
+                'academic_year': academic_year,
+                'user_type': 'student',
+            }
+        )
+        if created:
+            demo_student.set_password('demo123')
+            demo_student.save()
+            self.stdout.write(f'Created demo student: {demo_student.email}')
+        
+        # Get or create admin user for content creation (but don't set password)
         admin_user, created = User.objects.get_or_create(
             email='admin@uon.ac.ke',
             defaults={
@@ -23,12 +50,15 @@ class Command(BaseCommand):
                 'status': 'approved',
                 'is_active': True,
                 'is_staff': True,
+                'is_superuser': True,
+                'user_type': 'admin',
+                'academic_year': academic_year,
             }
         )
         if created:
-            admin_user.set_password('admin123')
-            admin_user.save()
-            self.stdout.write(f'Created admin user: {admin_user.email}')
+            # Don't set password - admin must use setup_admin command
+            self.stdout.write(f'Created admin user (no password set): {admin_user.email}')
+            self.stdout.write('Run: python manage.py setup_admin to set admin password')
 
         student_user, created = User.objects.get_or_create(
             email='john.doe@student.uon.ac.ke',
@@ -39,6 +69,10 @@ class Command(BaseCommand):
                 'phone_number': '+254 700 000 001',
                 'status': 'approved',
                 'is_active': True,
+                'current_year': 1,
+                'current_semester': 1,
+                'class_of': 2029,
+                'academic_year': academic_year,
             }
         )
         if created:
@@ -46,21 +80,6 @@ class Command(BaseCommand):
             student_user.save()
             self.stdout.write(f'Created student user: {student_user.email}')
 
-        pending_user, created = User.objects.get_or_create(
-            email='jane.smith@student.uon.ac.ke',
-            defaults={
-                'first_name': 'Jane',
-                'last_name': 'Smith',
-                'registration_number': 'GPR3/789012/2025',
-                'phone_number': '+254 700 000 002',
-                'status': 'pending',
-                'is_active': False,
-            }
-        )
-        if created:
-            pending_user.set_password('student123')
-            pending_user.save()
-            self.stdout.write(f'Created pending user: {pending_user.email}')
 
         # Clear existing data
         Course.objects.all().delete()
@@ -69,71 +88,76 @@ class Command(BaseCommand):
         Recording.objects.all().delete()
         Meeting.objects.all().delete()
 
-        # Create real UoN Law courses
+        # Create real UoN Law courses with proper year and semester categorization
         courses_data = [
-            # First Year Courses (GPR3xxx)
-            {'code': 'GPR3101', 'name': 'TORTS I', 'description': 'Introduction to tort law and civil wrongs'},
-            {'code': 'GPR3103', 'name': 'CONTRACTS I', 'description': 'Fundamentals of contract law'},
-            {'code': 'GPR3105', 'name': 'CRIMINAL LAW I', 'description': 'Introduction to criminal law principles'},
-            {'code': 'GPR3107', 'name': 'CONSTITUTIONAL LAW I', 'description': 'Constitutional principles and governance'},
-            {'code': 'GPR3109', 'name': 'LEGAL SYSTEMS AND LEGAL METHODS', 'description': 'Legal systems and research methods'},
-            {'code': 'GPR3115', 'name': 'COMMUNICATION SKILLS FOR LAWYERS', 'description': 'Professional communication skills'},
-            {'code': 'GPR3117', 'name': 'LEGAL RESEARCH AND WRITING', 'description': 'Legal research and writing techniques'},
+            # First Year Courses (GPR31xx) - First Semester
+            {'code': 'GPR3101', 'name': 'TORTS I', 'description': 'Introduction to tort law and civil wrongs', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3103', 'name': 'CONTRACTS I', 'description': 'Fundamentals of contract law', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3105', 'name': 'CRIMINAL LAW I', 'description': 'Introduction to criminal law principles', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3107', 'name': 'CONSTITUTIONAL LAW I', 'description': 'Constitutional principles and governance', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3109', 'name': 'LEGAL SYSTEMS AND LEGAL METHODS', 'description': 'Legal systems and research methods', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3115', 'name': 'COMMUNICATION SKILLS FOR LAWYERS', 'description': 'Professional communication skills', 'year': 1, 'semester': 1, 'credits': 2, 'is_core': True},
+            {'code': 'GPR3117', 'name': 'LEGAL RESEARCH AND WRITING', 'description': 'Legal research and writing techniques', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
             
-            # Second Year Courses (GPR32xx)
-            {'code': 'GPR3201', 'name': 'EVIDENCE I', 'description': 'Law of evidence in legal proceedings'},
-            {'code': 'GPR3203', 'name': 'ADMINISTRATIVE LAW I', 'description': 'Administrative law principles'},
-            {'code': 'GPR3205', 'name': 'PROPERTY THEORY', 'description': 'Theoretical foundations of property law'},
-            {'code': 'GPR3206', 'name': 'EQUITY', 'description': 'Equity and equitable remedies'},
-            {'code': 'GPR3207', 'name': 'HUMAN RIGHTS LAW', 'description': 'International and domestic human rights'},
-            {'code': 'GPR3211', 'name': 'FAMILY LAW', 'description': 'Family law and domestic relations'},
+            # Second Year Courses (GPR32xx) - First Semester
+            {'code': 'GPR3201', 'name': 'EVIDENCE I', 'description': 'Law of evidence in legal proceedings', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3203', 'name': 'ADMINISTRATIVE LAW I', 'description': 'Administrative law principles', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3205', 'name': 'PROPERTY THEORY', 'description': 'Theoretical foundations of property law', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3206', 'name': 'EQUITY', 'description': 'Equity and equitable remedies', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3207', 'name': 'HUMAN RIGHTS LAW', 'description': 'International and domestic human rights', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3211', 'name': 'FAMILY LAW', 'description': 'Family law and domestic relations', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
             
-            # Third Year Courses (GPR33xx)
-            {'code': 'GPR3300', 'name': 'JURISPRUDENCE', 'description': 'Legal philosophy and theory'},
-            {'code': 'GPR3301', 'name': 'PUBLIC INTERNATIONAL LAW', 'description': 'International law principles'},
-            {'code': 'GPR3303', 'name': 'LAW OF BUSINESS ASSOCIATIONS I', 'description': 'Company law fundamentals'},
-            {'code': 'GPR3305', 'name': 'CIVIL PROCEDURE I', 'description': 'Civil procedure and litigation'},
-            {'code': 'GPR3307', 'name': 'ADVANCED LEGAL WRITING AND RESEARCH', 'description': 'Advanced legal writing skills'},
-            {'code': 'GPR3309', 'name': 'CRIMINAL PROCEDURE', 'description': 'Criminal procedure and practice'},
-            {'code': 'GPR3316', 'name': 'LAW OF BUSINESS ASSOCIATIONS II', 'description': 'Advanced company law'},
+            # Third Year Courses (GPR33xx) - First Semester
+            {'code': 'GPR3300', 'name': 'JURISPRUDENCE', 'description': 'Legal philosophy and theory', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3301', 'name': 'PUBLIC INTERNATIONAL LAW', 'description': 'International law principles', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3303', 'name': 'LAW OF BUSINESS ASSOCIATIONS I', 'description': 'Company law fundamentals', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3305', 'name': 'CIVIL PROCEDURE I', 'description': 'Civil procedure and litigation', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3307', 'name': 'ADVANCED LEGAL WRITING AND RESEARCH', 'description': 'Advanced legal writing skills', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3309', 'name': 'CRIMINAL PROCEDURE', 'description': 'Criminal procedure and practice', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3316', 'name': 'LAW OF BUSINESS ASSOCIATIONS II', 'description': 'Advanced company law', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
             
-            # Fourth Year Courses (GPR34xx)
-            {'code': 'GPR3403', 'name': 'CONFLICT OF LAWS', 'description': 'Private international law'},
-            {'code': 'GPR3411', 'name': 'INTELLECTUAL PROPERTY LAW', 'description': 'IP law and protection'},
-            {'code': 'GPR3414', 'name': 'PROFESSIONAL ETHICS', 'description': 'Legal ethics and professional conduct'},
-            {'code': 'GPR3415', 'name': 'CONSUMER PROTECTION LAW', 'description': 'Consumer rights and protection'},
-            {'code': 'GPR3416', 'name': 'LAW OF THE SEA', 'description': 'Maritime and sea law'},
-            {'code': 'GPR3420', 'name': 'ENERGY LAW', 'description': 'Energy sector legal framework'},
-            {'code': 'GPR3422', 'name': 'LAW, DEMOCRACY AND GOVERNANCE', 'description': 'Democratic governance and law'},
-            {'code': 'GPR3423', 'name': 'BANKING LAW', 'description': 'Banking and financial law'},
-            {'code': 'GPR3424', 'name': 'INSURANCE LAW', 'description': 'Insurance law and regulation'},
-            {'code': 'GPR3425', 'name': 'TAX LAW', 'description': 'Taxation law and practice'},
-            {'code': 'GPR3427', 'name': 'CHILDREN AND THE LAW', 'description': 'Child rights and protection'},
-            {'code': 'GPR3431', 'name': 'HEALTH LAW AND POLICY', 'description': 'Healthcare law and policy'},
-            {'code': 'GPR3432', 'name': 'ENVIRONMENTAL AND NATURAL RESOURCES LAW', 'description': 'Environmental protection law'},
-            {'code': 'GPR3436', 'name': 'INTERNATIONAL CRIMINAL LAW', 'description': 'International criminal justice'},
-            {'code': 'GPR3457', 'name': 'DISABILITY RIGHTS LAW', 'description': 'Disability rights and inclusion'},
-            {'code': 'GPR3458', 'name': 'SPORTS AND ENTERTAINMENT LAW', 'description': 'Sports and entertainment legal issues'},
-            {'code': 'GPR3459', 'name': 'FOOD LAW AND POLICY', 'description': 'Food safety and regulation'},
-            {'code': 'GPR3460', 'name': 'CRIMINOLOGY AND PENOLOGY', 'description': 'Criminology and punishment theory'},
-            {'code': 'GPR3461', 'name': 'ISLAMIC JURISPRUDENCE', 'description': 'Islamic law principles'},
-            {'code': 'GPR3462', 'name': 'LAW AND LANGUAGE', 'description': 'Language and legal interpretation'},
-            {'code': 'GPR3463', 'name': 'PUBLIC INTEREST CLINIC', 'description': 'Public interest legal practice'},
-            {'code': 'GPR3468', 'name': 'RESEARCH PROPOSAL', 'description': 'Legal research methodology'},
+            # Fourth Year Courses (GPR34xx) - First Semester
+            {'code': 'GPR3403', 'name': 'CONFLICT OF LAWS', 'description': 'Private international law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3411', 'name': 'INTELLECTUAL PROPERTY LAW', 'description': 'IP law and protection', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3414', 'name': 'PROFESSIONAL ETHICS', 'description': 'Legal ethics and professional conduct', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3415', 'name': 'CONSUMER PROTECTION LAW', 'description': 'Consumer rights and protection', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3416', 'name': 'LAW OF THE SEA', 'description': 'Maritime and sea law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3420', 'name': 'ENERGY LAW', 'description': 'Energy sector legal framework', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3422', 'name': 'LAW, DEMOCRACY AND GOVERNANCE', 'description': 'Democratic governance and law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3423', 'name': 'BANKING LAW', 'description': 'Banking and financial law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3424', 'name': 'INSURANCE LAW', 'description': 'Insurance law and practice', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3425', 'name': 'TAX LAW', 'description': 'Taxation law and practice', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3427', 'name': 'CHILDREN AND THE LAW', 'description': 'Child rights and protection', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3431', 'name': 'HEALTH LAW AND POLICY', 'description': 'Healthcare law and policy', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3432', 'name': 'ENVIRONMENTAL AND NATURAL RESOURCES LAW', 'description': 'Environmental protection law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3436', 'name': 'INTERNATIONAL CRIMINAL LAW', 'description': 'International criminal justice', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3457', 'name': 'DISABILITY RIGHTS LAW', 'description': 'Disability rights and inclusion', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3458', 'name': 'SPORTS AND ENTERTAINMENT LAW', 'description': 'Sports and entertainment legal issues', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3459', 'name': 'FOOD LAW AND POLICY', 'description': 'Food safety and regulation', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3460', 'name': 'CRIMINOLOGY AND PENOLOGY', 'description': 'Criminology and punishment theory', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3461', 'name': 'ISLAMIC JURISPRUDENCE', 'description': 'Islamic legal principles', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3462', 'name': 'LAW AND LANGUAGE', 'description': 'Language and legal interpretation', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3463', 'name': 'PUBLIC INTEREST CLINIC', 'description': 'Public interest legal practice', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
+            {'code': 'GPR3468', 'name': 'RESEARCH PROPOSAL', 'description': 'Legal research methodology', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
         ]
 
         courses = {}
         for course_data in courses_data:
             course, created = Course.objects.get_or_create(
                 code=course_data['code'],
+                academic_year=academic_year,
                 defaults={
                     'name': course_data['name'],
-                    'description': course_data['description']
+                    'description': course_data['description'],
+                    'year': course_data['year'],
+                    'semester': course_data['semester'],
+                    'credits': course_data['credits'],
+                    'is_core': course_data['is_core']
                 }
             )
             courses[course_data['code']] = course
             if created:
-                self.stdout.write(f'Created course: {course.name}')
+                self.stdout.write(f'Created course: {course.name} (Year {course.year}, Sem {course.semester})')
 
         # Create timetable entries based on the provided schedule
         timetable_data = [
@@ -286,12 +310,12 @@ class Command(BaseCommand):
                     {
                         'title': f'{course.name} - Weekly Discussion',
                         'description': f'Weekly discussion session for {course.name}',
-                        'scheduled_time': datetime.now() + timedelta(days=1, hours=17, minutes=30)
+                        'scheduled_time': timezone.now() + timedelta(days=1, hours=17, minutes=30)
                     },
                     {
                         'title': f'{course.name} - Assignment Review',
                         'description': f'Review of assignments and feedback session for {course.name}',
-                        'scheduled_time': datetime.now() + timedelta(days=7, hours=17, minutes=30)
+                        'scheduled_time': timezone.now() + timedelta(days=7, hours=17, minutes=30)
                     }
                 ]
                 

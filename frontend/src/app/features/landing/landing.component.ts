@@ -1,33 +1,34 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../core/auth.service';
 
 @Component({
   selector: 'app-landing',
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="min-h-screen bg-gradient-to-br from-primary-50 to-navy-50">
+    <div class="min-h-screen bg-white">
       <!-- Header -->
-      <div class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center py-6">
+      <div class="bg-white border-b border-gray-200">
+        <div class="max-w-6xl mx-auto px-6">
+          <div class="flex justify-between items-center py-4">
             <div class="flex items-center">
               <div class="flex-shrink-0 flex items-center space-x-3">
                 <img src="/courseorganizerlogo.png" 
                      alt="Course Organizer Logo" 
-                     class="h-12 w-auto">
-                <h1 class="text-2xl font-bold text-navy-500">Course Organizer</h1>
+                     class="h-10 w-auto">
+                <h1 class="text-xl font-semibold text-gray-900">Course Organizer</h1>
               </div>
             </div>
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
               <a routerLink="/login" 
-                 class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                Login
+                 class="text-gray-600 hover:text-gray-900 px-4 py-2 text-sm font-medium transition-colors">
+                Sign In
               </a>
               <a routerLink="/register" 
-                 class="bg-accent-500 hover:bg-accent-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                Register
+                 class="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors">
+                Get Started
               </a>
             </div>
           </div>
@@ -35,73 +36,86 @@ import { RouterModule } from '@angular/router';
       </div>
 
       <!-- Hero Section -->
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="max-w-4xl mx-auto px-6 py-20">
         <div class="text-center">
-          <div class="flex justify-center mb-6">
-            <img src="/courseorganizerlogo.png" 
-                 alt="Course Organizer Logo" 
-                 class="h-20 w-auto">
-          </div>
-          <h1 class="text-4xl font-bold text-navy-500 mb-6">
-            Welcome to Course Organizer
+          <h1 class="text-5xl font-bold text-gray-900 mb-6 tracking-tight">
+            Course Organizer
           </h1>
-          <p class="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+          <p class="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
             A comprehensive platform designed specifically for University of Nairobi students to manage their academic journey.
           </p>
+          
+          <!-- Primary Call-to-Action -->
+          <div class="bg-gray-50 rounded-2xl p-12 mb-16">
+            <div class="text-center">
+              <h2 class="text-3xl font-semibold text-gray-900 mb-4">Class of 2029</h2>
+              <p class="text-lg text-gray-600 mb-8 max-w-xl mx-auto">
+                First Year Law Students - Join your classmates and access course materials, timetables, and resources
+              </p>
+              <a routerLink="/register" 
+                 class="inline-block bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 rounded-full font-semibold text-lg transition-colors">
+                Request Registration
+              </a>
+              <p class="text-sm text-gray-500 mt-6">
+                Registration requires admin approval • Free for Class of 2029 students
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- Current Support Section -->
-        <div class="bg-white rounded-lg shadow-lg p-8 mb-12">
-          <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-              <svg class="w-8 h-8 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-            <h2 class="text-2xl font-bold text-navy-500 mb-4">Currently Supporting</h2>
-            <h3 class="text-xl font-semibold text-primary-600 mb-2">School of Law - Module II Evening Students</h3>
-            <p class="text-gray-600">
-              We're starting with the School of Law Module II evening program and will gradually expand to other courses.
+        <div class="bg-white border border-gray-200 rounded-2xl p-12 mb-16">
+          <div class="text-center mb-12">
+            <h2 class="text-3xl font-semibold text-gray-900 mb-4">Currently Supporting</h2>
+            <h3 class="text-xl text-gray-600 mb-6">School of Law - Class of 2029</h3>
+            <p class="text-lg text-gray-500 max-w-2xl mx-auto">
+              We're starting with first-year law students (Class of 2029) and will gradually expand to other classes and programs.
             </p>
           </div>
 
           <!-- Registration Info -->
-          <div class="bg-primary-50 rounded-lg p-6 mb-6">
-            <h4 class="text-lg font-semibold text-navy-500 mb-3">Registration Requirements</h4>
-            <div class="space-y-3">
+          <div class="bg-gray-50 rounded-xl p-8 mb-8">
+            <h4 class="text-xl font-semibold text-gray-900 mb-6 text-center">Registration Requirements</h4>
+            <div class="space-y-4 max-w-2xl mx-auto">
               <div class="flex items-start">
                 <div class="flex-shrink-0">
-                  <svg class="w-5 h-5 text-primary-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                  </svg>
+                  <div class="w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
                 </div>
-                <div class="ml-3">
-                  <p class="text-sm text-gray-700">
-                            <strong>Registration Number Format:</strong> GPR3/123456/2025 (example)
+                <div class="ml-4">
+                  <p class="text-gray-700">
+                    <span class="font-semibold">Registration Number Format:</span> GPR3/123456/2025 (example)
                   </p>
                 </div>
               </div>
               <div class="flex items-start">
                 <div class="flex-shrink-0">
-                  <svg class="w-5 h-5 text-primary-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                  </svg>
+                  <div class="w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
                 </div>
-                <div class="ml-3">
-                  <p class="text-sm text-gray-700">
-                    <strong>Manual Approval:</strong> All registrations require manual approval by administrators
+                <div class="ml-4">
+                  <p class="text-gray-700">
+                    <span class="font-semibold">Manual Approval:</span> All registrations require manual approval by administrators
                   </p>
                 </div>
               </div>
               <div class="flex items-start">
                 <div class="flex-shrink-0">
-                  <svg class="w-5 h-5 text-primary-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                  </svg>
+                  <div class="w-6 h-6 bg-gray-900 rounded-full flex items-center justify-center">
+                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
                 </div>
-                <div class="ml-3">
-                  <p class="text-sm text-gray-700">
-                    <strong>Current Students:</strong> Must have GPR3/*/2025 format registration number
+                <div class="ml-4">
+                  <p class="text-gray-700">
+                    <span class="font-semibold">Class of 2029:</span> Must have GPR3/XXXXXX/2025 format registration number
                   </p>
                 </div>
               </div>
@@ -111,77 +125,100 @@ import { RouterModule } from '@angular/router';
           <!-- Action Buttons -->
           <div class="flex flex-col sm:flex-row gap-4 justify-center">
             <a routerLink="/register" 
-               class="bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-md font-medium transition-colors text-center">
-              Register Now
+               class="bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 rounded-full font-semibold transition-colors text-center text-lg">
+              Request Registration for Class of 2029
             </a>
             <a routerLink="/login" 
-               class="bg-white hover:bg-gray-50 text-primary-600 border border-primary-300 px-6 py-3 rounded-md font-medium transition-colors text-center">
-              Already Registered? Login
+               class="border-2 border-gray-300 hover:border-gray-400 text-gray-700 hover:text-gray-900 px-6 py-3 rounded-full font-medium transition-colors text-center">
+              Already Registered? Sign In
             </a>
+          </div>
+          
+          <!-- Registration Notice -->
+          <div class="mt-8 bg-gray-100 border border-gray-200 rounded-xl p-6">
+            <div class="text-center">
+              <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                Registration Process
+              </h3>
+              <div class="grid md:grid-cols-2 gap-4 text-sm text-gray-600 max-w-2xl mx-auto">
+                <div class="flex items-center">
+                  <span class="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-semibold mr-3">1</span>
+                  Click "Request Registration" above
+                </div>
+                <div class="flex items-center">
+                  <span class="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-semibold mr-3">2</span>
+                  Fill out your details with GPR3/XXXXXX/2025 registration number
+                </div>
+                <div class="flex items-center">
+                  <span class="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-semibold mr-3">3</span>
+                  Wait for admin approval and passcode via SMS
+                </div>
+                <div class="flex items-center">
+                  <span class="w-6 h-6 bg-gray-900 text-white rounded-full flex items-center justify-center text-xs font-semibold mr-3">4</span>
+                  Use the passcode to complete your registration
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Features Section -->
-        <div class="grid md:grid-cols-3 gap-8 mb-12">
-          <div class="bg-white rounded-lg shadow-lg p-6 text-center">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-100 rounded-full mb-4">
-              <svg class="w-6 h-6 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div class="grid md:grid-cols-3 gap-8 mb-16">
+          <div class="bg-white border border-gray-200 rounded-2xl p-8 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-2xl mb-6">
+              <svg class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 class="text-lg font-semibold text-navy-500 mb-2">Class Timetable</h3>
-            <p class="text-gray-600 text-sm">View your class schedule and stay updated with your academic calendar.</p>
+            <h3 class="text-xl font-semibold text-gray-900 mb-3">Class Timetable</h3>
+            <p class="text-gray-600">View your class schedule and stay updated with your academic calendar.</p>
           </div>
 
-          <div class="bg-white rounded-lg shadow-lg p-6 text-center">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-100 rounded-full mb-4">
-              <svg class="w-6 h-6 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="bg-white border border-gray-200 rounded-2xl p-8 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-2xl mb-6">
+              <svg class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 class="text-lg font-semibold text-navy-500 mb-2">Course Materials</h3>
-            <p class="text-gray-600 text-sm">Access all your course documents, readings, and resources in one place.</p>
+            <h3 class="text-xl font-semibold text-gray-900 mb-3">Course Materials</h3>
+            <p class="text-gray-600">Access all your course documents, readings, and resources in one place.</p>
           </div>
 
-          <div class="bg-white rounded-lg shadow-lg p-6 text-center">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-primary-100 rounded-full mb-4">
-              <svg class="w-6 h-6 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div class="bg-white border border-gray-200 rounded-2xl p-8 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-2xl mb-6">
+              <svg class="w-8 h-8 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 class="text-lg font-semibold text-navy-500 mb-2">Lecture Recordings</h3>
-            <p class="text-gray-600 text-sm">Watch recorded lectures and catch up on missed classes.</p>
+            <h3 class="text-xl font-semibold text-gray-900 mb-3">Lecture Recordings</h3>
+            <p class="text-gray-600">Watch recorded lectures and catch up on missed classes.</p>
           </div>
         </div>
 
         <!-- Future Plans -->
-        <div class="bg-white rounded-lg shadow-lg p-8">
-          <div class="text-center mb-6">
-            <h2 class="text-2xl font-bold text-navy-500 mb-4">Future Expansion</h2>
-            <p class="text-gray-600">
+        <div class="bg-white border border-gray-200 rounded-2xl p-12">
+          <div class="text-center mb-12">
+            <h2 class="text-3xl font-semibold text-gray-900 mb-4">Future Expansion</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
               We're committed to expanding access to all University of Nairobi students.
             </p>
           </div>
           
-          <div class="grid md:grid-cols-2 gap-6">
-            <div class="bg-gradient-to-r from-primary-50 to-primary-100 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-navy-500 mb-2">Phase 1: Module II Students</h3>
-              <p class="text-gray-600 text-sm mb-3">Starting with School of Law Module II evening students</p>
-              <div class="flex items-center text-sm text-primary-600">
-                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
+          <div class="grid md:grid-cols-2 gap-8">
+            <div class="bg-gray-50 rounded-xl p-8">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3">Phase 1: Class of 2029</h3>
+              <p class="text-gray-600 mb-4">Starting with first-year law students (Class of 2029)</p>
+              <div class="flex items-center text-sm text-gray-700">
+                <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
                 Currently Active
               </div>
             </div>
             
-            <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-navy-500 mb-2">Phase 2: Other Courses</h3>
-              <p class="text-gray-600 text-sm mb-3">Expanding to other University of Nairobi programs</p>
+            <div class="bg-gray-50 rounded-xl p-8">
+              <h3 class="text-xl font-semibold text-gray-900 mb-3">Phase 2: Other Courses</h3>
+              <p class="text-gray-600 mb-4">Expanding to other University of Nairobi programs</p>
               <div class="flex items-center text-sm text-gray-500">
-                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
+                <div class="w-2 h-2 bg-gray-400 rounded-full mr-3"></div>
                 Coming Soon
               </div>
             </div>
@@ -190,9 +227,9 @@ import { RouterModule } from '@angular/router';
       </div>
 
       <!-- Footer -->
-      <div class="bg-navy-500 text-white py-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p class="text-sm">
+      <div class="bg-gray-900 text-white py-12">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+          <p class="text-gray-400">
             © 2025 University of Nairobi - Course Organizer. All rights reserved.
           </p>
         </div>
@@ -201,4 +238,13 @@ import { RouterModule } from '@angular/router';
   `,
   styles: []
 })
-export class LandingComponent {}
+export class LandingComponent implements OnInit {
+  constructor(private authService: AuthService, private router: Router) {}
+
+  ngOnInit(): void {
+    // Redirect authenticated users to dashboard
+    if (this.authService.isAuthenticated()) {
+      this.router.navigate(['/dashboard']);
+    }
+  }
+}

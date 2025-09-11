@@ -23,11 +23,14 @@ COPY backend/ /app/
 # Create directories for static and media files
 RUN mkdir -p static media
 
+# Make startup script executable
+RUN chmod +x startup.sh
+
 # Collect static files
-RUN python manage.py collectstatic --noinput
+RUN python3 manage.py collectstatic --noinput
 
 # Expose port
 EXPOSE 8000
 
-# Run the application
-CMD ["gunicorn", "course_organizer.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Run the application using startup script
+CMD ["./startup.sh"]

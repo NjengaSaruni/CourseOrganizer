@@ -1,59 +1,93 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
-from django.core.validators import RegexValidator
-
-
-class User(AbstractUser):
-    """Custom User model extending Django's AbstractUser"""
-    registration_number = models.CharField(
-        max_length=20,
-        unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^GPR3/\d{6}/2025$',
-                message='Registration number must be in format GPR3/XXXXXX/2025'
-            )
-        ],
-        help_text='Registration number in format GPR3/XXXXXX/2025'
-    )
-    phone_number = models.CharField(max_length=15)
-    status = models.CharField(
-        max_length=10,
-        choices=[
-            ('pending', 'Pending'),
-            ('approved', 'Approved'),
-            ('rejected', 'Rejected')
-        ],
-        default='pending'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.get_full_name()} ({self.registration_number})"
-
-    @property
-    def is_admin(self):
-        """Check if user is admin based on registration number"""
-        return self.registration_number == 'GPR3/150561/2025'
-
-    def save(self, *args, **kwargs):
-        # Set username to email if not provided
-        if not self.username:
-            self.username = self.email
-        super().save(*args, **kwargs)
+from django.utils import timezone
+from directory.models import User, AcademicYear, Class
 
 
 class Course(models.Model):
     """Course model for organizing course materials"""
+    YEAR_CHOICES = [
+        (1, 'First Year'),
+        (2, 'Second Year'),
+        (3, 'Third Year'),
+        (4, 'Fourth Year'),
+    ]
+    
+    SEMESTER_CHOICES = [
+        (1, 'First Semester'),
+        (2, 'Second Semester'),
+        (3, 'Holiday Semester'),
+    ]
+    
     name = models.CharField(max_length=200)
     code = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True)
+    year = models.IntegerField(choices=YEAR_CHOICES, help_text="Academic year (1-4)")
+    semester = models.IntegerField(choices=SEMESTER_CHOICES, help_text="Semester (1-3)")
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, help_text="Academic year this course belongs to")
+    target_classes = models.ManyToManyField(Class, blank=True, related_name='courses', help_text="Classes this course is designed for")
+    credits = models.IntegerField(default=3, help_text="Number of credit hours")
+    is_core = models.BooleanField(default=True, help_text="Whether this is a core course")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['academic_year', 'year', 'semester', 'code']
+        unique_together = ['code', 'academic_year']
+
     def __str__(self):
-        return f"{self.code} - {self.name}"
+        return f"{self.code} - {self.name} ({self.academic_year} Year {self.year}, Sem {self.semester})"
+    
+    @property
+    def year_display(self):
+        """Get human-readable year display"""
+        return dict(self.YEAR_CHOICES)[self.year]
+    
+    @property
+    def semester_display(self):
+        """Get human-readable semester display"""
+        return dict(self.SEMESTER_CHOICES)[self.semester]
+    
+    @classmethod
+    def get_first_year_first_semester_courses(cls, academic_year=None):
+        """Get all first year first semester courses for the given academic year"""
+        if academic_year is None:
+            academic_year = AcademicYear.get_current_academic_year()
+        return cls.objects.filter(
+            academic_year=academic_year,
+            year=1,
+            semester=1
+        )
+    
+    @classmethod
+    def get_courses_for_class(cls, student_class, academic_year=None):
+        """Get all courses available for a specific class"""
+        if academic_year is None:
+            academic_year = AcademicYear.get_current_academic_year()
+        
+        # Get courses that are either:
+        # 1. Specifically targeted to this class, OR
+        # 2. First year first semester courses (for first-year students)
+        if student_class.current_year_of_study == 1:
+            # For first-year students, include all first-year first-semester courses
+            return cls.objects.filter(
+                academic_year=academic_year,
+                year=1,
+                semester=1
+            ).distinct()
+        else:
+            # For other years, only include courses specifically targeted to their class
+            return cls.objects.filter(
+                academic_year=academic_year,
+                target_classes=student_class
+            ).distinct()
+    
+    @classmethod
+    def get_courses_for_user(cls, user, academic_year=None):
+        """Get all courses available for a specific user based on their class"""
+        if not user.is_student or not user.student_class:
+            return cls.objects.none()
+        
+        return cls.get_courses_for_class(user.student_class, academic_year)
 
 
 class TimetableEntry(models.Model):

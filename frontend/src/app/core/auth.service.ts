@@ -15,6 +15,9 @@ export interface User {
   status: 'pending' | 'approved' | 'rejected';
   is_admin: boolean;
   date_joined: string;
+  class_display_name?: string;
+  passcode?: string;
+  smsSent?: boolean;
 }
 
 export interface RegistrationData {
@@ -35,6 +38,15 @@ export interface LoginData {
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+export interface RegistrationResponse {
+  user_id: number;
+  message: string;
+  status: string;
+  program: string;
+  class: string;
+  graduation_year: number;
 }
 
 @Injectable({
@@ -65,7 +77,7 @@ export class AuthService {
   login(email: string, password: string): Observable<boolean> {
     const loginData: LoginData = { email, password };
     
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login/`, loginData).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/directory/auth/login/`, loginData).pipe(
       map(response => {
         // Store token and user data
         localStorage.setItem('authToken', response.token);
@@ -80,9 +92,12 @@ export class AuthService {
     );
   }
 
-  register(registrationData: RegistrationData): Observable<boolean> {
-    return this.http.post(`${this.apiUrl}/auth/register/`, registrationData).pipe(
-      map(() => true),
+  register(registrationData: RegistrationData): Observable<RegistrationResponse> {
+    return this.http.post<RegistrationResponse>(`${this.apiUrl}/directory/register/student/`, registrationData).pipe(
+      map((response: RegistrationResponse) => {
+        console.log('Registration successful:', response);
+        return response;
+      }),
       catchError(error => {
         console.error('Registration error:', error);
         return throwError(() => error);
@@ -92,7 +107,7 @@ export class AuthService {
 
 
   logout(): Observable<any> {
-    return this.http.post(`${this.apiUrl}/auth/logout/`, {}).pipe(
+    return this.http.post(`${this.apiUrl}/directory/auth/logout/`, {}).pipe(
       map(() => {
         this.currentUserSubject.next(null);
         localStorage.removeItem('currentUser');
@@ -116,12 +131,19 @@ export class AuthService {
     return this.currentUserSubject.value !== null && !!localStorage.getItem('authToken');
   }
 
+  isAdmin(): boolean {
+    const user = this.getCurrentUser();
+    return user !== null && user.is_admin === true;
+  }
+
   getAuthToken(): string | null {
     return localStorage.getItem('authToken');
   }
 
   // Admin methods
   getPendingRegistrations(): Observable<User[]> {
+    console.log('Making API call to:', `${this.apiUrl}/admin/pending-registrations/`);
+    console.log('Auth token:', this.getAuthToken() ? 'Present' : 'Missing');
     return this.http.get<User[]>(`${this.apiUrl}/admin/pending-registrations/`);
   }
 
@@ -131,5 +153,13 @@ export class AuthService {
 
   rejectUser(userId: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/admin/reject-user/${userId}/`, {});
+  }
+
+  generatePasscode(userId: number): Observable<{passcode: string, message: string}> {
+    return this.http.post<{passcode: string, message: string}>(`${this.apiUrl}/admin/generate-passcode/${userId}/`, {});
+  }
+
+  sendPasscodeSMS(userId: number, passcode: string): Observable<{message: string}> {
+    return this.http.post<{message: string}>(`${this.apiUrl}/admin/send-passcode-sms/${userId}/`, { passcode });
   }
 }

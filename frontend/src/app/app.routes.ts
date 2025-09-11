@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/auth.guard';
+import { AdminGuard } from './core/admin.guard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent) },
@@ -33,7 +34,7 @@ export const routes: Routes = [
   { 
     path: 'admin', 
     loadComponent: () => import('./features/admin/admin.component').then(m => m.AdminComponent),
-    canActivate: [AuthGuard]
+    canActivate: [AdminGuard]
   },
   { path: '**', redirectTo: '/dashboard' }
 ];

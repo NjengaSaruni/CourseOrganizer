@@ -1,0 +1,362 @@
+from django.db import models
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from datetime import date
+import re
+
+
+class AcademicYear(models.Model):
+    """Academic Year model to track academic years (e.g., 2025/2026)"""
+    
+    SEMESTER_CHOICES = [
+        (1, 'First Semester'),
+        (2, 'Second Semester'),
+        (3, 'Holiday Semester'),
+    ]
+    
+    year_start = models.IntegerField(help_text="Starting year (e.g., 2025 for 2025/2026)")
+    year_end = models.IntegerField(help_text="Ending year (e.g., 2026 for 2025/2026)")
+    is_active = models.BooleanField(default=False, help_text="Currently active academic year")
+    first_semester_start = models.DateField(help_text="First semester start date")
+    first_semester_end = models.DateField(help_text="First semester end date")
+    second_semester_start = models.DateField(help_text="Second semester start date")
+    second_semester_end = models.DateField(help_text="Second semester end date")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['year_start', 'year_end']
+        ordering = ['-year_start', '-year_end']
+    
+    def __str__(self):
+        return f"{self.year_start}/{self.year_end}"
+    
+    def clean(self):
+        if self.year_end != self.year_start + 1:
+            raise ValidationError("Academic year must span exactly one year (e.g., 2025/2026)")
+    
+    @property
+    def display_name(self):
+        """Get formatted academic year name"""
+        return f"{self.year_start}/{self.year_end}"
+    
+    @classmethod
+    def get_current_academic_year(cls):
+        """Get the currently active academic year"""
+        return cls.objects.filter(is_active=True).first()
+    
+    @classmethod
+    def get_or_create_2025_2026(cls):
+        """Get or create the 2025/2026 academic year for UoN Law"""
+        academic_year, created = cls.objects.get_or_create(
+            year_start=2025,
+            year_end=2026,
+            defaults={
+                'is_active': True,
+                'first_semester_start': date(2025, 9, 1),
+                'first_semester_end': date(2025, 12, 13),
+                'second_semester_start': date(2026, 1, 15),
+                'second_semester_end': date(2026, 4, 30),
+            }
+        )
+        return academic_year
+
+
+class Class(models.Model):
+    """Class model to group students by graduation year and program"""
+    
+    PROGRAM_CHOICES = [
+        ('GPR', 'Bachelor of Laws (LLB)'),
+        ('LAW', 'Law Program'),
+        ('ENG', 'Engineering'),
+        ('MED', 'Medicine'),
+        ('SCI', 'Science'),
+        ('BUS', 'Business'),
+        ('ART', 'Arts'),
+        ('EDU', 'Education'),
+    ]
+    
+    name = models.CharField(max_length=100, help_text="Class name (e.g., 'Class of 2029')")
+    program = models.CharField(max_length=10, choices=PROGRAM_CHOICES, help_text="Academic program")
+    graduation_year = models.IntegerField(help_text="Expected graduation year")
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, help_text="Academic year this class started")
+    is_active = models.BooleanField(default=True, help_text="Whether this class is currently active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['program', 'graduation_year']
+        ordering = ['-graduation_year', 'program']
+    
+    def __str__(self):
+        return f"{self.get_program_display()} - {self.name}"
+    
+    @property
+    def display_name(self):
+        """Get formatted class name"""
+        return f"{self.get_program_display()} - {self.name}"
+    
+    @property
+    def current_year_of_study(self):
+        """Calculate current year of study based on academic year"""
+        if not self.academic_year:
+            return 1
+        
+        current_academic_year = AcademicYear.get_current_academic_year()
+        if not current_academic_year:
+            return 1
+        
+        years_elapsed = current_academic_year.year_start - self.academic_year.year_start
+        return min(max(years_elapsed + 1, 1), 4)  # Clamp between 1 and 4
+    
+    @property
+    def student_count(self):
+        """Get number of students in this class"""
+        return self.students.count()
+    
+    @classmethod
+    def get_or_create_class(cls, program, graduation_year, academic_year=None):
+        """Get or create a class for a specific program and graduation year"""
+        if academic_year is None:
+            academic_year = AcademicYear.get_or_create_2025_2026()
+        
+        class_obj, created = cls.objects.get_or_create(
+            program=program,
+            graduation_year=graduation_year,
+            defaults={
+                'name': f'Class of {graduation_year}',
+                'academic_year': academic_year,
+                'is_active': True,
+            }
+        )
+        return class_obj
+
+
+class UserManager(BaseUserManager):
+    """Custom user manager for the User model"""
+    
+    def create_user(self, email, password=None, **extra_fields):
+        """Create and return a regular user with an email and password"""
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        # Remove username from extra_fields if it exists to avoid duplicate
+        extra_fields.pop('username', None)
+        user = self.model(email=email, username=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+    
+    def create_superuser(self, email, password=None, **extra_fields):
+        """Create and return a superuser with an email and password"""
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('user_type', 'admin')
+        extra_fields.setdefault('status', 'approved')
+        
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+        
+        return self.create_user(email, password, **extra_fields)
+
+
+class User(AbstractUser):
+    """Base User model extending Django's AbstractUser"""
+    
+    objects = UserManager()
+    
+    USER_TYPE_CHOICES = [
+        ('student', 'Student'),
+        ('teacher', 'Teacher'),
+        ('admin', 'Administrator'),
+    ]
+    
+    YEAR_CHOICES = [
+        (1, 'First Year'),
+        (2, 'Second Year'),
+        (3, 'Third Year'),
+        (4, 'Fourth Year'),
+    ]
+    
+    SEMESTER_CHOICES = [
+        (1, 'First Semester'),
+        (2, 'Second Semester'),
+        (3, 'Holiday Semester'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Approval'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('suspended', 'Suspended'),
+    ]
+    
+    # UoN Registration Number with flexible format support
+    registration_number = models.CharField(
+        max_length=20,
+        unique=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[A-Z]{1,4}\d{0,2}/\d{1,6}/\d{4}$',
+                message='Registration number must be in format: PREFIX/XXXXXX/YYYY (e.g., GPR3/123456/2025, P15/1674/2014)'
+            )
+        ],
+        help_text='UoN registration number in format: PREFIX/XXXXXX/YYYY (middle part can be 1-6 digits)'
+    )
+    
+    phone_number = models.CharField(max_length=15, help_text="Phone number with country code")
+    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='student')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, null=True, blank=True, help_text="Current academic year")
+    student_class = models.ForeignKey(Class, on_delete=models.CASCADE, null=True, blank=True, related_name='students', help_text="Student class (for students)")
+    current_year = models.IntegerField(choices=YEAR_CHOICES, null=True, blank=True, help_text="Current academic year (for students)")
+    current_semester = models.IntegerField(choices=SEMESTER_CHOICES, null=True, blank=True, help_text="Current semester (for students)")
+    class_of = models.IntegerField(null=True, blank=True, help_text="Graduation year (Class of) - auto-calculated from student_class")
+    profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
+    bio = models.TextField(blank=True, help_text="Brief biography or description")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.get_full_name()} ({self.registration_number})"
+
+    def clean(self):
+        super().clean()
+        # Validate registration number format and extract information
+        if self.registration_number:
+            self.validate_registration_number()
+    
+    def validate_registration_number(self):
+        """Validate and extract information from UoN registration number"""
+        pattern = r'^([A-Z]{1,4})(\d{0,2})/(\d{1,6})/(\d{4})$'
+        match = re.match(pattern, self.registration_number)
+        
+        if not match:
+            raise ValidationError({
+                'registration_number': 'Invalid registration number format. Expected: PREFIX/*/YYYY'
+            })
+        
+        prefix, year_code, student_id, admission_year = match.groups()
+        
+        # Validate admission year (should be reasonable)
+        current_year = date.today().year
+        admission_year_int = int(admission_year)
+        if admission_year_int < 2000 or admission_year_int > current_year + 1:
+            raise ValidationError({
+                'registration_number': f'Invalid admission year "{admission_year}". Must be between 2000 and {current_year + 1}'
+            })
+        
+        # Auto-set class and class_of for students
+        if self.user_type == 'student':
+            graduation_year = admission_year_int + 4  # Typically 4 years for most programs
+            
+            # Auto-assign to appropriate class
+            if not self.student_class:
+                student_class = Class.get_or_create_class(prefix, graduation_year)
+                self.student_class = student_class
+            
+            # Set class_of from student_class
+            if self.student_class:
+                self.class_of = self.student_class.graduation_year
+    
+    @property
+    def is_admin(self):
+        """Check if user is admin based on user_type"""
+        return self.user_type == 'admin'
+    
+    @property
+    def is_student(self):
+        """Check if user is a student"""
+        return self.user_type == 'student'
+    
+    @property
+    def is_teacher(self):
+        """Check if user is a teacher"""
+        return self.user_type == 'teacher'
+    
+    @property
+    def year_display(self):
+        """Get human-readable year display"""
+        if self.current_year:
+            return dict(self.YEAR_CHOICES)[self.current_year]
+        return None
+    
+    @property
+    def semester_display(self):
+        """Get human-readable semester display"""
+        if self.current_semester:
+            return dict(self.SEMESTER_CHOICES)[self.current_semester]
+        return None
+    
+    @property
+    def is_first_year_first_semester(self):
+        """Check if user is in first year first semester"""
+        return self.current_year == 1 and self.current_semester == 1
+    
+    @property
+    def class_display_name(self):
+        """Get class display name"""
+        if self.student_class:
+            return self.student_class.display_name
+        return f"Class of {self.class_of}" if self.class_of else "No Class"
+    
+    @property
+    def is_class_of_2029(self):
+        """Check if user is in Class of 2029"""
+        return self.class_of == 2029 or (self.student_class and self.student_class.graduation_year == 2029)
+    
+    @property
+    def is_first_year_law_student(self):
+        """Check if user is a first-year law student"""
+        return (self.user_type == 'student' and 
+                self.current_year == 1 and 
+                self.registration_number and 
+                self.registration_number.startswith('GPR'))
+    
+    @property
+    def registration_info(self):
+        """Extract information from registration number"""
+        pattern = r'^([A-Z]{1,4})(\d{0,2})/(\d{1,6})/(\d{4})$'
+        match = re.match(pattern, self.registration_number)
+        if match:
+            prefix, year_code, student_id, admission_year = match.groups()
+            return {
+                'prefix': prefix,
+                'year_code': year_code,
+                'student_id': student_id,
+                'admission_year': admission_year,
+                'program': self.get_program_name(prefix)
+            }
+        return None
+    
+    def get_program_name(self, prefix):
+        """Get program name from prefix"""
+        program_names = {
+            'GPR': 'Bachelor of Laws (LLB)',
+            'LAW': 'Law Program',
+            'ENG': 'Engineering',
+            'MED': 'Medicine',
+            'SCI': 'Science',
+            'BUS': 'Business',
+            'ART': 'Arts',
+            'EDU': 'Education'
+        }
+        return program_names.get(prefix, f'{prefix} Program')
+    
+    def save(self, *args, **kwargs):
+        # Set username to email if not provided
+        if not self.username:
+            self.username = self.email
+        
+        # Set default academic year to 2025/2026 if not set
+        if not self.academic_year:
+            self.academic_year = AcademicYear.get_or_create_2025_2026()
+        
+        # Validate registration number and auto-assign class
+        if self.registration_number:
+            self.validate_registration_number()
+        
+        super().save(*args, **kwargs)

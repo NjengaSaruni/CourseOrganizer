@@ -30,7 +30,7 @@ This guide covers deploying the Course Organizer application to Render.com.
    - Environment: `Python 3`
    - Build Command: 
      ```bash
-     cd backend && pip install -r requirements.txt && python manage.py migrate && python manage.py create_demo_data
+     cd backend && pip install -r requirements.txt && python manage.py migrate && python manage.py create_uon_law_data
      ```
    - Start Command: 
      ```bash

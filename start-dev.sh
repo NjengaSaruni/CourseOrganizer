@@ -52,17 +52,19 @@ source venv/bin/activate
 echo "📦 Installing Python dependencies..."
 pip install -r requirements.txt
 
-# Run migrations
-echo "🗄️ Running database migrations..."
-python manage.py migrate
+# Reset database and create fresh data
+echo "🗄️ Resetting database with fresh academic year structure..."
+python3 manage.py reset_database
 
-# Create demo data
-echo "👥 Creating demo data..."
-python manage.py create_demo_data
+# Set up admin account
+echo "🔐 Setting up admin account..."
+echo "You need to set a password for the admin account (admin@uon.ac.ke)"
+echo "If the admin already exists, use --force to reset the password"
+python3 manage.py setup_admin --force
 
 # Start Django server in background
 echo "🚀 Starting Django server on http://localhost:8000"
-python manage.py runserver 0.0.0.0:8000 &
+python3 manage.py runserver 0.0.0.0:8000 &
 DJANGO_PID=$!
 
 cd ..
@@ -90,7 +92,8 @@ echo "🔧 Backend API: http://localhost:8000/api/"
 echo "⚙️ Django Admin: http://localhost:8000/admin/"
 echo ""
 echo "Demo accounts:"
-echo "  Admin: admin@uon.ac.ke / admin123"
+echo "  Admin: admin@uon.ac.ke / [password you set]"
+echo "  Demo Student (Class of 2029): demo.student@uon.ac.ke / demo123"
 echo "  Student: john.doe@student.uon.ac.ke / student123"
 echo ""
 echo "Press Ctrl+C to stop all services"

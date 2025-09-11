@@ -48,6 +48,11 @@ import { AuthService, User } from '../../core/auth.service';
                    class="text-gray-700 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors">
                   Meetings
                 </a>
+                <a *ngIf="currentUser?.is_admin" routerLink="/admin" 
+                   routerLinkActive="text-primary-600 border-b-2 border-primary-600" 
+                   class="text-gray-700 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors">
+                  Admin
+                </a>
               </div>
             </div>
             
@@ -97,6 +102,11 @@ import { AuthService, User } from '../../core/auth.service';
              routerLinkActive="text-primary-600 bg-primary-50" 
              class="text-gray-700 hover:text-primary-600 block px-3 py-2 text-base font-medium">
             Meetings
+          </a>
+          <a *ngIf="currentUser?.is_admin" routerLink="/admin" 
+             routerLinkActive="text-primary-600 bg-primary-50" 
+             class="text-gray-700 hover:text-primary-600 block px-3 py-2 text-base font-medium">
+            Admin
           </a>
         </div>
       </div>

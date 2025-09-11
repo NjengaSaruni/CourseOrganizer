@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'directory',
     'course_api',
 ]
 
@@ -160,7 +161,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Custom User Model
-AUTH_USER_MODEL = 'course_api.User'
+AUTH_USER_MODEL = 'directory.User'
 
 # Django REST Framework
 REST_FRAMEWORK = {
@@ -189,6 +190,17 @@ if DEBUG:
 else:
     # In production, allow Railway domains
     CORS_ALLOWED_ORIGINS.extend(['https://*.railway.app', 'http://*.railway.app'])
+
+# CSRF settings
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default="http://localhost:4200,http://127.0.0.1:4200",
+    cast=lambda v: [s.strip() for s in v.split(',')]
+)
+
+# In development, allow all origins for CSRF
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS.extend(['http://localhost:4200', 'http://127.0.0.1:4200'])
 
 # Email settings (for production)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

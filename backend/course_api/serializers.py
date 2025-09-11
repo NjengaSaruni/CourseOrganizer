@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
-from .models import User, Course, TimetableEntry, CourseMaterial, Recording, Meeting
+from directory.models import User
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -24,8 +25,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate_registration_number(self, value):
         """Validate registration number format"""
-        if not value.startswith('GPR3/') or not value.endswith('/2025'):
-            raise serializers.ValidationError('Registration number must be in format GPR3/XXXXXX/2025')
+        import re
+        pattern = r'^[A-Z]{1,4}\d{0,2}/\d{1,6}/\d{4}$'
+        if not re.match(pattern, value):
+            raise serializers.ValidationError('Registration number must be in format: PREFIX/XXXXXX/YYYY (e.g., GPR3/123456/2025, P15/1674/2014)')
         return value
 
     def create(self, validated_data):

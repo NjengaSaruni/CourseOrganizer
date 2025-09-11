@@ -70,7 +70,7 @@ python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py create_demo_data
+python manage.py create_uon_law_data
 python manage.py runserver 0.0.0.0:8000
 ```
 
@@ -187,7 +187,7 @@ python manage.py migrate
 python manage.py createsuperuser
 
 # Load demo data
-python manage.py create_demo_data
+python manage.py create_uon_law_data
 ```
 
 ### Frontend Development

@@ -8,7 +8,7 @@ services:
       cd backend
       pip install -r requirements.txt
       python manage.py migrate
-      python manage.py create_demo_data
+      python manage.py create_uon_law_data
     startCommand: |
       cd backend
       gunicorn course_organizer.wsgi:application --bind 0.0.0.0:$PORT

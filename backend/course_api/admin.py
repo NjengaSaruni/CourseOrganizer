@@ -1,29 +1,5 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, Course, TimetableEntry, CourseMaterial, Recording, Meeting
-
-
-@admin.register(User)
-class UserAdmin(BaseUserAdmin):
-    """Custom User admin"""
-    list_display = ('email', 'first_name', 'last_name', 'registration_number', 'status', 'is_active', 'date_joined')
-    list_filter = ('status', 'is_active', 'is_staff', 'date_joined')
-    search_fields = ('email', 'first_name', 'last_name', 'registration_number')
-    ordering = ('-date_joined',)
-    
-    fieldsets = (
-        (None, {'fields': ('email', 'password')}),
-        ('Personal info', {'fields': ('first_name', 'last_name', 'registration_number', 'phone_number')}),
-        ('Status', {'fields': ('status', 'is_active', 'is_staff', 'is_superuser')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined')}),
-    )
-    
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('email', 'first_name', 'last_name', 'registration_number', 'phone_number', 'password1', 'password2'),
-        }),
-    )
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting
 
 
 @admin.register(Course)

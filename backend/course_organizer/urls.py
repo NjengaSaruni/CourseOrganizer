@@ -33,6 +33,7 @@ def serve_static_file(request, path):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/directory/', include('directory.urls')),
     path('api/', include('course_api.urls')),
     # Serve static files for Angular app
     path('<path:path>', serve_static_file),

@@ -1,14 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CourseService, Meeting } from '../../core/course.service';
+import { AuthService } from '../../core/auth.service';
 import { LoaderComponent } from '../../shared/loader/loader.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, LoaderComponent, PageLayoutComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent],
   template: `
     <app-page-layout 
       pageTitle="Online Meetings" 
@@ -16,6 +17,49 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
       [isSidebarOpen]="isSidebarOpen"
       (sidebarToggle)="onSidebarToggle($event)">
           
+          <!-- Loading State -->
+          <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-20">
+            <div class="relative">
+              <!-- Meeting icon with spinning effect -->
+              <div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-8 h-8 text-blue-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <!-- Spinning ring around icon -->
+              <div class="absolute -inset-2 w-20 h-20 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <div class="mt-6 text-center">
+              <h3 class="text-lg font-medium text-gray-900 mb-2">Loading Meetings</h3>
+              <p class="text-sm text-gray-500">Fetching your scheduled meetings...</p>
+              <!-- Skeleton cards -->
+              <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                <div *ngFor="let i of [1,2,3]" class="bg-white rounded-lg shadow-md animate-pulse" [style.animation-delay]="(i-1)*0.1 + 's'">
+                  <div class="p-6">
+                    <div class="flex items-center mb-4">
+                      <div class="h-10 w-10 bg-gray-200 rounded-lg"></div>
+                      <div class="ml-3">
+                        <div class="h-6 w-16 bg-gray-200 rounded-full"></div>
+                      </div>
+                    </div>
+                    <div class="h-6 bg-gray-200 rounded mb-2"></div>
+                    <div class="h-4 bg-gray-200 rounded mb-3 w-3/4"></div>
+                    <div class="space-y-2 mb-4">
+                      <div class="h-3 bg-gray-200 rounded w-full"></div>
+                      <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <div class="h-4 bg-gray-200 rounded w-1/2"></div>
+                      <div class="h-8 w-16 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Meetings Content -->
+          <div *ngIf="!isLoading">
           <!-- Filter by Subject -->
           <div class="mb-6">
             <label for="subject-filter" class="block text-sm font-medium text-gray-700 mb-2">
@@ -45,7 +89,7 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
                   </div>
                   <div class="ml-3">
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {{ meeting.duration }} min
+                      {{ meeting.duration }}
                     </span>
                   </div>
                 </div>
@@ -58,21 +102,21 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
                     <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    {{ meeting.date | date:'MMM d, y' }} at {{ meeting.time }}
+                    {{ meeting.scheduled_time | date:'MMM d, y' }} at {{ meeting.scheduled_time | date:'h:mm a' }}
                   </div>
                   <div class="flex items-center text-sm text-gray-500">
                     <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    {{ meeting.subject }}
+                    {{ meeting.created_by_name }}
                   </div>
                 </div>
                 
                 <div class="flex items-center justify-between">
                   <div class="text-sm text-gray-500">
-                    <span class="font-medium">{{ meeting.subject }}</span>
+                    <span class="font-medium">{{ meeting.created_by_name }}</span>
                   </div>
-                  <a [href]="meeting.link" 
+                  <a [href]="meeting.meeting_url" 
                      class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                     <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -91,9 +135,8 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
             <h3 class="mt-2 text-sm font-medium text-gray-900">No meetings scheduled</h3>
             <p class="mt-1 text-sm text-gray-500">Online meetings will appear here once they are scheduled.</p>
           </div>
+          </div> <!-- End Meetings Content -->
     </app-page-layout>
-    
-    <app-loader [isLoading]="isLoading" message="Loading meetings..."></app-loader>
   `,
   styles: []
 })
@@ -105,10 +148,19 @@ export class MeetingsComponent implements OnInit {
   isLoading = true;
   isSidebarOpen = false;
 
-  constructor(private courseService: CourseService) {}
+  constructor(
+    private courseService: CourseService,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    this.loadMeetings();
+    // Only load data if user is authenticated
+    if (this.authService.isAuthenticated()) {
+      this.loadMeetings();
+    } else {
+      this.isLoading = false;
+    }
   }
 
   onSidebarToggle(isOpen: boolean): void {
@@ -121,18 +173,20 @@ export class MeetingsComponent implements OnInit {
       next: (meetings) => {
         this.meetings = meetings;
         this.filteredMeetings = meetings;
-        this.subjects = [...new Set(meetings.map(m => m.subject))];
+        this.subjects = ['All Courses']; // We'll update this when we have course data
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
   }
 
   filterMeetings(): void {
-    if (this.selectedSubject) {
-      this.filteredMeetings = this.meetings.filter(m => m.subject === this.selectedSubject);
+    if (this.selectedSubject && this.selectedSubject !== 'All Courses') {
+      this.filteredMeetings = this.meetings.filter(m => m.title.toLowerCase().includes(this.selectedSubject.toLowerCase()));
     } else {
       this.filteredMeetings = this.meetings;
     }
