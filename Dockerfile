@@ -10,6 +10,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    libjpeg62-turbo-dev \
+    zlib1g-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -42,11 +44,11 @@ WORKDIR /app
 COPY backend/ ./
 
 # Run migrations and create UoN Law data
-RUN python manage.py migrate
-RUN python manage.py create_uon_law_data
+RUN python3 manage.py migrate
+RUN python3 manage.py create_uon_law_data
 
 # Collect static files first
-RUN python manage.py collectstatic --noinput
+RUN python3 manage.py collectstatic --noinput
 
 # Copy Angular build to static directory (after collectstatic)
 RUN cp -r frontend/dist/course-organizer/browser/* static/
