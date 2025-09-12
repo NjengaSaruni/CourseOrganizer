@@ -127,7 +127,21 @@ export class NavbarComponent implements OnInit {
   }
 
   logout(): void {
-    this.authService.logout();
+    this.authService.logout().subscribe({
+      next: () => {
+        // Logout successful, redirect to home page
+        console.log('Logout successful, redirecting...');
+        window.location.href = '/';
+      },
+      error: (error) => {
+        console.error('Logout error:', error);
+        // Even if logout fails on server, clear local data and redirect
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('authToken');
+        // Force reload to clear any cached state
+        window.location.href = '/';
+      }
+    });
   }
 
   toggleMobileMenu(): void {

@@ -158,7 +158,7 @@ export class CalendarService {
     const daysToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     monday.setDate(today.getDate() + daysToMonday);
 
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days.map((day, index) => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + index);

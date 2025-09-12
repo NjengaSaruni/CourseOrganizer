@@ -159,13 +159,33 @@ class RegistrationRequestDetailView(generics.RetrieveUpdateAPIView):
 @permission_classes([permissions.AllowAny])
 def login_view(request):
     """User login endpoint"""
+    import logging
+    from django.contrib.auth import login
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Directory login attempt for email: {request.data.get('email', 'No email provided')}")
+    
     serializer = LoginSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.validated_data['user']
+        logger.info(f"User authenticated: {user.email}, Last login before: {user.last_login}")
+        
         token, created = Token.objects.get_or_create(user=user)
+        logger.info(f"Token {'created' if created else 'retrieved'}: {token.key[:10]}...")
+        
+        # Log before login
+        logger.info(f"Before login() call - User last_login: {user.last_login}")
+        
+        # Call Django's login function to update last_login
+        login(request, user)
+        
+        # Refresh user from database to get updated last_login
+        user.refresh_from_db()
+        logger.info(f"After login() call - User last_login: {user.last_login}")
         
         # Get user profile data
         user_data = UserSerializer(user).data
+        logger.info(f"Returning user data with last_login: {user_data.get('last_login')}")
         
         # Add profile-specific data
         if user.is_student and hasattr(user, 'student'):
@@ -177,19 +197,52 @@ def login_view(request):
             'token': token.key,
             'user': user_data
         })
+    else:
+        logger.error(f"Directory login failed for {request.data.get('email', 'No email')}: {serializer.errors}")
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])
 def logout_view(request):
     """User logout endpoint"""
-    try:
-        request.user.auth_token.delete()
-        return Response({'message': 'Successfully logged out'})
-    except:
-        return Response({'error': 'Error logging out'}, status=status.HTTP_400_BAD_REQUEST)
+    import logging
+    from django.contrib.auth import logout
+    
+    logger = logging.getLogger(__name__)
+    
+    # Get the token from the Authorization header
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    if auth_header.startswith('Token '):
+        token_key = auth_header.split(' ')[1]
+        try:
+            # Find and delete the token
+            token = Token.objects.get(key=token_key)
+            user = token.user
+            logger.info(f"Logging out user: {user.email}")
+            
+            # Delete the token
+            token.delete()
+            
+            # Also call Django's logout function to clear session
+            if request.user.is_authenticated:
+                logout(request)
+            
+            logger.info(f"Successfully logged out user: {user.email}")
+            return Response({'message': 'Successfully logged out'})
+            
+        except Token.DoesNotExist:
+            logger.warning(f"Attempted logout with invalid token: {token_key[:10]}...")
+            # Token doesn't exist, but that's fine - user is already logged out
+            return Response({'message': 'Already logged out'})
+        except Exception as e:
+            logger.error(f"Error during logout: {e}")
+            return Response({'error': 'Error logging out'}, status=status.HTTP_400_BAD_REQUEST)
+    else:
+        logger.warning("Logout attempt without valid authorization header")
+        # No token provided, but that's fine - user is already logged out
+        return Response({'message': 'Already logged out'})
 
 
 @api_view(['GET'])

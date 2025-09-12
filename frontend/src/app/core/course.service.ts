@@ -117,8 +117,14 @@ export class CourseService {
   }
 
   getTimetable(): Observable<TimetableEntry[]> {
-    return this.http.get<PaginatedResponse<TimetableEntry>>(`${this.apiUrl}/timetable/`).pipe(
-      map(response => response.results),
+    return this.http.get<any>(`${this.apiUrl}/timetable/`).pipe(
+      map(response => {
+        // Handle both paginated and non-paginated responses
+        if (response.results) {
+          return response.results;
+        }
+        return response;
+      }),
       catchError(this.handleAuthError.bind(this))
     );
   }
@@ -159,15 +165,27 @@ export class CourseService {
   }
 
   getTimetableByYear(year: number): Observable<TimetableEntry[]> {
-    return this.http.get<PaginatedResponse<TimetableEntry>>(`${this.apiUrl}/timetable/?year=${year}`).pipe(
-      map(response => response.results),
+    return this.http.get<any>(`${this.apiUrl}/timetable/?year=${year}`).pipe(
+      map(response => {
+        // Handle both paginated and non-paginated responses
+        if (response.results) {
+          return response.results;
+        }
+        return response;
+      }),
       catchError(this.handleAuthError.bind(this))
     );
   }
 
   getTimetableByYearAndSemester(year: number, semester: number): Observable<TimetableEntry[]> {
-    return this.http.get<PaginatedResponse<TimetableEntry>>(`${this.apiUrl}/timetable/?year=${year}&semester=${semester}`).pipe(
-      map(response => response.results),
+    return this.http.get<any>(`${this.apiUrl}/timetable/?year=${year}&semester=${semester}`).pipe(
+      map(response => {
+        // Handle both paginated and non-paginated responses
+        if (response.results) {
+          return response.results;
+        }
+        return response;
+      }),
       catchError(this.handleAuthError.bind(this))
     );
   }

@@ -8,7 +8,7 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = 'Create University of Nairobi School of Law Module II data'
+    help = 'Create University of Nairobi School of Law Module II data - First Year First Semester only (GPR31xx courses)'
 
     def handle(self, *args, **options):
         self.stdout.write('Creating UoN Law Module II data...')
@@ -88,7 +88,7 @@ class Command(BaseCommand):
         Recording.objects.all().delete()
         Meeting.objects.all().delete()
 
-        # Create real UoN Law courses with proper year and semester categorization
+        # Create only First Year First Semester courses (GPR31xx) for Class of 2025-2029
         courses_data = [
             # First Year Courses (GPR31xx) - First Semester
             {'code': 'GPR3101', 'name': 'TORTS I', 'description': 'Introduction to tort law and civil wrongs', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
@@ -98,47 +98,6 @@ class Command(BaseCommand):
             {'code': 'GPR3109', 'name': 'LEGAL SYSTEMS AND LEGAL METHODS', 'description': 'Legal systems and research methods', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
             {'code': 'GPR3115', 'name': 'COMMUNICATION SKILLS FOR LAWYERS', 'description': 'Professional communication skills', 'year': 1, 'semester': 1, 'credits': 2, 'is_core': True},
             {'code': 'GPR3117', 'name': 'LEGAL RESEARCH AND WRITING', 'description': 'Legal research and writing techniques', 'year': 1, 'semester': 1, 'credits': 3, 'is_core': True},
-            
-            # Second Year Courses (GPR32xx) - First Semester
-            {'code': 'GPR3201', 'name': 'EVIDENCE I', 'description': 'Law of evidence in legal proceedings', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3203', 'name': 'ADMINISTRATIVE LAW I', 'description': 'Administrative law principles', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3205', 'name': 'PROPERTY THEORY', 'description': 'Theoretical foundations of property law', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3206', 'name': 'EQUITY', 'description': 'Equity and equitable remedies', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3207', 'name': 'HUMAN RIGHTS LAW', 'description': 'International and domestic human rights', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3211', 'name': 'FAMILY LAW', 'description': 'Family law and domestic relations', 'year': 2, 'semester': 1, 'credits': 3, 'is_core': True},
-            
-            # Third Year Courses (GPR33xx) - First Semester
-            {'code': 'GPR3300', 'name': 'JURISPRUDENCE', 'description': 'Legal philosophy and theory', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3301', 'name': 'PUBLIC INTERNATIONAL LAW', 'description': 'International law principles', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3303', 'name': 'LAW OF BUSINESS ASSOCIATIONS I', 'description': 'Company law fundamentals', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3305', 'name': 'CIVIL PROCEDURE I', 'description': 'Civil procedure and litigation', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3307', 'name': 'ADVANCED LEGAL WRITING AND RESEARCH', 'description': 'Advanced legal writing skills', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3309', 'name': 'CRIMINAL PROCEDURE', 'description': 'Criminal procedure and practice', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3316', 'name': 'LAW OF BUSINESS ASSOCIATIONS II', 'description': 'Advanced company law', 'year': 3, 'semester': 1, 'credits': 3, 'is_core': True},
-            
-            # Fourth Year Courses (GPR34xx) - First Semester
-            {'code': 'GPR3403', 'name': 'CONFLICT OF LAWS', 'description': 'Private international law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3411', 'name': 'INTELLECTUAL PROPERTY LAW', 'description': 'IP law and protection', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3414', 'name': 'PROFESSIONAL ETHICS', 'description': 'Legal ethics and professional conduct', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3415', 'name': 'CONSUMER PROTECTION LAW', 'description': 'Consumer rights and protection', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3416', 'name': 'LAW OF THE SEA', 'description': 'Maritime and sea law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3420', 'name': 'ENERGY LAW', 'description': 'Energy sector legal framework', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3422', 'name': 'LAW, DEMOCRACY AND GOVERNANCE', 'description': 'Democratic governance and law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3423', 'name': 'BANKING LAW', 'description': 'Banking and financial law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3424', 'name': 'INSURANCE LAW', 'description': 'Insurance law and practice', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3425', 'name': 'TAX LAW', 'description': 'Taxation law and practice', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3427', 'name': 'CHILDREN AND THE LAW', 'description': 'Child rights and protection', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3431', 'name': 'HEALTH LAW AND POLICY', 'description': 'Healthcare law and policy', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3432', 'name': 'ENVIRONMENTAL AND NATURAL RESOURCES LAW', 'description': 'Environmental protection law', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3436', 'name': 'INTERNATIONAL CRIMINAL LAW', 'description': 'International criminal justice', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3457', 'name': 'DISABILITY RIGHTS LAW', 'description': 'Disability rights and inclusion', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3458', 'name': 'SPORTS AND ENTERTAINMENT LAW', 'description': 'Sports and entertainment legal issues', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3459', 'name': 'FOOD LAW AND POLICY', 'description': 'Food safety and regulation', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3460', 'name': 'CRIMINOLOGY AND PENOLOGY', 'description': 'Criminology and punishment theory', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3461', 'name': 'ISLAMIC JURISPRUDENCE', 'description': 'Islamic legal principles', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3462', 'name': 'LAW AND LANGUAGE', 'description': 'Language and legal interpretation', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3463', 'name': 'PUBLIC INTEREST CLINIC', 'description': 'Public interest legal practice', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
-            {'code': 'GPR3468', 'name': 'RESEARCH PROPOSAL', 'description': 'Legal research methodology', 'year': 4, 'semester': 1, 'credits': 3, 'is_core': True},
         ]
 
         courses = {}
@@ -159,61 +118,26 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(f'Created course: {course.name} (Year {course.year}, Sem {course.semester})')
 
-        # Create timetable entries based on the provided schedule
+        # Create timetable entries for First Year First Semester courses only
         timetable_data = [
             # Monday
             {'day': 'monday', 'code': 'GPR3107', 'subject': 'CONSTITUTIONAL LAW I', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S. Alosa'},
-            {'day': 'monday', 'code': 'GPR3211', 'subject': 'FAMILY LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'A. Shah/C. Shilaho'},
-            {'day': 'monday', 'code': 'GPR3307', 'subject': 'ADVANCED LEGAL WRITING AND RESEARCH', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'R. Rogo/M. Jadeed'},
-            {'day': 'monday', 'code': 'GPR3416', 'subject': 'LAW OF THE SEA', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'N. Maru'},
-            {'day': 'monday', 'code': 'GPR3423', 'subject': 'BANKING LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'N. Gichuki'},
-            {'day': 'monday', 'code': 'GPR3457', 'subject': 'DISABILITY RIGHTS LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'L. Mute/ S. Alosa'},
-            {'day': 'monday', 'code': 'GPR3459', 'subject': 'FOOD LAW AND POLICY', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'F.Jaoko/J.Adogo'},
-            {'day': 'monday', 'code': 'GPR3461', 'subject': 'ISLAMIC JURISPRUDENCE', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'M. Bakari'},
             
             # Tuesday
             {'day': 'tuesday', 'code': 'GPR3103', 'subject': 'CONTRACTS I', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'J.Murungi/ M. Okelloh'},
-            {'day': 'tuesday', 'code': 'GPR3205', 'subject': 'PROPERTY THEORY', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'M.Deche/P. Pete'},
-            {'day': 'tuesday', 'code': 'GPR3425', 'subject': 'TAX LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'F. Kaburu'},
-            {'day': 'tuesday', 'code': 'GPR3427', 'subject': 'CHILDREN AND THE LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'R. Rogo'},
-            {'day': 'tuesday', 'code': 'GPR3431', 'subject': 'HEALTH LAW AND POLICY', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'N.Njuguna'},
-            {'day': 'tuesday', 'code': 'GPR3432', 'subject': 'ENVIRONMENTAL AND NATURAL RESOURCES LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'J. Adogo'},
-            {'day': 'tuesday', 'code': 'GPR3463', 'subject': 'PUBLIC INTEREST CLINIC', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'N. Sitonic'},
             
             # Wednesday
             {'day': 'wednesday', 'code': 'GPR3109', 'subject': 'LEGAL SYSTEMS AND LEGAL METHODS', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S. Ouma'},
-            {'day': 'wednesday', 'code': 'GPR3207', 'subject': 'HUMAN RIGHTS LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'F. Oduor'},
-            {'day': 'wednesday', 'code': 'GPR3300', 'subject': 'JURISPRUDENCE', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'P. Pete'},
-            {'day': 'wednesday', 'code': 'GPR3415', 'subject': 'CONSUMER PROTECTION LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'J.Asiema'},
-            {'day': 'wednesday', 'code': 'GPR3422', 'subject': 'LAW, DEMOCRACY AND GOVERNANCE', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S. Alosa'},
-            {'day': 'wednesday', 'code': 'GPR3436', 'subject': 'INTERNATIONAL CRIMINAL LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'R. Rogo'},
-            {'day': 'wednesday', 'code': 'GPR3462', 'subject': 'LAW AND LANGUAGE', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'N.Kabira'},
             
             # Thursday
             {'day': 'thursday', 'code': 'GPR3101', 'subject': 'TORTS I', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'V. Yatani/P. Pete'},
-            {'day': 'thursday', 'code': 'GPR3201', 'subject': 'EVIDENCE I', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'P. Ogendi/M. Bakari'},
-            {'day': 'thursday', 'code': 'GPR3303', 'subject': 'LAW OF BUSINESS ASSOCIATIONS I', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S.Ngare'},
-            {'day': 'thursday', 'code': 'GPR3316', 'subject': 'LAW OF BUSINESS ASSOCIATIONS II', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S. Ngare'},
-            {'day': 'thursday', 'code': 'GPR3414', 'subject': 'PROFESSIONAL ETHICS', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'M.Deche'},
             
             # Friday
             {'day': 'friday', 'code': 'GPR3115', 'subject': 'COMMUNICATION SKILLS FOR LAWYERS', 'time': '08:00 - 11:00', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'N. Maru/M. Okelloh'},
             {'day': 'friday', 'code': 'GPR3117', 'subject': 'LEGAL RESEARCH AND WRITING', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S. Kinyanjui'},
-            {'day': 'friday', 'code': 'GPR3203', 'subject': 'ADMINISTRATIVE LAW I', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'W. Ndegwa/ M. Okelloh'},
-            {'day': 'friday', 'code': 'GPR3301', 'subject': 'PUBLIC INTERNATIONAL LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S.Kinyanjui'},
-            {'day': 'friday', 'code': 'GPR3403', 'subject': 'CONFLICT OF LAWS', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'L. Aloo'},
-            {'day': 'friday', 'code': 'GPR3411', 'subject': 'INTELLECTUAL PROPERTY LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'R.Gitau/P.Pete'},
-            {'day': 'friday', 'code': 'GPR3420', 'subject': 'ENERGY LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'J.Murungi'},
-            {'day': 'friday', 'code': 'GPR3424', 'subject': 'INSURANCE LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'R. Gitau'},
-            {'day': 'friday', 'code': 'GPR3458', 'subject': 'SPORTS AND ENTERTAINMENT LAW', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S. Wekesa'},
             
             # Saturday
             {'day': 'saturday', 'code': 'GPR3105', 'subject': 'CRIMINAL LAW I', 'time': '11:00 - 14:00', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'N. Sitonic/ C. Shilaho'},
-            {'day': 'saturday', 'code': 'GPR3206', 'subject': 'EQUITY', 'time': '08:00 - 11:00', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'R. Kariuki/J. Asiema'},
-            {'day': 'saturday', 'code': 'GPR3305', 'subject': 'CIVIL PROCEDURE I', 'time': '08:00 - 11:00', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'S.Ouma'},
-            {'day': 'saturday', 'code': 'GPR3309', 'subject': 'CRIMINAL PROCEDURE', 'time': '17:30 - 20:30', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'F.Oduor'},
-            {'day': 'saturday', 'code': 'GPR3460', 'subject': 'CRIMINOLOGY AND PENOLOGY', 'time': '11:00 - 14:00', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'K. Mbulu'},
-            {'day': 'saturday', 'code': 'GPR3468', 'subject': 'RESEARCH PROPOSAL', 'time': '08:00 - 11:00', 'location': 'ONLINE', 'group': 'Group 1', 'lecturer': 'W. Ndegwa/ R.Rogo'},
         ]
 
         for entry_data in timetable_data:
@@ -335,5 +259,5 @@ class Command(BaseCommand):
                         self.stdout.write(f'Created meeting: {meeting.title}')
 
         self.stdout.write(
-            self.style.SUCCESS('Successfully created UoN Law Module II data!')
+            self.style.SUCCESS('Successfully created UoN Law Module II data for First Year First Semester (GPR31xx courses)!')
         )

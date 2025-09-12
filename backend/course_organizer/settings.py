@@ -209,3 +209,34 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+        },
+    },
+        'loggers': {
+            'course_api.views': {
+                'handlers': ['console', 'file'],
+                'level': 'INFO',
+                'propagate': True,
+            },
+            'directory.views': {
+                'handlers': ['console', 'file'],
+                'level': 'INFO',
+                'propagate': True,
+            },
+            'django': {
+                'handlers': ['console'],
+                'level': 'INFO',
+            },
+        },
+}

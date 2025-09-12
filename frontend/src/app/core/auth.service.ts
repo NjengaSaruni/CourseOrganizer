@@ -15,6 +15,9 @@ export interface User {
   status: 'pending' | 'approved' | 'rejected';
   is_admin: boolean;
   date_joined: string;
+  date_joined_formatted?: string;
+  last_login?: string;
+  last_login_formatted: string;
   class_display_name?: string;
   passcode?: string;
   smsSent?: boolean;
@@ -108,16 +111,21 @@ export class AuthService {
 
   logout(): Observable<any> {
     return this.http.post(`${this.apiUrl}/directory/auth/logout/`, {}).pipe(
-      map(() => {
+      map((response: any) => {
+        // Always clear local data regardless of server response
         this.currentUserSubject.next(null);
         localStorage.removeItem('currentUser');
         localStorage.removeItem('authToken');
+        console.log('Logout successful:', response.message || 'Logged out');
+        return response;
       }),
       catchError(error => {
         // Even if logout fails on server, clear local data
+        console.warn('Logout request failed, but clearing local data:', error);
         this.currentUserSubject.next(null);
         localStorage.removeItem('currentUser');
         localStorage.removeItem('authToken');
+        // Don't throw error - we want logout to always succeed locally
         return throwError(() => error);
       })
     );
@@ -147,6 +155,11 @@ export class AuthService {
     return this.http.get<User[]>(`${this.apiUrl}/admin/pending-registrations/`);
   }
 
+  getConfirmedRegistrations(): Observable<User[]> {
+    console.log('Making API call to:', `${this.apiUrl}/admin/confirmed-registrations/`);
+    return this.http.get<User[]>(`${this.apiUrl}/admin/confirmed-registrations/`);
+  }
+
   approveUser(userId: number): Observable<any> {
     return this.http.post(`${this.apiUrl}/admin/approve-user/${userId}/`, {});
   }
@@ -155,11 +168,42 @@ export class AuthService {
     return this.http.post(`${this.apiUrl}/admin/reject-user/${userId}/`, {});
   }
 
-  generatePasscode(userId: number): Observable<{passcode: string, message: string}> {
-    return this.http.post<{passcode: string, message: string}>(`${this.apiUrl}/admin/generate-passcode/${userId}/`, {});
+  // Timetable management methods
+  getTimetableEntries(year?: number, semester?: number): Observable<any[]> {
+    let url = `${this.apiUrl}/timetable/`;
+    const params = [];
+    if (year) params.push(`year=${year}`);
+    if (semester) params.push(`semester=${semester}`);
+    if (params.length > 0) url += `?${params.join('&')}`;
+    return this.http.get<any>(url).pipe(
+      map(response => {
+        // Handle both paginated and non-paginated responses
+        if (response.results) {
+          return response.results;
+        }
+        return response;
+      })
+    );
   }
 
-  sendPasscodeSMS(userId: number, passcode: string): Observable<{message: string}> {
-    return this.http.post<{message: string}>(`${this.apiUrl}/admin/send-passcode-sms/${userId}/`, { passcode });
+  createTimetableEntry(entry: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/timetable/create/`, entry);
   }
+
+  updateTimetableEntry(id: number, entry: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/timetable/${id}/update/`, entry);
+  }
+
+  deleteTimetableEntry(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/timetable/${id}/delete/`);
+  }
+
+  // TODO: Passcode methods disabled until SMS service is properly configured
+  // generatePasscode(userId: number): Observable<{passcode: string, message: string}> {
+  //   return this.http.post<{passcode: string, message: string}>(`${this.apiUrl}/admin/generate-passcode/${userId}/`, {});
+  // }
+
+  // sendPasscodeSMS(userId: number, passcode: string): Observable<{message: string}> {
+  //   return this.http.post<{message: string}>(`${this.apiUrl}/admin/send-passcode-sms/${userId}/`, { passcode });
+  // }
 }

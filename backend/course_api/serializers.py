@@ -50,15 +50,41 @@ class UserSerializer(serializers.ModelSerializer):
     """Serializer for user details"""
     full_name = serializers.SerializerMethodField()
     is_admin = serializers.ReadOnlyField()
+    class_display_name = serializers.ReadOnlyField()
+    last_login_formatted = serializers.SerializerMethodField()
+    date_joined_formatted = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('id', 'email', 'first_name', 'last_name', 'full_name', 'registration_number', 
-                 'phone_number', 'status', 'is_admin', 'date_joined')
-        read_only_fields = ('id', 'date_joined', 'status')
+                 'phone_number', 'status', 'is_admin', 'date_joined', 'last_login', 
+                 'class_display_name', 'last_login_formatted', 'date_joined_formatted')
+        read_only_fields = ('id', 'date_joined', 'status', 'last_login')
 
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}"
+    
+    def get_last_login_formatted(self, obj):
+        if obj.last_login:
+            import pytz
+            from django.utils import timezone
+            
+            # Convert UTC time to East Africa Time (EAT)
+            eat_tz = pytz.timezone('Africa/Nairobi')
+            local_time = obj.last_login.astimezone(eat_tz)
+            return local_time.strftime('%Y-%m-%d %H:%M:%S EAT')
+        return 'Never logged in'
+    
+    def get_date_joined_formatted(self, obj):
+        if obj.date_joined:
+            import pytz
+            from django.utils import timezone
+            
+            # Convert UTC time to East Africa Time (EAT)
+            eat_tz = pytz.timezone('Africa/Nairobi')
+            local_time = obj.date_joined.astimezone(eat_tz)
+            return local_time.strftime('%Y-%m-%d %H:%M:%S EAT')
+        return 'Unknown'
 
 
 class LoginSerializer(serializers.Serializer):

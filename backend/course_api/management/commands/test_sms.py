@@ -15,7 +15,7 @@ class Command(BaseCommand):
         parser.add_argument(
             '--type',
             type=str,
-            choices=['passcode', 'approval'],
+            choices=['passcode', 'approval', 'simple'],
             default='passcode',
             help='Type of SMS to send (default: passcode)'
         )
@@ -35,10 +35,16 @@ class Command(BaseCommand):
                 passcode='123456',
                 student_name='Test Student'
             )
-        else:
+        elif sms_type == 'approval':
             result = sms_service.send_approval_notification(
                 phone_number=phone_number,
                 student_name='Test Student'
+            )
+        else:  # simple test
+            result = sms_service._send_sms(
+                phone_number=phone_number,
+                message='Test message from Course Organizer',
+                sms_type='simple'
             )
         
         if result['success']:
