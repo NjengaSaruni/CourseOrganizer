@@ -1,10 +1,12 @@
 """
 SMS Service for Course Organizer
 Handles sending passcodes and notifications via SMS
+Supports multiple SMS providers: Twilio, Africa's Talking, and logging fallback
 """
 
 import os
 import logging
+import requests
 from typing import Optional
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioException
@@ -12,23 +14,42 @@ from twilio.base.exceptions import TwilioException
 logger = logging.getLogger(__name__)
 
 class SMSService:
-    """SMS service using Twilio"""
+    """SMS service supporting multiple providers"""
     
     def __init__(self):
-        self.account_sid = os.getenv('TWILIO_ACCOUNT_SID')
-        self.auth_token = os.getenv('TWILIO_AUTH_TOKEN')
-        self.from_number = os.getenv('TWILIO_FROM_NUMBER')
+        # Twilio configuration
+        self.twilio_account_sid = os.getenv('TWILIO_ACCOUNT_SID')
+        self.twilio_auth_token = os.getenv('TWILIO_AUTH_TOKEN')
+        self.twilio_from_number = os.getenv('TWILIO_FROM_NUMBER')
         
-        # Initialize Twilio client if credentials are available
-        self.client = None
-        if self.account_sid and self.auth_token:
+        # Africa's Talking configuration
+        self.at_username = os.getenv('AT_USERNAME')
+        self.at_api_key = os.getenv('AT_API_KEY')
+        self.at_from = os.getenv('AT_FROM', 'CourseOrg')
+        
+        # Initialize providers
+        self.twilio_client = None
+        self.provider = self._initialize_providers()
+        
+    def _initialize_providers(self):
+        """Initialize available SMS providers"""
+        # Try Twilio first
+        if self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number:
             try:
-                self.client = Client(self.account_sid, self.auth_token)
+                self.twilio_client = Client(self.twilio_account_sid, self.twilio_auth_token)
                 logger.info("Twilio SMS service initialized successfully")
+                return 'twilio'
             except Exception as e:
                 logger.error(f"Failed to initialize Twilio client: {e}")
-        else:
-            logger.warning("Twilio credentials not found. SMS will be logged only.")
+        
+        # Try Africa's Talking
+        if self.at_username and self.at_api_key:
+            logger.info("Africa's Talking SMS service initialized successfully")
+            return 'africas_talking'
+        
+        # Fallback to logging
+        logger.warning("No SMS provider credentials found. SMS will be logged only.")
+        return 'logging'
     
     def send_passcode(self, phone_number: str, passcode: str, student_name: str) -> dict:
         """
@@ -63,7 +84,7 @@ class SMSService:
     
     def _send_sms(self, phone_number: str, message: str, sms_type: str) -> dict:
         """
-        Internal method to send SMS
+        Internal method to send SMS using the best available provider
         
         Args:
             phone_number: Recipient's phone number
@@ -88,36 +109,87 @@ class SMSService:
         logger.info(f"SMS ({sms_type}) to {clean_number}: {message}")
         print(f"📱 SMS ({sms_type}) to {clean_number}: {message}")
         
-        # Send via Twilio if client is available
-        if self.client and self.from_number:
-            try:
-                message_obj = self.client.messages.create(
-                    body=message,
-                    from_=self.from_number,
-                    to=clean_number
-                )
-                
-                return {
-                    'success': True,
-                    'message': f'SMS sent successfully to {clean_number}',
-                    'twilio_sid': message_obj.sid,
-                    'status': message_obj.status
-                }
-                
-            except TwilioException as e:
-                error_msg = f"Twilio error: {str(e)}"
-                logger.error(error_msg)
-                return {
-                    'success': False,
-                    'message': error_msg,
-                    'fallback': True
-                }
+        # Send via the best available provider
+        if self.provider == 'twilio':
+            return self._send_via_twilio(clean_number, message, sms_type)
+        elif self.provider == 'africas_talking':
+            return self._send_via_africas_talking(clean_number, message, sms_type)
         else:
             # Fallback: just log the SMS
             return {
                 'success': True,
-                'message': f'SMS logged (no Twilio credentials): {clean_number}',
+                'message': f'SMS logged (no provider credentials): {clean_number}',
+                'fallback': True,
+                'provider': 'logging'
+            }
+    
+    def _send_via_twilio(self, phone_number: str, message: str, sms_type: str) -> dict:
+        """Send SMS via Twilio"""
+        try:
+            message_obj = self.twilio_client.messages.create(
+                body=message,
+                from_=self.twilio_from_number,
+                to=phone_number
+            )
+            
+            return {
+                'success': True,
+                'message': f'SMS sent successfully to {phone_number}',
+                'provider': 'twilio',
+                'twilio_sid': message_obj.sid,
+                'status': message_obj.status
+            }
+            
+        except TwilioException as e:
+            error_msg = f"Twilio error: {str(e)}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'message': error_msg,
+                'provider': 'twilio',
                 'fallback': True
+            }
+    
+    def _send_via_africas_talking(self, phone_number: str, message: str, sms_type: str) -> dict:
+        """Send SMS via Africa's Talking"""
+        try:
+            url = "https://api.africastalking.com/version1/messaging"
+            headers = {
+                'ApiKey': self.at_api_key,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+            data = {
+                'username': self.at_username,
+                'to': phone_number,
+                'message': message,
+                'from': self.at_from
+            }
+            
+            response = requests.post(url, headers=headers, data=data)
+            response.raise_for_status()
+            
+            result = response.json()
+            if result.get('SMSMessageData', {}).get('Recipients', [{}])[0].get('status') == 'Success':
+                return {
+                    'success': True,
+                    'message': f'SMS sent successfully to {phone_number}',
+                    'provider': 'africas_talking',
+                    'at_response': result
+                }
+            else:
+                return {
+                    'success': False,
+                    'message': f"Africa's Talking error: {result}",
+                    'provider': 'africas_talking'
+                }
+                
+        except Exception as e:
+            error_msg = f"Africa's Talking error: {str(e)}"
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'message': error_msg,
+                'provider': 'africas_talking'
             }
 
 # Global SMS service instance
