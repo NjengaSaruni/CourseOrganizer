@@ -54,10 +54,45 @@ print_status "Setting up admin account..."
 print_warning "You will be prompted to enter a password for admin@uon.ac.ke"
 echo ""
 
-# Run the admin setup command inside the Railway service at /app
-railway run --service course-organizer-backend bash -lc "cd /app && python3 manage.py setup_admin --force"
-
-print_success "Admin account setup complete!"
+# Check if ADMIN_PASSWORD is already set
+if railway variables --service course-organizer-backend | grep -q "ADMIN_PASSWORD"; then
+    print_status "ADMIN_PASSWORD environment variable is already set."
+    print_status "The admin account should be automatically configured on deployment."
+    print_status "If you need to change the password, you can:"
+    echo "  1. Update the ADMIN_PASSWORD variable: railway variables --set ADMIN_PASSWORD=newpassword"
+    echo "  2. Redeploy the application: railway up"
+    echo ""
+    read -p "Do you want to set a new admin password now? (y/n): " -n 1 -r
+    echo ""
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        while true; do
+            read -s -p "Enter new admin password (min 8 characters): " NEW_ADMIN_PASSWORD
+            echo ""
+            if [ ${#NEW_ADMIN_PASSWORD} -lt 8 ]; then
+                print_error "Password must be at least 8 characters long!"
+                continue
+            fi
+            
+            read -s -p "Confirm new admin password: " CONFIRM_PASSWORD
+            echo ""
+            if [ "$NEW_ADMIN_PASSWORD" != "$CONFIRM_PASSWORD" ]; then
+                print_error "Passwords do not match!"
+                continue
+            fi
+            
+            # Update admin password
+            railway variables --set "ADMIN_PASSWORD=$NEW_ADMIN_PASSWORD"
+            print_success "Admin password updated! Redeploying application..."
+            railway up
+            break
+        done
+    fi
+else
+    # No ADMIN_PASSWORD set, run interactive setup
+    railway run --service course-organizer-backend bash -lc "cd /app && python3 manage.py setup_admin --force"
+    print_success "Admin account setup complete!"
+fi
 
 echo ""
 echo "🎉 Railway Setup Complete!"

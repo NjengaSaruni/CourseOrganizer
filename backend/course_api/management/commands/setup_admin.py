@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from getpass import getpass
 import sys
+import os
 
 User = get_user_model()
 
@@ -22,10 +23,16 @@ class Command(BaseCommand):
             action='store_true',
             help='Force password reset even if admin exists'
         )
+        parser.add_argument(
+            '--password',
+            type=str,
+            help='Admin password (if not provided, will prompt for input or use ADMIN_PASSWORD env var)'
+        )
 
     def handle(self, *args, **options):
         email = options['email']
         force = options['force']
+        password_arg = options['password']
         
         self.stdout.write('🔐 Setting up admin account...')
         self.stdout.write(f'Email: {email}')
@@ -57,27 +64,51 @@ class Command(BaseCommand):
                 username=email
             )
         
-        # Get password from user input
-        while True:
-            try:
-                password = getpass('Enter admin password: ')
-                if not password:
-                    self.stdout.write(self.style.ERROR('Password cannot be empty!'))
-                    continue
-                
-                confirm_password = getpass('Confirm admin password: ')
-                if password != confirm_password:
-                    self.stdout.write(self.style.ERROR('Passwords do not match!'))
-                    continue
-                
-                if len(password) < 8:
-                    self.stdout.write(self.style.ERROR('Password must be at least 8 characters long!'))
-                    continue
-                
-                break
-            except KeyboardInterrupt:
-                self.stdout.write('\nOperation cancelled.')
-                sys.exit(1)
+        # Get password from various sources
+        password = None
+        
+        # 1. Check command line argument
+        if password_arg:
+            password = password_arg
+            self.stdout.write('Using password from command line argument')
+        
+        # 2. Check environment variable
+        elif os.getenv('ADMIN_PASSWORD'):
+            password = os.getenv('ADMIN_PASSWORD')
+            self.stdout.write('Using password from ADMIN_PASSWORD environment variable')
+        
+        # 3. Prompt for password interactively
+        else:
+            self.stdout.write('No password provided. Please enter admin password:')
+            while True:
+                try:
+                    password = getpass('Enter admin password: ')
+                    if not password:
+                        self.stdout.write(self.style.ERROR('Password cannot be empty!'))
+                        continue
+                    
+                    confirm_password = getpass('Confirm admin password: ')
+                    if password != confirm_password:
+                        self.stdout.write(self.style.ERROR('Passwords do not match!'))
+                        continue
+                    
+                    if len(password) < 8:
+                        self.stdout.write(self.style.ERROR('Password must be at least 8 characters long!'))
+                        continue
+                    
+                    break
+                except KeyboardInterrupt:
+                    self.stdout.write('\nOperation cancelled.')
+                    sys.exit(1)
+        
+        # Validate password
+        if not password:
+            self.stdout.write(self.style.ERROR('Password cannot be empty!'))
+            return
+        
+        if len(password) < 8:
+            self.stdout.write(self.style.ERROR('Password must be at least 8 characters long!'))
+            return
         
         # Set password and save
         admin_user.set_password(password)

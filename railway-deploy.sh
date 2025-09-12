@@ -103,6 +103,41 @@ railway variables --set "DEBUG=false"
 railway variables --set "ALLOWED_HOSTS=*.railway.app"
 railway variables --set "CORS_ALLOWED_ORIGINS=https://*.railway.app"
 
+# Ask for admin password
+print_status "Setting up admin account..."
+echo ""
+print_warning "You can set the admin password now or later:"
+echo "  1. Set it now (recommended for automated deployment)"
+echo "  2. Set it later using ./railway-setup.sh"
+echo ""
+read -p "Do you want to set the admin password now? (y/n): " -n 1 -r
+echo ""
+
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    while true; do
+        read -s -p "Enter admin password (min 8 characters): " ADMIN_PASSWORD
+        echo ""
+        if [ ${#ADMIN_PASSWORD} -lt 8 ]; then
+            print_error "Password must be at least 8 characters long!"
+            continue
+        fi
+        
+        read -s -p "Confirm admin password: " CONFIRM_PASSWORD
+        echo ""
+        if [ "$ADMIN_PASSWORD" != "$CONFIRM_PASSWORD" ]; then
+            print_error "Passwords do not match!"
+            continue
+        fi
+        
+        # Set admin password as environment variable
+        railway variables --set "ADMIN_PASSWORD=$ADMIN_PASSWORD"
+        print_success "Admin password set successfully!"
+        break
+    done
+else
+    print_warning "Admin password not set. You'll need to run ./railway-setup.sh after deployment."
+fi
+
 print_success "Environment variables configured"
 
 # Deploy using Dockerfile
@@ -136,17 +171,26 @@ print_status "Django Admin:"
 echo "  https://course-organizer-backend-production.up.railway.app/admin/"
 echo ""
 print_status "Demo accounts:"
-echo "  Admin: admin@uon.ac.ke / [password you set]"
+if [ ! -z "$ADMIN_PASSWORD" ]; then
+    echo "  Admin: admin@uon.ac.ke / [password you set during deployment]"
+else
+    echo "  Admin: admin@uon.ac.ke / [password to be set]"
+fi
 echo "  Demo Student (Class of 2029): demo.student@uon.ac.ke / demo123"
 echo "  Student: john.doe@student.uon.ac.ke / student123"
 echo ""
-print_warning "IMPORTANT: After deployment, you must set the admin password:"
-echo "  Option 1 (Recommended): Run the setup script:"
-echo "    ./railway-setup.sh"
-echo ""
-echo "  Option 2 (Manual):"
-echo "    1. Connect to your Railway service: railway shell"
-echo "    2. Run: python manage.py setup_admin"
-echo "    3. Enter a secure password for admin@uon.ac.ke"
+if [ -z "$ADMIN_PASSWORD" ]; then
+    print_warning "IMPORTANT: Admin password not set during deployment!"
+    echo "  Option 1 (Recommended): Run the setup script:"
+    echo "    ./railway-setup.sh"
+    echo ""
+    echo "  Option 2 (Manual):"
+    echo "    1. Connect to your Railway service: railway shell"
+    echo "    2. Run: python manage.py setup_admin"
+    echo "    3. Enter a secure password for admin@uon.ac.ke"
+    echo ""
+else
+    print_success "Admin password was set during deployment and will be configured automatically!"
+fi
 echo ""
 print_warning "Note: Docker builds take longer but are more reliable than Nixpacks."

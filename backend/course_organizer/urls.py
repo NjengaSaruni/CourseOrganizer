@@ -21,6 +21,7 @@ from django.conf.urls.static import static
 from django.views.generic import TemplateView
 from django.views.static import serve
 from django.http import HttpResponse
+from . import views
 import os
 
 def serve_static_file(request, path):
@@ -38,7 +39,7 @@ urlpatterns = [
     # Serve static files for Angular app
     path('<path:path>', serve_static_file),
     # Serve Angular app at root (catch-all)
-    path('', TemplateView.as_view(template_name='index.html')),
+    path('', views.serve_angular_app),
 ]
 
 # Serve static files during development

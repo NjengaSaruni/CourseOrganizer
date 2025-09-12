@@ -46,6 +46,7 @@ COPY backend/ ./
 # Run migrations and create UoN Law data
 RUN python3 manage.py migrate
 RUN python3 manage.py create_uon_law_data
+# Demo data creation removed for production deployment
 
 # Collect static files first
 RUN python3 manage.py collectstatic --noinput
@@ -53,8 +54,11 @@ RUN python3 manage.py collectstatic --noinput
 # Copy Angular build to static directory (after collectstatic)
 RUN cp -r frontend/dist/course-organizer/browser/* static/
 
+# Make startup script executable
+RUN chmod +x startup.sh
+
 # Expose port (Railway provides PORT env var)
 EXPOSE 8080
 
 # Start command - Railway will set PORT automatically
-CMD gunicorn course_organizer.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+CMD ["./startup.sh"]

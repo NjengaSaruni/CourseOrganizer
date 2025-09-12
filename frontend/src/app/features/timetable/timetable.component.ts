@@ -40,7 +40,7 @@ export class TimetableComponent implements OnInit {
   showEditModal = false;
 
   days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  timeSlots = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00'];
+  timeSlots = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
   
   courseColors = [
     '#3B82F6', // Blue
@@ -81,7 +81,8 @@ export class TimetableComponent implements OnInit {
         this.isLoading = false;
         this.cdr.detectChanges();
       },
-      error: () => {
+      error: (error) => {
+        console.error('Error loading timetable:', error);
         this.isLoading = false;
         this.cdr.detectChanges();
       }
@@ -123,24 +124,91 @@ export class TimetableComponent implements OnInit {
 
   getEventsForDayAndTime(day: string, timeSlot: string): CalendarEvent[] {
     return this.calendarEvents.filter(event => {
-      const eventStartHour = event.start.getHours();
-      const slotHour = parseInt(timeSlot.split(':')[0]);
-      
-      // Match events that start within the time slot (within 2 hours)
-      const timeMatch = Math.abs(eventStartHour - slotHour) <= 1;
       const dayMatch = event.day.toLowerCase() === day.toLowerCase();
+      if (!dayMatch) return false;
       
-      return dayMatch && timeMatch;
+      const slotHour = parseInt(timeSlot.split(':')[0]);
+      const slotStart = slotHour;
+      const slotEnd = slotHour + 2; // 2-hour slots
+      
+      const eventStartHour = event.start.getHours();
+      const eventStartMinute = event.start.getMinutes();
+      const eventEndHour = event.end.getHours();
+      const eventEndMinute = event.end.getMinutes();
+      
+      const eventStart = eventStartHour + (eventStartMinute / 60);
+      const eventEnd = eventEndHour + (eventEndMinute / 60);
+      
+      // Check if event overlaps with this time slot
+      return (eventStart < slotEnd && eventEnd > slotStart);
     });
+  }
+
+  // Get the display information for an event in a specific time slot
+  getEventDisplayInfo(event: CalendarEvent, timeSlot: string): { 
+    showInfo: boolean, 
+    height: string,
+    position: string,
+    alignment: string
+  } {
+    const slotHour = parseInt(timeSlot.split(':')[0]);
+    const slotStart = slotHour;
+    const slotEnd = slotHour + 2;
+    
+    const eventStartHour = event.start.getHours();
+    const eventStartMinute = event.start.getMinutes();
+    const eventEndHour = event.end.getHours();
+    const eventEndMinute = event.end.getMinutes();
+    
+    const eventStart = eventStartHour + (eventStartMinute / 60);
+    const eventEnd = eventEndHour + (eventEndMinute / 60);
+    
+    // Calculate how much of this slot the event occupies
+    const slotEventStart = Math.max(eventStart, slotStart);
+    const slotEventEnd = Math.min(eventEnd, slotEnd);
+    const slotEventDuration = slotEventEnd - slotEventStart;
+    const slotDuration = slotEnd - slotStart; // 2 hours
+    const percentage = (slotEventDuration / slotDuration) * 100;
+    
+    // Determine height, position, alignment, and whether to show info
+    let height = '100%';
+    let position = 'relative';
+    let alignment = '';
+    let showInfo = true;
+    
+    if (percentage < 100) {
+      // Partial block
+      height = `${Math.max(percentage, 25)}%`; // Minimum 25% height for visibility
+      
+      if (eventStart >= slotStart) {
+        // Event starts in this slot (e.g., 17:30 in 16:00-18:00 slot)
+        position = 'absolute';
+        alignment = 'bottom-0'; // Position at bottom of slot
+        showInfo = percentage > 50; // Show info if more than half the slot
+      } else {
+        // Event started in previous slot (e.g., 17:30 event in 18:00-20:00 slot)
+        position = 'relative';
+        alignment = 'top-0'; // Position at top of slot
+        showInfo = false; // Don't show info in continuation blocks
+      }
+    }
+    
+    return { showInfo, height, position, alignment };
   }
 
   getDayDate(day: string): string {
     const today = new Date();
     const dayIndex = this.days.indexOf(day);
     const currentDayIndex = today.getDay() - 1; // Monday = 0
-    const daysUntilTarget = (dayIndex - currentDayIndex + 7) % 7;
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() + daysUntilTarget);
+    
+    // Calculate the start of the current week (Monday)
+    const startOfWeek = new Date(today);
+    const daysFromMonday = (currentDayIndex + 7) % 7;
+    startOfWeek.setDate(today.getDate() - daysFromMonday);
+    
+    // Calculate the target date for this day
+    const targetDate = new Date(startOfWeek);
+    targetDate.setDate(startOfWeek.getDate() + dayIndex);
     
     return targetDate.toLocaleDateString('en-US', { 
       month: 'short', 
@@ -153,6 +221,40 @@ export class TimetableComponent implements OnInit {
     const nextHour = hours + 2; // 2-hour slots
     return `${nextHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   }
+
+  // Check if a day is today
+  isToday(day: string): boolean {
+    const today = new Date();
+    const dayIndex = this.days.indexOf(day);
+    const currentDayIndex = today.getDay() - 1; // Monday = 0
+    return dayIndex === currentDayIndex;
+  }
+
+  // Get current time position for the time indicator line
+  getCurrentTimePosition(): { top: string, visible: boolean } {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTime = currentHour + (currentMinute / 60);
+    
+    // Check if current time is within our timetable hours (8:00 - 22:00)
+    if (currentTime < 8 || currentTime > 22) {
+      return { top: '0%', visible: false };
+    }
+    
+    // Calculate position within the timetable
+    const startHour = 8;
+    const endHour = 22;
+    const totalHours = endHour - startHour;
+    const timeFromStart = currentTime - startHour;
+    const percentage = (timeFromStart / totalHours) * 100;
+    
+    return { 
+      top: `${percentage}%`, 
+      visible: true 
+    };
+  }
+
 
   selectEvent(event: CalendarEvent): void {
     this.selectedEvent = event;
