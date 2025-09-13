@@ -36,7 +36,7 @@ RUN chmod +x startup-prod.sh
 RUN python3 manage.py collectstatic --noinput
 
 # Frontend build stage
-FROM node:18-alpine as frontend
+FROM node:20-alpine as frontend
 
 WORKDIR /app/frontend
 
