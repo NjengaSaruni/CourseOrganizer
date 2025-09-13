@@ -58,7 +58,10 @@ print_status "Linking to production project: $PROD_PROJECT_NAME..."
 if railway link --project $PROD_PROJECT_NAME >/dev/null 2>&1; then
     print_success "Linked to production project"
 else
-    print_error "Could not link to production project. Make sure it exists and you have access."
+    print_warning "Could not link to existing production project. You may need to:"
+    print_warning "1. Create the project manually in Railway dashboard"
+    print_warning "2. Or run the deployment script first: ./railway-deploy-prod.sh"
+    print_warning "3. Or link to an existing project with: railway link"
     exit 1
 fi
 

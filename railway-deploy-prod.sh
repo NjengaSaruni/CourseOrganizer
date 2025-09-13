@@ -60,7 +60,7 @@ if railway link --project $PROD_PROJECT_NAME >/dev/null 2>&1; then
     print_status "Found existing production project: $PROD_PROJECT_NAME"
 else
     print_status "Creating new production project..."
-    railway init $PROD_PROJECT_NAME
+    railway init
     print_status "Adding PostgreSQL database to production..."
     railway add --database postgres
     print_status "Adding production application service..."

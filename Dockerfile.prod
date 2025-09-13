@@ -77,43 +77,8 @@ RUN adduser -D -s /bin/sh nginx && \
     chown -R nginx:nginx /app/static && \
     chown -R nginx:nginx /app/media
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-set -e\n\
-echo "🚀 Starting Production Course Organizer..."\n\
-echo "==========================================="\n\
-\n\
-# Wait for database to be ready\n\
-echo "⏳ Waiting for database connection..."\n\
-python manage.py migrate --noinput\n\
-\n\
-# Set up admin account if ADMIN_PASSWORD is provided\n\
-if [ ! -z "$ADMIN_PASSWORD" ]; then\n\
-    echo "🔐 Setting up admin account with provided password..."\n\
-    python manage.py setup_admin --force --password "$ADMIN_PASSWORD"\n\
-    echo "✅ Admin account setup complete!"\n\
-else\n\
-    echo "⚠️  No ADMIN_PASSWORD provided. Admin account not set up."\n\
-fi\n\
-\n\
-# Set up school structure\n\
-echo "🏫 Setting up school structure..."\n\
-python manage.py setup_school_structure\n\
-\n\
-# Assign students to default class\n\
-echo "👥 Assigning students to default class..."\n\
-python manage.py assign_students_to_default_class\n\
-\n\
-echo "✅ Application startup complete!"\n\
-\n\
-# Start gunicorn in background\n\
-echo "🚀 Starting Gunicorn server..."\n\
-gunicorn course_organizer.wsgi:application --config gunicorn.conf.py &\n\
-\n\
-# Start nginx in foreground\n\
-echo "🌐 Starting Nginx server..."\n\
-exec nginx -g "daemon off;"' > /app/startup-prod.sh
-
+# Copy the production startup script
+COPY backend/startup-prod.sh /app/startup-prod.sh
 RUN chmod +x /app/startup-prod.sh
 
 # Expose port 80
