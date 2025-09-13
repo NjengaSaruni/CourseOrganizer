@@ -71,9 +71,8 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy gunicorn configuration
 COPY gunicorn.conf.py /app/
 
-# Create nginx user and set permissions
-RUN adduser -D -s /bin/sh nginx && \
-    chown -R nginx:nginx /usr/share/nginx/html && \
+# Set nginx permissions (nginx user already exists in alpine)
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chown -R nginx:nginx /app/static && \
     chown -R nginx:nginx /app/media
 
