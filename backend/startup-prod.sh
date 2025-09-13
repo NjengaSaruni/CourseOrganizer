@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Railway Production Startup Script
 # This script runs in the production container with nginx and gunicorn
