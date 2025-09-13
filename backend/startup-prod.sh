@@ -32,6 +32,10 @@ python manage.py assign_students_to_default_class
 
 echo "✅ Application startup complete!"
 
+# Test Django app is working
+echo "🧪 Testing Django application..."
+python manage.py check --deploy
+
 # Debug: Check if static files exist
 echo "🔍 Debugging static files..."
 if [ -f "static/index.html" ]; then
@@ -46,8 +50,21 @@ fi
 echo "🚀 Starting Gunicorn server..."
 gunicorn course_organizer.wsgi:application --config gunicorn.conf.py &
 
-# Wait a moment for gunicorn to start
-sleep 5
+# Wait for gunicorn to start and test health endpoint
+echo "⏳ Waiting for Gunicorn to start..."
+sleep 10
+
+# Test health endpoint
+echo "🏥 Testing health endpoint..."
+for i in {1..5}; do
+    if curl -f http://localhost:8000/api/ >/dev/null 2>&1; then
+        echo "✅ Health endpoint is responding"
+        break
+    else
+        echo "⏳ Health endpoint not ready, attempt $i/5..."
+        sleep 5
+    fi
+done
 
 # Start nginx in foreground
 echo "🌐 Starting Nginx server..."
