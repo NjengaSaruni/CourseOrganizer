@@ -58,6 +58,29 @@ PROD_PROJECT_NAME="course-organizer-prod"
 # Try to switch to production project
 if railway link --project $PROD_PROJECT_NAME >/dev/null 2>&1; then
     print_status "Found existing production project: $PROD_PROJECT_NAME"
+    
+    # Check if we're linked to a service
+    if ! railway service >/dev/null 2>&1; then
+        print_status "No service linked. Listing available services..."
+        railway service list
+        
+        print_status "Linking to production backend service..."
+        if railway service course-organizer-prod-backend >/dev/null 2>&1; then
+            print_success "Linked to course-organizer-prod-backend service"
+        else
+            print_warning "Service course-organizer-prod-backend not found. Available services:"
+            railway service list
+            echo ""
+            print_warning "Please enter the correct service name from the list above:"
+            read -p "Service name: " SERVICE_NAME
+            if railway service "$SERVICE_NAME" >/dev/null 2>&1; then
+                print_success "Linked to $SERVICE_NAME service"
+            else
+                print_error "Failed to link to service: $SERVICE_NAME"
+                exit 1
+            fi
+        fi
+    fi
 else
     print_status "Creating new production project..."
     railway init
@@ -69,6 +92,17 @@ else
     railway service course-organizer-prod-backend
     print_success "Production project setup complete"
 fi
+
+# Verify we're linked to a service
+print_status "Verifying service connection..."
+if ! railway service >/dev/null 2>&1; then
+    print_error "No service linked. Cannot continue with deployment."
+    print_warning "Please run 'railway service <service-name>' to link to a service first."
+    exit 1
+fi
+
+CURRENT_SERVICE=$(railway service 2>/dev/null || echo "unknown")
+print_success "Linked to service: $CURRENT_SERVICE"
 
 # Generate production secret key
 SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))")
