@@ -184,14 +184,47 @@ CORS_ALLOWED_ORIGINS = config(
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
+# Debug CORS settings
+print(f"CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
+print(f"DEBUG mode: {DEBUG}")
+
 CORS_ALLOW_CREDENTIALS = True
 
 # Allow all origins in development, specific origins in production
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
-    # In production, allow Railway domains
-    CORS_ALLOWED_ORIGINS.extend(['https://*.railway.app', 'http://*.railway.app'])
+    # In production, allow Railway domains and custom domain
+    CORS_ALLOWED_ORIGINS.extend(['https://*.railway.app', 'http://*.railway.app', 'https://co.riverlearn.co.ke'])
+    
+    # Ensure co.riverlearn.co.ke is always included
+    if 'https://co.riverlearn.co.ke' not in CORS_ALLOWED_ORIGINS:
+        CORS_ALLOWED_ORIGINS.append('https://co.riverlearn.co.ke')
+    
+    # Also try allowing all origins temporarily to debug
+    CORS_ALLOW_ALL_ORIGINS = True  # Temporarily allow all origins for debugging
+
+# Additional CORS settings for better compatibility
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
 
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = config(
