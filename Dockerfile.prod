@@ -1,0 +1,127 @@
+# Multi-stage build for production with nginx and gunicorn
+FROM python:3.11-slim as backend
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Set work directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        postgresql-client \
+        gcc \
+        python3-dev \
+        libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY backend/requirements.txt /app/
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir gunicorn
+
+# Copy backend code
+COPY backend/ /app/
+
+# Create directories for static and media files
+RUN mkdir -p static media
+
+# Make startup script executable
+RUN chmod +x startup-prod.sh
+
+# Collect static files
+RUN python3 manage.py collectstatic --noinput
+
+# Frontend build stage
+FROM node:18-alpine as frontend
+
+WORKDIR /app/frontend
+
+# Copy package files
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build the frontend
+RUN npm run build
+
+# Production stage with nginx
+FROM nginx:alpine as production
+
+# Install Python runtime for gunicorn
+RUN apk add --no-cache python3 py3-pip
+
+# Copy backend from backend stage
+COPY --from=backend /app /app
+WORKDIR /app
+
+# Copy built frontend from frontend stage
+COPY --from=frontend /app/frontend/dist/course-organizer /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy gunicorn configuration
+COPY gunicorn.conf.py /app/
+
+# Create nginx user and set permissions
+RUN adduser -D -s /bin/sh nginx && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /app/static && \
+    chown -R nginx:nginx /app/media
+
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "🚀 Starting Production Course Organizer..."\n\
+echo "==========================================="\n\
+\n\
+# Wait for database to be ready\n\
+echo "⏳ Waiting for database connection..."\n\
+python manage.py migrate --noinput\n\
+\n\
+# Set up admin account if ADMIN_PASSWORD is provided\n\
+if [ ! -z "$ADMIN_PASSWORD" ]; then\n\
+    echo "🔐 Setting up admin account with provided password..."\n\
+    python manage.py setup_admin --force --password "$ADMIN_PASSWORD"\n\
+    echo "✅ Admin account setup complete!"\n\
+else\n\
+    echo "⚠️  No ADMIN_PASSWORD provided. Admin account not set up."\n\
+fi\n\
+\n\
+# Set up school structure\n\
+echo "🏫 Setting up school structure..."\n\
+python manage.py setup_school_structure\n\
+\n\
+# Assign students to default class\n\
+echo "👥 Assigning students to default class..."\n\
+python manage.py assign_students_to_default_class\n\
+\n\
+echo "✅ Application startup complete!"\n\
+\n\
+# Start gunicorn in background\n\
+echo "🚀 Starting Gunicorn server..."\n\
+gunicorn course_organizer.wsgi:application --config gunicorn.conf.py &\n\
+\n\
+# Start nginx in foreground\n\
+echo "🌐 Starting Nginx server..."\n\
+exec nginx -g "daemon off;"' > /app/startup-prod.sh
+
+RUN chmod +x /app/startup-prod.sh
+
+# Expose port 80
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health/ || exit 1
+
+# Run the production startup script
+CMD ["/app/startup-prod.sh"]
