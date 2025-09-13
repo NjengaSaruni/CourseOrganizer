@@ -1,12 +1,13 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 import { AuthService, User } from '../../core/auth.service';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, PageLayoutComponent],
+  imports: [CommonModule, RouterModule, PageLayoutComponent],
   template: `
     <app-page-layout 
       pageTitle="Admin Panel" 
@@ -274,6 +275,107 @@ import { AuthService, User } from '../../core/auth.service';
                     </svg>
                     <span>Last Login: {{ student.last_login_formatted }}</span>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Management Sections Grid -->
+      <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Class Representative Management Section -->
+        <div class="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+          <div class="px-8 py-6 border-b border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900">Class Representatives</h2>
+                <p class="text-sm text-gray-600 mt-1">Assign and manage Class Representatives</p>
+              </div>
+              <div class="text-2xl">👥</div>
+            </div>
+          </div>
+          
+          <div class="p-8">
+            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold text-gray-900 mb-2">Manage Class Reps</h3>
+                  <p class="text-gray-700 mb-4">
+                    Assign students as Class Representatives with specific permissions for announcements, polls, and message moderation.
+                  </p>
+                  <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <div class="flex items-center">
+                      <span class="mr-2">📢</span>
+                      <span>Send Announcements</span>
+                    </div>
+                    <div class="flex items-center">
+                      <span class="mr-2">📊</span>
+                      <span>Create Polls</span>
+                    </div>
+                    <div class="flex items-center">
+                      <span class="mr-2">🛡️</span>
+                      <span>Moderate Messages</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="ml-6">
+                  <a routerLink="/admin/class-rep-management"
+                     class="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Manage Class Reps
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Course Management Section -->
+        <div class="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+          <div class="px-8 py-6 border-b border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900">Course Management</h2>
+                <p class="text-sm text-gray-600 mt-1">Manage recordings and materials for your courses</p>
+              </div>
+              <div class="text-2xl">🎓</div>
+            </div>
+          </div>
+          
+          <div class="p-8">
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold text-gray-900 mb-2">Manage Course Content</h3>
+                  <p class="text-gray-700 mb-4">
+                    Upload recordings from Zoom, Google Meet, or other platforms. Add course materials organized by topics or specific lessons.
+                  </p>
+                  <div class="flex items-center space-x-4 text-sm text-gray-600">
+                    <div class="flex items-center">
+                      <span class="mr-2">🎥</span>
+                      <span>Upload Recordings</span>
+                    </div>
+                    <div class="flex items-center">
+                      <span class="mr-2">📚</span>
+                      <span>Add Materials</span>
+                    </div>
+                    <div class="flex items-center">
+                      <span class="mr-2">📖</span>
+                      <span>Organize by Topics</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="ml-6">
+                  <a routerLink="/admin/course-management"
+                     class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Manage Courses
+                  </a>
                 </div>
               </div>
             </div>

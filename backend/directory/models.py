@@ -63,75 +63,6 @@ class AcademicYear(models.Model):
         return academic_year
 
 
-class Class(models.Model):
-    """Class model to group students by graduation year and program"""
-    
-    PROGRAM_CHOICES = [
-        ('GPR', 'Bachelor of Laws (LLB)'),
-        ('LAW', 'Law Program'),
-        ('ENG', 'Engineering'),
-        ('MED', 'Medicine'),
-        ('SCI', 'Science'),
-        ('BUS', 'Business'),
-        ('ART', 'Arts'),
-        ('EDU', 'Education'),
-    ]
-    
-    name = models.CharField(max_length=100, help_text="Class name (e.g., 'Class of 2029')")
-    program = models.CharField(max_length=10, choices=PROGRAM_CHOICES, help_text="Academic program")
-    graduation_year = models.IntegerField(help_text="Expected graduation year")
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, help_text="Academic year this class started")
-    is_active = models.BooleanField(default=True, help_text="Whether this class is currently active")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        unique_together = ['program', 'graduation_year']
-        ordering = ['-graduation_year', 'program']
-    
-    def __str__(self):
-        return f"{self.get_program_display()} - {self.name}"
-    
-    @property
-    def display_name(self):
-        """Get formatted class name"""
-        return f"{self.get_program_display()} - {self.name}"
-    
-    @property
-    def current_year_of_study(self):
-        """Calculate current year of study based on academic year"""
-        if not self.academic_year:
-            return 1
-        
-        current_academic_year = AcademicYear.get_current_academic_year()
-        if not current_academic_year:
-            return 1
-        
-        years_elapsed = current_academic_year.year_start - self.academic_year.year_start
-        return min(max(years_elapsed + 1, 1), 4)  # Clamp between 1 and 4
-    
-    @property
-    def student_count(self):
-        """Get number of students in this class"""
-        return self.students.count()
-    
-    @classmethod
-    def get_or_create_class(cls, program, graduation_year, academic_year=None):
-        """Get or create a class for a specific program and graduation year"""
-        if academic_year is None:
-            academic_year = AcademicYear.get_or_create_2025_2026()
-        
-        class_obj, created = cls.objects.get_or_create(
-            program=program,
-            graduation_year=graduation_year,
-            defaults={
-                'name': f'Class of {graduation_year}',
-                'academic_year': academic_year,
-                'is_active': True,
-            }
-        )
-        return class_obj
-
 
 class UserManager(BaseUserManager):
     """Custom user manager for the User model"""
@@ -211,7 +142,7 @@ class User(AbstractUser):
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='student')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, null=True, blank=True, help_text="Current academic year")
-    student_class = models.ForeignKey(Class, on_delete=models.CASCADE, null=True, blank=True, related_name='students', help_text="Student class (for students)")
+    student_class = models.ForeignKey('school.Class', on_delete=models.CASCADE, null=True, blank=True, related_name='students', help_text="Student class (for students)")
     current_year = models.IntegerField(choices=YEAR_CHOICES, null=True, blank=True, help_text="Current academic year (for students)")
     current_semester = models.IntegerField(choices=SEMESTER_CHOICES, null=True, blank=True, help_text="Current semester (for students)")
     class_of = models.IntegerField(null=True, blank=True, help_text="Graduation year (Class of) - auto-calculated from student_class")
@@ -255,8 +186,18 @@ class User(AbstractUser):
             
             # Auto-assign to appropriate class
             if not self.student_class:
-                student_class = Class.get_or_create_class(prefix, graduation_year)
-                self.student_class = student_class
+                try:
+                    from school.models import Class as SchoolClass
+                    # Try to get the default class first
+                    default_class = SchoolClass.get_default_class()
+                    if default_class:
+                        self.student_class = default_class
+                    else:
+                        # Fallback to creating a class (this should be handled by setup commands)
+                        pass
+                except ImportError:
+                    # School app not available yet
+                    pass
             
             # Set class_of from student_class
             if self.student_class:
@@ -345,6 +286,26 @@ class User(AbstractUser):
             'EDU': 'Education'
         }
         return program_names.get(prefix, f'{prefix} Program')
+    
+    @property
+    def is_class_rep(self):
+        """Check if user is a Class Representative"""
+        try:
+            from communication.models import ClassRepRole
+            return ClassRepRole.objects.filter(user=self, is_active=True).exists()
+        except ImportError:
+            return False
+    
+    def has_class_rep_permission(self, permission):
+        """Check if user has a specific Class Rep permission"""
+        try:
+            from communication.models import ClassRepRole
+            class_rep = ClassRepRole.objects.filter(user=self, is_active=True).first()
+            if class_rep:
+                return class_rep.has_permission(permission)
+        except ImportError:
+            pass
+        return False
     
     def save(self, *args, **kwargs):
         # Set username to email if not provided

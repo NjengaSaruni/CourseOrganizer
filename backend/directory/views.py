@@ -7,10 +7,11 @@ from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from .models import User, AcademicYear, Class
+from .models import User, AcademicYear
+from school.models import Class
 from .extended_models import Student, Teacher, RegistrationRequest
 from .serializers import (
-    UserSerializer, StudentSerializer, TeacherSerializer,
+    UserSerializer, StudentSerializer, StudentUserSerializer, TeacherSerializer,
     RegistrationRequestSerializer, RegistrationRequestCreateSerializer,
     StudentRegistrationSerializer,
     LoginSerializer, UserProfileSerializer, AcademicYearSerializer, ClassSerializer
@@ -65,29 +66,42 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
 
 class StudentListView(generics.ListAPIView):
     """List all students"""
-    queryset = Student.objects.all()
-    serializer_class = StudentSerializer
+    queryset = User.objects.filter(user_type='student')
+    serializer_class = StudentUserSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
         # Only admins and teachers can see all students
         if not (self.request.user.is_admin or self.request.user.is_teacher):
-            return Student.objects.none()
-        return Student.objects.all()
+            return User.objects.none()
+        
+        queryset = User.objects.filter(user_type='student')
+        
+        # Filter by class_id if provided (now uses school.Class)
+        class_id = self.request.query_params.get('class_id')
+        if class_id:
+            queryset = queryset.filter(student_class_id=class_id)
+        
+        # Filter by status if provided
+        status = self.request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        return queryset
 
 
 class StudentDetailView(generics.RetrieveAPIView):
     """Get student details"""
-    queryset = Student.objects.all()
-    serializer_class = StudentSerializer
+    queryset = User.objects.filter(user_type='student')
+    serializer_class = StudentUserSerializer
     permission_classes = [permissions.IsAuthenticated]
     
     def get_object(self):
         # Students can only view their own profile unless they're admin/teacher
         if self.request.user.is_admin or self.request.user.is_teacher:
-            return Student.objects.get(pk=self.kwargs['pk'])
-        elif self.request.user.is_student and hasattr(self.request.user, 'student'):
-            return self.request.user.student
+            return User.objects.get(pk=self.kwargs['pk'])
+        elif self.request.user.is_student:
+            return self.request.user
         return None
 
 
@@ -330,7 +344,7 @@ def register_student(request):
             'message': f'Registration successful! Your account is pending approval for {user.class_display_name}.',
             'user_id': user.id,
             'class': user.class_display_name,
-            'program': user.student_class.get_program_display() if user.student_class else 'Unknown',
+            'program': user.student_class.program if user.student_class else 'Unknown',
             'graduation_year': user.class_of,
             'status': 'pending_approval'
         }, status=status.HTTP_201_CREATED)

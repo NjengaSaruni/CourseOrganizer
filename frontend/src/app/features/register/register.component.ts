@@ -184,6 +184,36 @@ import { AuthService, RegistrationResponse } from '../../core/auth.service';
               </div>
             </div>
 
+            <!-- Privacy Policy Agreement -->
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-6">
+              <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0">
+                  <input id="privacyPolicy" 
+                         name="privacyPolicy" 
+                         type="checkbox" 
+                         required
+                         [disabled]="isLoading"
+                         [(ngModel)]="registrationData.agreeToPrivacyPolicy"
+                         class="h-4 w-4 text-gray-900 focus:ring-gray-900 border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                </div>
+                <div class="flex-1">
+                  <label for="privacyPolicy" class="text-sm text-gray-700">
+                    I agree to the 
+                    <a routerLink="/privacy-policy" 
+                       target="_blank"
+                       class="text-gray-900 hover:text-gray-700 underline font-medium">
+                      Privacy Policy
+                    </a>
+                    and consent to the collection, processing, and use of my personal information as described therein.
+                  </label>
+                  <div *ngIf="!registrationData.agreeToPrivacyPolicy && registrationData.agreeToPrivacyPolicy !== undefined" 
+                       class="mt-2 text-sm text-red-600">
+                    You must agree to the Privacy Policy to continue.
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div *ngIf="errorMessage" class="bg-red-50 border border-red-200 rounded-xl p-4">
               <div class="flex">
                 <div class="flex-shrink-0">
@@ -245,7 +275,8 @@ export class RegisterComponent implements OnInit {
     registration_number: '',
     phone_number: '',
     password: '',
-    confirm_password: ''
+    confirm_password: '',
+    agreeToPrivacyPolicy: false
   };
 
   isLoading = false;
@@ -302,6 +333,7 @@ export class RegisterComponent implements OnInit {
            this.registrationData.password.trim() !== '' &&
            this.registrationData.confirm_password.trim() !== '' &&
            this.registrationData.password === this.registrationData.confirm_password &&
+           this.registrationData.agreeToPrivacyPolicy === true &&
            flexiblePattern.test(regNumber); // Allow any valid format
   }
 
@@ -340,7 +372,8 @@ export class RegisterComponent implements OnInit {
           registration_number: '',
           phone_number: '',
           password: '',
-          confirm_password: ''
+          confirm_password: '',
+          agreeToPrivacyPolicy: false
         };
         
         // Hide the form after successful registration
@@ -378,7 +411,8 @@ export class RegisterComponent implements OnInit {
       registration_number: '',
       phone_number: '',
       password: '',
-      confirm_password: ''
+      confirm_password: '',
+      agreeToPrivacyPolicy: false
     };
     this.errorMessage = '';
     this.successMessage = '';

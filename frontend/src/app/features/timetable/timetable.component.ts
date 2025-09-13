@@ -1,6 +1,7 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { CourseService, TimetableEntry } from '../../core/course.service';
 import { AuthService } from '../../core/auth.service';
 import { CalendarService, CalendarEvent as CalendarEventType } from '../../core/calendar.service';
@@ -56,7 +57,8 @@ export class TimetableComponent implements OnInit {
     private courseService: CourseService,
     private authService: AuthService,
     private calendarService: CalendarService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -257,7 +259,15 @@ export class TimetableComponent implements OnInit {
 
 
   selectEvent(event: CalendarEvent): void {
+    if (this.isAdmin) {
+      // Admin users see the event details modal
     this.selectedEvent = event;
+    } else {
+      // Non-admin users navigate to course detail page
+      // For now, we'll use the course name as the ID. In a real app, this would be a proper course ID
+      const courseId = event.course.toLowerCase().replace(/\s+/g, '-');
+      this.router.navigate(['/course', courseId]);
+    }
   }
 
   closeEventDetails(): void {

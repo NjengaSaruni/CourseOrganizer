@@ -11,7 +11,8 @@ from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, LoginSerializer,
     CourseSerializer, TimetableEntrySerializer, CourseMaterialSerializer,
-    RecordingSerializer, MeetingSerializer
+    RecordingSerializer, MeetingSerializer, TimetableEntryWithRecordingsSerializer,
+    CourseWithDetailsSerializer
 )
 
 
@@ -389,7 +390,7 @@ def get_user_courses(request):
 @permission_classes([IsAuthenticated])
 def get_class_courses(request, class_id):
     """Get courses for a specific class"""
-    from directory.models import Class
+    from school.models import Class
     
     try:
         student_class = Class.objects.get(id=class_id)
@@ -400,10 +401,140 @@ def get_class_courses(request, class_id):
             'class': {
                 'id': student_class.id,
                 'name': student_class.display_name,
-                'program': student_class.get_program_display(),
+                'program': student_class.program,
                 'graduation_year': student_class.graduation_year
             },
             'courses': serializer.data
         })
     except Class.DoesNotExist:
         return Response({'error': 'Class not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Admin Views for Course Management
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_admin_courses(request):
+    """Get all courses for admin management"""
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    courses = Course.objects.all().order_by('academic_year', 'year', 'semester', 'code')
+    serializer = CourseWithDetailsSerializer(courses, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_course_timetable_entries(request, course_id):
+    """Get timetable entries for a specific course with recordings and materials"""
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        course = Course.objects.get(id=course_id)
+        # Get the last 3 timetable entries for this course, with ability to get more
+        limit = int(request.query_params.get('limit', 3))
+        entries = course.timetable_entries.all().order_by('-created_at')[:limit]
+        
+        serializer = TimetableEntryWithRecordingsSerializer(entries, many=True)
+        return Response({
+            'course': CourseSerializer(course).data,
+            'timetable_entries': serializer.data,
+            'total_entries': course.timetable_entries.count()
+        })
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_recording(request):
+    """Add a recording for a specific timetable entry"""
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    serializer = RecordingSerializer(data=request.data)
+    if serializer.is_valid():
+        recording = serializer.save(uploaded_by=request.user)
+        return Response(RecordingSerializer(recording).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_course_material(request):
+    """Add course material (course-wide, topic-wise, or lesson-specific)"""
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    serializer = CourseMaterialSerializer(data=request.data)
+    if serializer.is_valid():
+        material = serializer.save(uploaded_by=request.user)
+        return Response(CourseMaterialSerializer(material).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_recording(request, recording_id):
+    """Update a recording"""
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        recording = Recording.objects.get(id=recording_id)
+        serializer = RecordingSerializer(recording, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except Recording.DoesNotExist:
+        return Response({'error': 'Recording not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_course_material(request, material_id):
+    """Update a course material"""
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        material = CourseMaterial.objects.get(id=material_id)
+        serializer = CourseMaterialSerializer(material, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    except CourseMaterial.DoesNotExist:
+        return Response({'error': 'Material not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_recording(request, recording_id):
+    """Delete a recording"""
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        recording = Recording.objects.get(id=recording_id)
+        recording.delete()
+        return Response({'message': 'Recording deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    except Recording.DoesNotExist:
+        return Response({'error': 'Recording not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_course_material(request, material_id):
+    """Delete a course material"""
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        material = CourseMaterial.objects.get(id=material_id)
+        material.delete()
+        return Response({'message': 'Material deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    except CourseMaterial.DoesNotExist:
+        return Response({'error': 'Material not found'}, status=status.HTTP_404_NOT_FOUND)

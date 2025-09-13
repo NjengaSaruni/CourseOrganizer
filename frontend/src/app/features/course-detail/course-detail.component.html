@@ -1,0 +1,258 @@
+<app-page-layout 
+  [pageTitle]="course?.name || 'Course Details'" 
+  [pageSubtitle]="course?.code || ''"
+  [isSidebarOpen]="isSidebarOpen"
+  (sidebarToggle)="onSidebarToggle($event)">
+    
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+    <div class="p-6">
+      <div class="flex flex-col items-center justify-center py-16">
+        <div class="w-16 h-16 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+        <div class="mt-6 text-center">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Loading Course Details</h3>
+          <p class="text-gray-600">Fetching course information...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Content -->
+  <div *ngIf="!isLoading && course" class="space-y-6">
+    
+    <!-- Back Button -->
+    <div class="flex items-center">
+      <button (click)="goBack()" 
+              class="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Timetable
+      </button>
+    </div>
+
+    <!-- Course Header -->
+    <div class="bg-white shadow rounded-lg p-6">
+      <div class="flex items-start justify-between">
+        <div class="flex-1">
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">{{ course.name }}</h1>
+          <div class="flex items-center space-x-4 text-gray-600 mb-4">
+            <span class="font-medium">{{ course.code }}</span>
+            <span>•</span>
+            <span>{{ course.credits }} Credits</span>
+            <span>•</span>
+            <span>{{ course.semester }}</span>
+            <span>•</span>
+            <span>{{ course.academicYear }}</span>
+          </div>
+          <p class="text-gray-700 leading-relaxed">{{ course.description }}</p>
+        </div>
+        <div class="ml-6">
+          <div class="text-right">
+            <div class="text-sm text-gray-500 mb-1">Lecturer</div>
+            <div class="font-semibold text-gray-900">{{ course.lecturer }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-white shadow rounded-lg">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8 px-6">
+          <button *ngFor="let tab of [
+            { key: 'overview', label: 'Overview', icon: '📊' },
+            { key: 'meetings', label: 'Meetings', icon: '🎓' },
+            { key: 'materials', label: 'Materials', icon: '📚' },
+            { key: 'assignments', label: 'Assignments', icon: '📝' },
+            { key: 'examinations', label: 'Examinations', icon: '📋' }
+          ]"
+          (click)="setActiveTab(tab.key)"
+          [class]="activeTab === tab.key 
+            ? 'border-blue-500 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium' 
+            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium'">
+            <span class="mr-2">{{ tab.icon }}</span>
+            {{ tab.label }}
+          </button>
+        </nav>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="p-6">
+        
+        <!-- Overview Tab -->
+        <div *ngIf="activeTab === 'overview'" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Quick Stats -->
+            <div class="bg-blue-50 rounded-lg p-4">
+              <div class="flex items-center">
+                <div class="text-2xl mr-3">🎓</div>
+                <div>
+                  <div class="text-2xl font-bold text-blue-900">{{ meetings.length }}</div>
+                  <div class="text-sm text-blue-600">Total Meetings</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-green-50 rounded-lg p-4">
+              <div class="flex items-center">
+                <div class="text-2xl mr-3">📚</div>
+                <div>
+                  <div class="text-2xl font-bold text-green-900">{{ materials.length }}</div>
+                  <div class="text-sm text-green-600">Course Materials</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-purple-50 rounded-lg p-4">
+              <div class="flex items-center">
+                <div class="text-2xl mr-3">📝</div>
+                <div>
+                  <div class="text-2xl font-bold text-purple-900">{{ assignments.length }}</div>
+                  <div class="text-sm text-purple-600">Assignments</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upcoming Events -->
+          <div class="bg-gray-50 rounded-lg p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Upcoming Events</h3>
+            <div class="space-y-3">
+              <div *ngFor="let meeting of getUpcomingMeetings()" 
+                   class="flex items-center p-3 bg-white rounded-lg">
+                <div class="text-2xl mr-3">{{ getTypeIcon(meeting.type) }}</div>
+                <div class="flex-1">
+                  <div class="font-medium text-gray-900">{{ meeting.title }}</div>
+                  <div class="text-sm text-gray-600">{{ meeting.date | date:'MMM d, y' }} at {{ meeting.time }}</div>
+                </div>
+                <div class="text-sm text-blue-600">{{ meeting.location }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meetings Tab -->
+        <div *ngIf="activeTab === 'meetings'" class="space-y-4">
+          <div *ngFor="let meeting of meetings" 
+               class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="text-2xl mr-3">{{ getTypeIcon(meeting.type) }}</span>
+                  <h3 class="text-lg font-semibold text-gray-900">{{ meeting.title }}</h3>
+                  <span [class]="'ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusColor(meeting.status)">
+                    {{ meeting.status | titlecase }}
+                  </span>
+                </div>
+                <div class="text-sm text-gray-600 mb-2">
+                  {{ meeting.date | date:'EEEE, MMMM d, y' }} at {{ meeting.time }} • {{ meeting.location }}
+                </div>
+                <p *ngIf="meeting.notes" class="text-gray-700">{{ meeting.notes }}</p>
+              </div>
+              <div class="ml-4">
+                <button *ngIf="meeting.recordingUrl && meeting.status === 'completed'" 
+                        (click)="viewRecording(meeting)"
+                        class="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">
+                  View Recording
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Materials Tab -->
+        <div *ngIf="activeTab === 'materials'" class="space-y-4">
+          <div *ngFor="let material of materials" 
+               class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="text-2xl mr-3">{{ getTypeIcon(material.type) }}</span>
+                  <h3 class="text-lg font-semibold text-gray-900">{{ material.title }}</h3>
+                </div>
+                <p *ngIf="material.description" class="text-gray-600 mb-2">{{ material.description }}</p>
+                <div class="text-sm text-gray-500">
+                  Uploaded {{ material.uploadDate | date:'MMM d, y' }}
+                  <span *ngIf="material.size"> • {{ material.size }}</span>
+                </div>
+              </div>
+              <div class="ml-4">
+                <button (click)="downloadMaterial(material)"
+                        class="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">
+                  Download
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assignments Tab -->
+        <div *ngIf="activeTab === 'assignments'" class="space-y-4">
+          <div *ngFor="let assignment of assignments" 
+               class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="text-2xl mr-3">{{ getTypeIcon('assignment') }}</span>
+                  <h3 class="text-lg font-semibold text-gray-900">{{ assignment.title }}</h3>
+                  <span [class]="'ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusColor(assignment.status)">
+                    {{ assignment.status | titlecase }}
+                  </span>
+                </div>
+                <p class="text-gray-700 mb-2">{{ assignment.description }}</p>
+                <div class="text-sm text-gray-600">
+                  Due: {{ assignment.dueDate | date:'MMM d, y' }} • Max Marks: {{ assignment.maxMarks }}
+                  <span *ngIf="assignment.obtainedMarks !== undefined">
+                    • Obtained: {{ assignment.obtainedMarks }}/{{ assignment.maxMarks }}
+                  </span>
+                </div>
+              </div>
+              <div class="ml-4">
+                <button *ngIf="assignment.status === 'not_started' || assignment.status === 'in_progress'"
+                        class="px-3 py-1 text-sm font-medium text-green-600 bg-green-100 rounded-md hover:bg-green-200">
+                  Submit
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Examinations Tab -->
+        <div *ngIf="activeTab === 'examinations'" class="space-y-4">
+          <div *ngFor="let exam of examinations" 
+               class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="text-2xl mr-3">{{ getTypeIcon(exam.type) }}</span>
+                  <h3 class="text-lg font-semibold text-gray-900">{{ exam.title }}</h3>
+                  <span [class]="'ml-3 px-2 py-1 text-xs font-medium rounded-full ' + getStatusColor(exam.status)">
+                    {{ exam.status | titlecase }}
+                  </span>
+                </div>
+                <div class="text-sm text-gray-600 mb-2">
+                  {{ exam.date | date:'EEEE, MMMM d, y' }} at {{ exam.time }} • {{ exam.location }}
+                </div>
+                <div class="text-sm text-gray-600">
+                  Duration: {{ exam.duration }} minutes • Max Marks: {{ exam.maxMarks }}
+                  <span *ngIf="exam.obtainedMarks !== undefined">
+                    • Obtained: {{ exam.obtainedMarks }}/{{ exam.maxMarks }}
+                  </span>
+                </div>
+              </div>
+              <div class="ml-4">
+                <button *ngIf="exam.status === 'upcoming'"
+                        class="px-3 py-1 text-sm font-medium text-blue-600 bg-blue-100 rounded-md hover:bg-blue-200">
+                  View Details
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</app-page-layout>

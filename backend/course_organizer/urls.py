@@ -36,6 +36,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/directory/', include('directory.urls')),
     path('api/', include('course_api.urls')),
+    path('api/communication/', include('communication.urls')),
+    path('api/school/', include('school.urls')),
     # Serve static files for Angular app
     path('<path:path>', serve_static_file),
     # Serve Angular app at root (catch-all)

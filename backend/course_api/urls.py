@@ -35,4 +35,14 @@ urlpatterns = [
     path('materials/', views.CourseMaterialListView.as_view(), name='materials_list'),
     path('recordings/', views.RecordingListView.as_view(), name='recordings_list'),
     path('meetings/', views.MeetingListView.as_view(), name='meetings_list'),
+    
+    # Admin course management endpoints
+    path('admin/courses/', views.get_admin_courses, name='admin_courses'),
+    path('admin/courses/<int:course_id>/timetable-entries/', views.get_course_timetable_entries, name='course_timetable_entries'),
+    path('admin/recordings/', views.add_recording, name='add_recording'),
+    path('admin/recordings/<int:recording_id>/', views.update_recording, name='update_recording'),
+    path('admin/recordings/<int:recording_id>/delete/', views.delete_recording, name='delete_recording'),
+    path('admin/materials/', views.add_course_material, name='add_course_material'),
+    path('admin/materials/<int:material_id>/', views.update_course_material, name='update_course_material'),
+    path('admin/materials/<int:material_id>/delete/', views.delete_course_material, name='delete_course_material'),
 ]

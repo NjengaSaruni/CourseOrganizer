@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from datetime import date
-from .models import User, AcademicYear, Class
+from .models import User, AcademicYear
+from school.models import Class
 from .extended_models import Student, Teacher, RegistrationRequest
 
 
@@ -47,6 +48,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class StudentSerializer(serializers.ModelSerializer):
+    """Serializer for Student model (extended model)"""
     user = UserSerializer(read_only=True)
     progress_percentage = serializers.ReadOnlyField()
     is_on_track = serializers.ReadOnlyField()
@@ -57,6 +59,40 @@ class StudentSerializer(serializers.ModelSerializer):
                  'gpa', 'credits_completed', 'credits_required', 'progress_percentage',
                  'is_full_time', 'financial_aid', 'is_on_track',
                  'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relationship']
+
+
+class StudentUserSerializer(serializers.ModelSerializer):
+    """Serializer for User objects with user_type='student'"""
+    full_name = serializers.SerializerMethodField()
+    class_display_name = serializers.SerializerMethodField()
+    registration_info = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
+    student_class = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'full_name', 'registration_number', 
+                 'phone_number', 'user_type', 'status', 'current_year', 'current_semester',
+                 'class_of', 'student_class', 'class_display_name', 'registration_info', 'is_active', 
+                 'date_joined', 'is_admin']
+        read_only_fields = ['id', 'date_joined', 'is_admin']
+    
+    def get_full_name(self, obj):
+        return obj.get_full_name()
+    
+    def get_class_display_name(self, obj):
+        return obj.class_display_name
+    
+    def get_registration_info(self, obj):
+        return obj.registration_info
+    
+    def get_is_admin(self, obj):
+        return obj.is_admin
+    
+    def get_student_class(self, obj):
+        if obj.student_class:
+            return obj.student_class.id
+        return None
 
 
 class TeacherSerializer(serializers.ModelSerializer):
@@ -182,8 +218,8 @@ class StudentRegistrationSerializer(serializers.ModelSerializer):
         admission_year_int = int(admission_year)
         graduation_year = admission_year_int + 4  # Typically 4 years for most programs
         
-        # Get or create the appropriate class
-        student_class = Class.get_or_create_class(prefix, graduation_year)
+        # Get the default class (all students go to the default class)
+        student_class = Class.get_default_class()
         
         # Determine current year and semester based on academic year
         current_academic_year = AcademicYear.get_current_academic_year()

@@ -130,19 +130,31 @@ class TimetableEntrySerializer(serializers.ModelSerializer):
 class CourseMaterialSerializer(serializers.ModelSerializer):
     """Serializer for course materials"""
     uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
+    timetable_entry_display = serializers.SerializerMethodField()
 
     class Meta:
         model = CourseMaterial
         fields = '__all__'
 
+    def get_timetable_entry_display(self, obj):
+        if obj.timetable_entry:
+            return f"{obj.timetable_entry.day.title()} - {obj.timetable_entry.time}"
+        return None
+
 
 class RecordingSerializer(serializers.ModelSerializer):
     """Serializer for recordings"""
     uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
+    timetable_entry_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Recording
         fields = '__all__'
+
+    def get_timetable_entry_display(self, obj):
+        if obj.timetable_entry:
+            return f"{obj.timetable_entry.day.title()} - {obj.timetable_entry.time}"
+        return None
 
 
 class MeetingSerializer(serializers.ModelSerializer):
@@ -152,3 +164,40 @@ class MeetingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meeting
         fields = '__all__'
+
+
+class TimetableEntryWithRecordingsSerializer(serializers.ModelSerializer):
+    """Serializer for timetable entries with their recordings"""
+    recordings = RecordingSerializer(many=True, read_only=True)
+    materials = CourseMaterialSerializer(many=True, read_only=True)
+    has_recording = serializers.SerializerMethodField()
+    has_materials = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TimetableEntry
+        fields = '__all__'
+
+    def get_has_recording(self, obj):
+        return obj.recordings.exists()
+
+    def get_has_materials(self, obj):
+        return obj.materials.exists()
+
+
+class CourseWithDetailsSerializer(serializers.ModelSerializer):
+    """Serializer for courses with detailed information"""
+    timetable_entries = TimetableEntryWithRecordingsSerializer(many=True, read_only=True)
+    recent_recordings = serializers.SerializerMethodField()
+    recent_materials = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = '__all__'
+
+    def get_recent_recordings(self, obj):
+        recent = obj.recordings.all()[:3]
+        return RecordingSerializer(recent, many=True).data
+
+    def get_recent_materials(self, obj):
+        recent = obj.materials.all()[:3]
+        return CourseMaterialSerializer(recent, many=True).data

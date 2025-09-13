@@ -69,7 +69,7 @@ import { AuthService } from '../../core/auth.service';
             <h2 class="text-3xl font-semibold text-gray-900 mb-4">Currently Supporting</h2>
             <h3 class="text-xl text-gray-600 mb-6">School of Law - Class of 2029</h3>
             <p class="text-lg text-gray-500 max-w-2xl mx-auto">
-              We're starting with first-year law students (Class of 2029) and will gradually expand to other classes and programs.
+              We're starting with first-year law students (Class of 2029) and will expand to all law students, then to other University of Nairobi programs.
             </p>
           </div>
 
@@ -200,13 +200,18 @@ import { AuthService } from '../../core/auth.service';
           <div class="text-center mb-12">
             <h2 class="text-3xl font-semibold text-gray-900 mb-4">Future Expansion</h2>
             <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-              We're committed to expanding access to all University of Nairobi students.
+              We're committed to expanding access to all University of Nairobi students through a phased approach.
             </p>
           </div>
           
-          <div class="grid md:grid-cols-2 gap-8">
+          <div class="grid md:grid-cols-3 gap-8">
             <div class="bg-gray-50 rounded-xl p-8">
-              <h3 class="text-xl font-semibold text-gray-900 mb-3">Phase 1: Class of 2029</h3>
+              <div class="flex items-center mb-4">
+                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-green-600 font-bold text-sm">1</span>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900">Phase 1: Class of 2029</h3>
+              </div>
               <p class="text-gray-600 mb-4">Starting with first-year law students (Class of 2029)</p>
               <div class="flex items-center text-sm text-gray-700">
                 <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
@@ -215,11 +220,54 @@ import { AuthService } from '../../core/auth.service';
             </div>
             
             <div class="bg-gray-50 rounded-xl p-8">
-              <h3 class="text-xl font-semibold text-gray-900 mb-3">Phase 2: Other Courses</h3>
-              <p class="text-gray-600 mb-4">Expanding to other University of Nairobi programs</p>
+              <div class="flex items-center mb-4">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-blue-600 font-bold text-sm">2</span>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900">Phase 2: All Law Students</h3>
+              </div>
+              <p class="text-gray-600 mb-4">Expanding to cover all law students across all years at UoN</p>
+              <div class="flex items-center text-sm text-gray-500">
+                <div class="w-2 h-2 bg-blue-400 rounded-full mr-3"></div>
+                In Development
+              </div>
+            </div>
+            
+            <div class="bg-gray-50 rounded-xl p-8">
+              <div class="flex items-center mb-4">
+                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-purple-600 font-bold text-sm">3</span>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900">Phase 3: Other Courses</h3>
+              </div>
+              <p class="text-gray-600 mb-4">Expanding to other University of Nairobi programs and faculties</p>
               <div class="flex items-center text-sm text-gray-500">
                 <div class="w-2 h-2 bg-gray-400 rounded-full mr-3"></div>
-                Coming Soon
+                Future Plans
+              </div>
+            </div>
+          </div>
+          
+          <!-- Timeline -->
+          <div class="mt-12 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-8">
+            <h3 class="text-xl font-semibold text-gray-900 mb-6 text-center">Expansion Timeline</h3>
+            <div class="flex items-center justify-between">
+              <div class="text-center">
+                <div class="w-4 h-4 bg-green-500 rounded-full mx-auto mb-2"></div>
+                <p class="text-sm font-medium text-gray-900">2025 Q4</p>
+                <p class="text-xs text-gray-600">Class of 2029</p>
+              </div>
+              <div class="flex-1 h-0.5 bg-gray-300 mx-4"></div>
+              <div class="text-center">
+                <div class="w-4 h-4 bg-blue-400 rounded-full mx-auto mb-2"></div>
+                <p class="text-sm font-medium text-gray-900">2026 Q1-Q2</p>
+                <p class="text-xs text-gray-600">All Law Students</p>
+              </div>
+              <div class="flex-1 h-0.5 bg-gray-300 mx-4"></div>
+              <div class="text-center">
+                <div class="w-4 h-4 bg-gray-400 rounded-full mx-auto mb-2"></div>
+                <p class="text-sm font-medium text-gray-900">2026 Q3+</p>
+                <p class="text-xs text-gray-600">Other Courses</p>
               </div>
             </div>
           </div>
@@ -228,10 +276,20 @@ import { AuthService } from '../../core/auth.service';
 
       <!-- Footer -->
       <div class="bg-gray-900 text-white py-12">
-        <div class="max-w-4xl mx-auto px-6 text-center">
-          <p class="text-gray-400">
-            © 2025 University of Nairobi - Course Organizer. All rights reserved.
-          </p>
+        <div class="max-w-4xl mx-auto px-6">
+          <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div class="text-center md:text-left">
+              <p class="text-gray-400">
+                © 2025 RiverLearn Inc. - Course Organizer. All rights reserved.
+              </p>
+            </div>
+            <div class="flex space-x-6">
+              <a routerLink="/privacy-policy" 
+                 class="text-gray-400 hover:text-white transition-colors text-sm">
+                Privacy Policy
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </div>

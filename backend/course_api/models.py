@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
-from directory.models import User, AcademicYear, Class
+from directory.models import User, AcademicYear
+from school.models import Class
 
 
 class Course(models.Model):
@@ -120,13 +121,25 @@ class TimetableEntry(models.Model):
 
 class CourseMaterial(models.Model):
     """Course material model"""
+    MATERIAL_TYPE_CHOICES = [
+        ('course_wide', 'Course Wide'),
+        ('topic_wise', 'Topic Wise'),
+        ('lesson_specific', 'Lesson Specific'),
+    ]
+    
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     file_url = models.URLField(blank=True)
     file_type = models.CharField(max_length=50, blank=True)
+    material_type = models.CharField(max_length=20, choices=MATERIAL_TYPE_CHOICES, default='course_wide')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='materials')
+    timetable_entry = models.ForeignKey('TimetableEntry', on_delete=models.CASCADE, null=True, blank=True, related_name='materials')
+    topic = models.CharField(max_length=200, blank=True, help_text="Topic name for topic-wise materials")
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.title
@@ -134,13 +147,26 @@ class CourseMaterial(models.Model):
 
 class Recording(models.Model):
     """Lecture recording model"""
+    PLATFORM_CHOICES = [
+        ('zoom', 'Zoom'),
+        ('google_meet', 'Google Meet'),
+        ('teams', 'Microsoft Teams'),
+        ('physical', 'Physical Meeting'),
+        ('other', 'Other'),
+    ]
+    
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     video_url = models.URLField(blank=True)
     duration = models.DurationField(blank=True, null=True)
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default='zoom')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='recordings')
+    timetable_entry = models.ForeignKey('TimetableEntry', on_delete=models.CASCADE, null=True, blank=True, related_name='recordings')
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.title

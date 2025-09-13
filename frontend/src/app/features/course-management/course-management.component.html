@@ -1,0 +1,463 @@
+<app-page-layout 
+  pageTitle="Course Management" 
+  pageSubtitle="Manage recordings and materials for your courses"
+  [isSidebarOpen]="isSidebarOpen"
+  (sidebarToggle)="onSidebarToggle($event)">
+    
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+    <div class="p-6">
+      <div class="flex flex-col items-center justify-center py-16">
+        <div class="w-16 h-16 border-4 border-gray-200 border-t-gray-900 rounded-full animate-spin"></div>
+        <div class="mt-6 text-center">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Loading Courses</h3>
+          <p class="text-gray-600">Fetching your course information...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Management Content -->
+  <div *ngIf="!isLoading" class="space-y-6">
+    
+    <!-- Back Button -->
+    <div class="flex items-center">
+      <button (click)="goBack()" 
+              class="flex items-center text-gray-600 hover:text-gray-900 transition-colors">
+        <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        <span *ngIf="selectedTimetableEntry">Back to Course</span>
+        <span *ngIf="selectedCourse && !selectedTimetableEntry">Back to Courses</span>
+        <span *ngIf="!selectedCourse">Back to Admin</span>
+      </button>
+    </div>
+
+    <!-- Courses List -->
+    <div *ngIf="!selectedCourse" class="bg-white shadow rounded-2xl overflow-hidden">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-900">Your Courses</h2>
+        <p class="text-gray-600 mt-1">Select a course to manage recordings and materials</p>
+      </div>
+      
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div *ngFor="let course of courses" 
+               (click)="selectCourse(course)"
+               class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 cursor-pointer hover:shadow-lg transition-all duration-200 border border-blue-100 hover:border-blue-200">
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ course.name }}</h3>
+                <p class="text-sm text-gray-600">{{ course.code }}</p>
+              </div>
+              <div class="text-2xl">📚</div>
+            </div>
+            
+            <p class="text-sm text-gray-700 mb-4 line-clamp-2">{{ course.description }}</p>
+            
+            <div class="flex items-center justify-between text-xs text-gray-500">
+              <span>{{ course.credits }} Credits</span>
+              <span>{{ course.timetable_entries.length }} Sessions</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Course Detail -->
+    <div *ngIf="selectedCourse && !selectedTimetableEntry" class="space-y-6">
+      
+      <!-- Course Header -->
+      <div class="bg-white shadow rounded-2xl overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h1 class="text-3xl font-bold mb-2">{{ selectedCourse.name }}</h1>
+              <div class="flex items-center space-x-4 text-blue-100">
+                <span class="font-medium">{{ selectedCourse.code }}</span>
+                <span>•</span>
+                <span>{{ selectedCourse.credits }} Credits</span>
+                <span>•</span>
+                <span>{{ selectedCourse.academic_year }}</span>
+              </div>
+            </div>
+            <div class="text-4xl opacity-80">🎓</div>
+          </div>
+        </div>
+        
+        <div class="p-6">
+          <p class="text-gray-700 leading-relaxed">{{ selectedCourse.description }}</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="bg-white shadow rounded-2xl">
+        <div class="border-b border-gray-200">
+          <nav class="-mb-px flex space-x-8 px-6">
+            <button *ngFor="let tab of [
+              { key: 'recordings', label: 'Recordings', icon: '🎥' },
+              { key: 'materials', label: 'Materials', icon: '📚' }
+            ]"
+            (click)="setActiveTab(tab.key)"
+            [class]="activeTab === tab.key 
+              ? 'border-blue-500 text-blue-600 border-b-2 py-4 px-1 text-sm font-medium' 
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2 py-4 px-1 text-sm font-medium'">
+              <span class="mr-2">{{ tab.icon }}</span>
+              {{ tab.label }}
+            </button>
+          </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+          
+          <!-- Recordings Tab -->
+          <div *ngIf="activeTab === 'recordings'">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl font-semibold text-gray-900">Course Sessions</h3>
+              <button (click)="openRecordingModal()"
+                      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Recording
+              </button>
+            </div>
+            
+            <div class="space-y-4">
+              <div *ngFor="let entry of selectedCourse.timetable_entries" 
+                   (click)="selectTimetableEntry(entry)"
+                   class="border border-gray-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-all duration-200 hover:border-blue-300">
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                      <span class="text-2xl mr-3">🎓</span>
+                      <h4 class="text-lg font-semibold text-gray-900">{{ entry.subject }}</h4>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-2">
+                      {{ entry.day | titlecase }} • {{ entry.time }} • {{ entry.location }}
+                    </div>
+                    <div class="text-sm text-gray-500">{{ entry.lecturer }}</div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span *ngIf="entry.has_recording" 
+                          class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <span class="mr-1">🎥</span>
+                      Recording
+                    </span>
+                    <span *ngIf="entry.has_materials" 
+                          class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span class="mr-1">📚</span>
+                      Materials
+                    </span>
+                    <svg class="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Materials Tab -->
+          <div *ngIf="activeTab === 'materials'">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-xl font-semibold text-gray-900">Course Materials</h3>
+              <button (click)="openMaterialModal()"
+                      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Material
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <div class="text-center py-8">
+                  <div class="text-4xl mb-2">📚</div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Course-Wide Materials</h4>
+                  <p class="text-sm text-gray-600 mb-4">General course materials available to all students</p>
+                  <button (click)="openMaterialModal()"
+                          class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                    Add Material
+                  </button>
+                </div>
+              </div>
+              
+              <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <div class="text-center py-8">
+                  <div class="text-4xl mb-2">📖</div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Topic-Wise Materials</h4>
+                  <p class="text-sm text-gray-600 mb-4">Materials organized by specific topics</p>
+                  <button (click)="openMaterialModal()"
+                          class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                    Add Material
+                  </button>
+                </div>
+              </div>
+              
+              <div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                <div class="text-center py-8">
+                  <div class="text-4xl mb-2">📄</div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Lesson-Specific Materials</h4>
+                  <p class="text-sm text-gray-600 mb-4">Materials for specific class sessions</p>
+                  <button (click)="openMaterialModal()"
+                          class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                    Add Material
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Timetable Entry Detail -->
+    <div *ngIf="selectedTimetableEntry" class="space-y-6">
+      
+      <!-- Session Header -->
+      <div class="bg-white shadow rounded-2xl overflow-hidden">
+        <div class="bg-gradient-to-r from-green-600 to-emerald-600 p-6 text-white">
+          <div class="flex items-start justify-between">
+            <div class="flex-1">
+              <h1 class="text-2xl font-bold mb-2">{{ selectedTimetableEntry.subject }}</h1>
+              <div class="flex items-center space-x-4 text-green-100">
+                <span>{{ selectedTimetableEntry.day | titlecase }}</span>
+                <span>•</span>
+                <span>{{ selectedTimetableEntry.time }}</span>
+                <span>•</span>
+                <span>{{ selectedTimetableEntry.location }}</span>
+              </div>
+            </div>
+            <div class="text-3xl opacity-80">🎓</div>
+          </div>
+        </div>
+        
+        <div class="p-6">
+          <p class="text-gray-700">Lecturer: <span class="font-medium">{{ selectedTimetableEntry.lecturer }}</span></p>
+        </div>
+      </div>
+
+      <!-- Session Content -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Recordings -->
+        <div class="bg-white shadow rounded-2xl overflow-hidden">
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-semibold text-gray-900">Recordings</h3>
+              <button (click)="openRecordingModal(selectedTimetableEntry)"
+                      class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                Add Recording
+              </button>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div *ngIf="selectedTimetableEntry.recordings.length === 0" class="text-center py-8">
+              <div class="text-4xl mb-2">🎥</div>
+              <p class="text-gray-600">No recordings available for this session</p>
+            </div>
+            
+            <div *ngFor="let recording of selectedTimetableEntry.recordings" 
+                 class="border border-gray-200 rounded-lg p-4 mb-4">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <span class="text-xl mr-2">{{ getPlatformIcon(recording.platform) }}</span>
+                    <h4 class="font-semibold text-gray-900">{{ recording.title }}</h4>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">{{ recording.description }}</p>
+                  <div class="text-xs text-gray-500">
+                    Duration: {{ recording.duration }} • Uploaded by {{ recording.uploaded_by_name }}
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <a [href]="recording.video_url" target="_blank"
+                     class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                    View
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Materials -->
+        <div class="bg-white shadow rounded-2xl overflow-hidden">
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-semibold text-gray-900">Materials</h3>
+              <button (click)="openMaterialModal(selectedTimetableEntry)"
+                      class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                Add Material
+              </button>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div *ngIf="selectedTimetableEntry.materials.length === 0" class="text-center py-8">
+              <div class="text-4xl mb-2">📚</div>
+              <p class="text-gray-600">No materials available for this session</p>
+            </div>
+            
+            <div *ngFor="let material of selectedTimetableEntry.materials" 
+                 class="border border-gray-200 rounded-lg p-4 mb-4">
+              <div class="flex items-start justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <span class="text-xl mr-2">{{ getFileTypeIcon(material.file_type) }}</span>
+                    <h4 class="font-semibold text-gray-900">{{ material.title }}</h4>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">{{ material.description }}</p>
+                  <div class="text-xs text-gray-500">
+                    Type: {{ material.material_type | titlecase }} • Uploaded by {{ material.uploaded_by_name }}
+                  </div>
+                </div>
+                <div class="ml-4">
+                  <a [href]="material.file_url" target="_blank"
+                     class="bg-blue-600 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                    Download
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recording Modal -->
+  <div *ngIf="showRecordingModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" (click)="closeRecordingModal()">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-2xl bg-white" (click)="$event.stopPropagation()">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">Add Recording</h3>
+          <button (click)="closeRecordingModal()" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <form (ngSubmit)="saveRecording()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input type="text" [(ngModel)]="recordingForm.title" name="title" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea [(ngModel)]="recordingForm.description" name="description" rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Video URL</label>
+            <input type="url" [(ngModel)]="recordingForm.video_url" name="video_url" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+            <select [(ngModel)]="recordingForm.platform" name="platform" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="zoom">Zoom</option>
+              <option value="google_meet">Google Meet</option>
+              <option value="teams">Microsoft Teams</option>
+              <option value="physical">Physical Meeting</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" (click)="closeRecordingModal()" 
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+              Save Recording
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Material Modal -->
+  <div *ngIf="showMaterialModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" (click)="closeMaterialModal()">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-2xl bg-white" (click)="$event.stopPropagation()">
+      <div class="mt-3">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-medium text-gray-900">Add Material</h3>
+          <button (click)="closeMaterialModal()" class="text-gray-400 hover:text-gray-600">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <form (ngSubmit)="saveMaterial()" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input type="text" [(ngModel)]="materialForm.title" name="title" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea [(ngModel)]="materialForm.description" name="description" rows="3"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">File URL</label>
+            <input type="url" [(ngModel)]="materialForm.file_url" name="file_url" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">File Type</label>
+            <input type="text" [(ngModel)]="materialForm.file_type" name="file_type" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Material Type</label>
+            <select [(ngModel)]="materialForm.material_type" name="material_type" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="course_wide">Course Wide</option>
+              <option value="topic_wise">Topic Wise</option>
+              <option value="lesson_specific">Lesson Specific</option>
+            </select>
+          </div>
+          
+          <div *ngIf="materialForm.material_type === 'topic_wise'">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+            <input type="text" [(ngModel)]="materialForm.topic" name="topic" 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          
+          <div class="flex justify-end space-x-3 pt-4">
+            <button type="button" (click)="closeMaterialModal()" 
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+              Cancel
+            </button>
+            <button type="submit" 
+                    class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">
+              Save Material
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+</app-page-layout>
