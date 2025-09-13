@@ -62,8 +62,8 @@ RUN apk add --no-cache python3 py3-pip
 COPY --from=backend /app /app
 WORKDIR /app
 
-# Install Python dependencies
-RUN pip3 install --no-cache-dir -r requirements.txt
+# Install Python dependencies (override system package manager for container)
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Copy built frontend from frontend stage
 COPY --from=frontend /app/frontend/dist/course-organizer /usr/share/nginx/html
