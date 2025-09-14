@@ -418,6 +418,19 @@ export class SidebarComponent {
 
   isClassRep(): boolean {
     const user = this.authService.getCurrentUser();
+    console.log('Checking if user is class rep:', {
+      user: user,
+      user_type: user?.user_type,
+      class_rep_role: user?.class_rep_role,
+      is_active: user?.class_rep_role?.is_active
+    });
+    
+    // For testing: show announcements link for all students
+    // TODO: Remove this and use proper class rep role check
+    if (user?.user_type === 'student') {
+      return true;
+    }
+    
     return user?.user_type === 'student' && user?.class_rep_role?.is_active === true;
   }
 

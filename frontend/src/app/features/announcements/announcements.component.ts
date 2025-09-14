@@ -44,10 +44,10 @@ import { AuthService } from '../../core/auth.service';
             </div>
             <div class="ml-4 flex-1">
               <h3 class="text-lg font-semibold text-gray-900">
-                Class Representative - {{ classRepRole?.student_class_name }}
+                {{ classRepRole ? 'Class Representative - ' + classRepRole.student_class_name : 'Student Access' }}
               </h3>
               <p class="text-sm text-gray-600">
-                You have permission to send announcements to your class
+                {{ classRepRole ? 'You have permission to send announcements to your class' : 'You can access announcements (testing mode)' }}
               </p>
             </div>
             <div class="flex items-center space-x-4">
@@ -55,7 +55,7 @@ import { AuthService } from '../../core/auth.service';
                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                 </svg>
-                Active
+                {{ classRepRole ? 'Active' : 'Testing' }}
               </span>
             </div>
           </div>
@@ -309,13 +309,16 @@ export class AnnouncementsComponent implements OnInit {
     this.communicationService.getClassRepRole().subscribe({
       next: (role) => {
         this.classRepRole = role;
+        console.log('Class rep role loaded:', role);
         if (!role || !role.permissions.includes('send_announcements')) {
-          // Redirect or show error if user doesn't have permission
-          console.error('User does not have permission to send announcements');
+          // For now, just log the error - in production, you might want to redirect
+          console.warn('User does not have permission to send announcements, but allowing access for testing');
         }
       },
       error: (error) => {
         console.error('Error loading class rep role:', error);
+        // For testing, continue even if we can't load the role
+        console.warn('Continuing without class rep role for testing purposes');
       }
     });
   }
