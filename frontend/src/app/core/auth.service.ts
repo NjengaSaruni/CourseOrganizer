@@ -14,6 +14,7 @@ export interface User {
   phone_number: string;
   status: 'pending' | 'approved' | 'rejected';
   is_admin: boolean;
+  user_type: 'student' | 'teacher' | 'admin';
   date_joined: string;
   date_joined_formatted?: string;
   last_login?: string;
@@ -21,6 +22,13 @@ export interface User {
   class_display_name?: string;
   passcode?: string;
   smsSent?: boolean;
+  class_rep_role?: {
+    id: number;
+    is_active: boolean;
+    permissions: string[];
+    student_class: number;
+    student_class_name: string;
+  };
 }
 
 export interface RegistrationData {

@@ -25,6 +25,27 @@ export interface ClassRepPermission {
   permissions: string[];
 }
 
+export interface Announcement {
+  id?: number;
+  title: string;
+  content: string;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  is_pinned: boolean;
+  expires_at: string | null;
+  attachment?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  sender?: {
+    id: number;
+    full_name: string;
+    registration_number: string;
+  };
+  student_class?: {
+    id: number;
+    display_name: string;
+  };
+}
+
 export interface Class {
   id: number;
   name: string;
@@ -112,6 +133,16 @@ export class CommunicationService {
       map(response => response),
       catchError(error => {
         console.error('Error updating class rep:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Get current user's class rep role
+  getClassRepRole(): Observable<ClassRepRole | null> {
+    return this.http.get<ClassRepRole | null>(`${this.apiUrl}/communication/class-reps/my-role/`).pipe(
+      catchError(error => {
+        console.error('Error fetching class rep role:', error);
         return throwError(() => error);
       })
     );
@@ -261,5 +292,42 @@ export class CommunicationService {
       'send_notifications': 'Can send push notifications to class members'
     };
     return permissionDescriptions[permission] || 'No description available';
+  }
+
+  // Announcement methods
+  getAnnouncements(): Observable<Announcement[]> {
+    return this.http.get<Announcement[]>(`${this.apiUrl}/communication/announcements/`).pipe(
+      catchError(error => {
+        console.error('Error fetching announcements:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  createAnnouncement(announcement: Announcement): Observable<Announcement> {
+    return this.http.post<Announcement>(`${this.apiUrl}/communication/announcements/`, announcement).pipe(
+      catchError(error => {
+        console.error('Error creating announcement:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  updateAnnouncement(id: number, announcement: Announcement): Observable<Announcement> {
+    return this.http.put<Announcement>(`${this.apiUrl}/communication/announcements/${id}/`, announcement).pipe(
+      catchError(error => {
+        console.error('Error updating announcement:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  deleteAnnouncement(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/communication/announcements/${id}/`).pipe(
+      catchError(error => {
+        console.error('Error deleting announcement:', error);
+        return throwError(() => error);
+      })
+    );
   }
 }

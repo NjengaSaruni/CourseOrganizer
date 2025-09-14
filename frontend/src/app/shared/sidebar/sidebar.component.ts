@@ -104,6 +104,21 @@ import { AuthService, User } from '../../core/auth.service';
                   <div class="text-xs text-gray-500">Online sessions</div>
                 </div>
               </a>
+
+              <!-- Class Rep Announcements -->
+              <a *ngIf="isClassRep()" routerLink="/announcements" 
+                 routerLinkActive="bg-orange-50 text-orange-700 border-r-2 border-orange-500" 
+                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-9 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2M9 9h6m-6 4h6m-6 4h4"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Announcements</div>
+                  <div class="text-xs text-gray-500">Send class announcements</div>
+                </div>
+              </a>
             </div>
 
             <!-- Administration Section -->
@@ -287,6 +302,22 @@ import { AuthService, User } from '../../core/auth.service';
                   <div class="text-xs text-gray-500">Online sessions</div>
                 </div>
               </a>
+
+              <!-- Class Rep Announcements -->
+              <a *ngIf="isClassRep()" routerLink="/announcements" 
+                 routerLinkActive="bg-orange-50 text-orange-700" 
+                 (click)="toggleSidebar()"
+                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-9 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2M9 9h6m-6 4h6m-6 4h4"/>
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Announcements</div>
+                  <div class="text-xs text-gray-500">Send class announcements</div>
+                </div>
+              </a>
             </div>
 
             <!-- Administration Section -->
@@ -383,6 +414,11 @@ export class SidebarComponent {
   isAdmin(): boolean {
     const user = this.authService.getCurrentUser();
     return user?.is_admin === true;
+  }
+
+  isClassRep(): boolean {
+    const user = this.authService.getCurrentUser();
+    return user?.user_type === 'student' && user?.class_rep_role?.is_active === true;
   }
 
   getInitials(): string {

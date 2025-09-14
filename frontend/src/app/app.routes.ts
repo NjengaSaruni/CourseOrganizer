@@ -62,5 +62,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/account-settings/account-settings.component').then(m => m.AccountSettingsComponent),
     canActivate: [AuthGuard]
   },
+  { 
+    path: 'announcements', 
+    loadComponent: () => import('./features/announcements/announcements.component').then(m => m.AnnouncementsComponent),
+    canActivate: [AuthGuard]
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];
