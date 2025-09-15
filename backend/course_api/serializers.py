@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from directory.models import User
-from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -122,9 +122,29 @@ class CourseSerializer(serializers.ModelSerializer):
 
 class TimetableEntrySerializer(serializers.ModelSerializer):
     """Serializer for timetable entries"""
+    has_meeting = serializers.SerializerMethodField()
+    meeting_id = serializers.SerializerMethodField()
+    can_join_meeting = serializers.SerializerMethodField()
+    
     class Meta:
         model = TimetableEntry
         fields = '__all__'
+    
+    def get_has_meeting(self, obj):
+        """Check if this timetable entry has an associated meeting"""
+        return obj.meetings.exists()
+    
+    def get_meeting_id(self, obj):
+        """Get the meeting ID for this timetable entry if exists"""
+        meeting = obj.meetings.first()
+        return meeting.id if meeting else None
+    
+    def get_can_join_meeting(self, obj):
+        """Check if user can join the meeting for this timetable entry"""
+        meeting = obj.meetings.first()
+        if meeting:
+            return meeting.can_join_now
+        return False
 
 
 class CourseMaterialSerializer(serializers.ModelSerializer):
@@ -157,13 +177,38 @@ class RecordingSerializer(serializers.ModelSerializer):
         return None
 
 
+class JitsiRecordingSerializer(serializers.ModelSerializer):
+    """Serializer for Jitsi recordings"""
+    class Meta:
+        model = JitsiRecording
+        fields = '__all__'
+
+
 class MeetingSerializer(serializers.ModelSerializer):
     """Serializer for meetings"""
     created_by_name = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    admin_host_name = serializers.CharField(source='admin_host.get_full_name', read_only=True)
+    platform_display = serializers.CharField(source='get_platform_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    is_live = serializers.SerializerMethodField()
+    can_join = serializers.SerializerMethodField()
+    video_join_url = serializers.CharField(read_only=True)
+    jitsi_join_url = serializers.CharField(read_only=True)
+    recordings = JitsiRecordingSerializer(many=True, read_only=True)
 
     class Meta:
         model = Meeting
         fields = '__all__'
+
+    def get_is_live(self, obj):
+        """Check if meeting is currently live"""
+        from django.utils import timezone
+        now = timezone.now()
+        return obj.status == 'live' or (obj.scheduled_time <= now and obj.status == 'scheduled')
+
+    def get_can_join(self, obj):
+        """Check if user can join the meeting"""
+        return obj.can_join_now
 
 
 class TimetableEntryWithRecordingsSerializer(serializers.ModelSerializer):

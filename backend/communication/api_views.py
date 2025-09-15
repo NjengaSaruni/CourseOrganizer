@@ -29,7 +29,7 @@ class AnnouncementListCreateView(generics.ListCreateAPIView):
         
         if user.is_admin:
             return Announcement.objects.select_related('sender', 'student_class').all()
-        elif user.is_student:
+        elif user.is_student and user.student_class:
             return Announcement.objects.select_related('sender', 'student_class').filter(
                 student_class=user.student_class
             )

@@ -7,11 +7,11 @@ from django.contrib.auth import login
 from django.db.models import Q
 from django.http import JsonResponse
 from directory.models import User
-from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, LoginSerializer,
     CourseSerializer, TimetableEntrySerializer, CourseMaterialSerializer,
-    RecordingSerializer, MeetingSerializer, TimetableEntryWithRecordingsSerializer,
+    RecordingSerializer, MeetingSerializer, JitsiRecordingSerializer, TimetableEntryWithRecordingsSerializer,
     CourseWithDetailsSerializer
 )
 
@@ -538,3 +538,426 @@ def delete_course_material(request, material_id):
         return Response({'message': 'Material deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     except CourseMaterial.DoesNotExist:
         return Response({'error': 'Material not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Jitsi Meeting Management Views
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_jitsi_meeting(request):
+    """Create a new Jitsi meeting"""
+    try:
+        data = request.data.copy()
+        
+        # Set platform to Jitsi if not specified
+        if 'platform' not in data:
+            data['platform'] = 'jitsi'
+        
+        # Validate required fields
+        required_fields = ['title', 'scheduled_time', 'course']
+        for field in required_fields:
+            if field not in data:
+                return Response({'error': f'{field} is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get course
+        try:
+            course = Course.objects.get(id=data['course'])
+        except Course.DoesNotExist:
+            return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Create meeting
+        data['created_by'] = request.user.id
+        serializer = MeetingSerializer(data=data)
+        
+        if serializer.is_valid():
+            meeting = serializer.save()
+            return Response({
+                'message': 'Jitsi meeting created successfully',
+                'meeting': MeetingSerializer(meeting).data
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_jitsi_meeting(request, meeting_id):
+    """Get details of a specific Jitsi meeting"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id, platform='jitsi')
+        serializer = MeetingSerializer(meeting)
+        return Response(serializer.data)
+    except Meeting.DoesNotExist:
+        return Response({'error': 'Meeting not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def update_meeting_status(request, meeting_id):
+    """Update meeting status (start, end, cancel)"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+        
+        # Check if user has permission to update this meeting
+        if not (request.user.is_admin or meeting.created_by == request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        new_status = request.data.get('status')
+        if new_status not in ['scheduled', 'live', 'ended', 'cancelled']:
+            return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        meeting.status = new_status
+        meeting.save()
+        
+        return Response({
+            'message': f'Meeting status updated to {new_status}',
+            'meeting': MeetingSerializer(meeting).data
+        })
+        
+    except Meeting.DoesNotExist:
+        return Response({'error': 'Meeting not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def start_jitsi_recording(request, meeting_id):
+    """Start recording for a Jitsi meeting (for future Jibri integration)"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id, platform='jitsi')
+        
+        # Check if user has permission to start recording
+        if not (request.user.is_admin or meeting.created_by == request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        if not meeting.is_recording_enabled:
+            return Response({'error': 'Recording is not enabled for this meeting'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if recording is already in progress
+        active_recording = meeting.recordings.filter(status__in=['pending', 'recording']).first()
+        if active_recording:
+            return Response({'error': 'Recording already in progress'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create new recording entry
+        import uuid
+        recording_id = f"rec-{uuid.uuid4().hex[:12]}"
+        
+        recording = JitsiRecording.objects.create(
+            meeting=meeting,
+            recording_id=recording_id,
+            status='pending'
+        )
+        
+        # TODO: Integrate with Jibri to actually start recording
+        # For now, just mark as pending
+        
+        return Response({
+            'message': 'Recording start request submitted',
+            'recording': JitsiRecordingSerializer(recording).data
+        })
+        
+    except Meeting.DoesNotExist:
+        return Response({'error': 'Meeting not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def stop_jitsi_recording(request, meeting_id):
+    """Stop recording for a Jitsi meeting"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id, platform='jitsi')
+        
+        # Check if user has permission to stop recording
+        if not (request.user.is_admin or meeting.created_by == request.user):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Find active recording
+        active_recording = meeting.recordings.filter(status__in=['pending', 'recording']).first()
+        if not active_recording:
+            return Response({'error': 'No active recording found'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update recording status
+        active_recording.status = 'processing'
+        active_recording.save()
+        
+        # TODO: Integrate with Jibri to actually stop recording
+        
+        return Response({
+            'message': 'Recording stop request submitted',
+            'recording': JitsiRecordingSerializer(active_recording).data
+        })
+        
+    except Meeting.DoesNotExist:
+        return Response({'error': 'Meeting not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_meeting_recordings(request, meeting_id):
+    """Get all recordings for a specific meeting"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+        recordings = meeting.recordings.all()
+        serializer = JitsiRecordingSerializer(recordings, many=True)
+        return Response(serializer.data)
+    except Meeting.DoesNotExist:
+        return Response({'error': 'Meeting not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def join_meeting(request, meeting_id):
+    """Generate join URL for a meeting with user authentication"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+        
+        # Check if user can join the meeting
+        if not meeting.can_join_now:
+            return Response({'error': 'Meeting is not available for joining at this time'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate video meeting URL with user info
+        user_name = request.user.get_full_name() or request.user.email
+        
+        if meeting.platform == 'daily':
+            # For Daily.co, we'll use the room URL directly
+            # The frontend will handle token generation for authentication
+            join_url = meeting.video_join_url
+            
+            # If Daily.co room URL is empty, fallback to Jitsi
+            if not join_url:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Daily.co room URL is empty for meeting {meeting.id}, falling back to Jitsi")
+                # Generate a Jitsi URL as fallback
+                jitsi_room_name = f"meeting-{meeting.id}-{meeting.course.code.lower().replace(' ', '-')}"
+                join_url = f"https://meet.jit.si/{jitsi_room_name}"
+        elif meeting.platform == 'jitsi':
+            # Add user display name to the URL
+            base_url = meeting.jitsi_join_url
+            
+            # Add current user info to the URL
+            if '?' in base_url:
+                join_url = f"{base_url}&userInfo.displayName={user_name}"
+            else:
+                join_url = f"{base_url}?userInfo.displayName={user_name}"
+        else:
+            join_url = meeting.meeting_url
+        
+        # Generate Daily.co token if needed
+        daily_token = None
+        if meeting.platform == 'daily' and meeting.daily_room_name:
+            try:
+                from .daily_service import daily_service
+                if daily_service.is_api_configured():
+                    is_owner = request.user == meeting.admin_host or request.user.is_admin
+                    token_data = daily_service.create_meeting_token(
+                        room_name=meeting.daily_room_name,
+                        user_id=str(request.user.id),
+                        user_name=user_name,
+                        is_owner=is_owner
+                    )
+                    daily_token = token_data.get('token')
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to generate Daily.co token: {str(e)}")
+        
+        # Determine the actual platform being used based on the URL
+        actual_platform = meeting.platform
+        if meeting.platform == 'daily' and 'daily.co' not in join_url:
+            actual_platform = 'jitsi'  # Fallback to Jitsi
+        
+        return Response({
+            'meeting_id': meeting.id,
+            'join_url': join_url,
+            'meeting_title': meeting.title,
+            'user_name': user_name,
+            'admin_host': meeting.admin_host.get_full_name() if meeting.admin_host else None,
+            'platform': actual_platform,
+            'daily_token': daily_token if actual_platform == 'daily' else None,
+            'daily_room_name': meeting.daily_room_name if actual_platform == 'daily' else None
+        })
+        
+    except Meeting.DoesNotExist:
+        return Response({'error': 'Meeting not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Timetable-Meeting Integration Views
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_meeting_for_timetable_entry(request, timetable_entry_id):
+    """Create a Jitsi meeting for a specific timetable entry"""
+    try:
+        timetable_entry = TimetableEntry.objects.get(id=timetable_entry_id)
+        
+        # Check if user has permission (admin only for now)
+        if not request.user.is_admin:
+            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Check if meeting already exists
+        existing_meeting = timetable_entry.meetings.filter(
+            platform='jitsi',
+            status__in=['scheduled', 'live']
+        ).first()
+        
+        if existing_meeting:
+            return Response({
+                'message': 'Meeting already exists for this timetable entry',
+                'meeting': MeetingSerializer(existing_meeting).data
+            })
+        
+        # Create meeting for today
+        meeting = timetable_entry.create_meeting_for_today(admin_host=request.user)
+        
+        if not meeting:
+            return Response({'error': 'Failed to create meeting'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Update timetable entry to indicate it has video call
+        timetable_entry.has_video_call = True
+        timetable_entry.save()
+        
+        return Response({
+            'message': 'Meeting created successfully for timetable entry',
+            'meeting': MeetingSerializer(meeting).data,
+            'timetable_entry': TimetableEntrySerializer(timetable_entry).data
+        }, status=status.HTTP_201_CREATED)
+        
+    except TimetableEntry.DoesNotExist:
+        return Response({'error': 'Timetable entry not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_timetable_with_meetings(request):
+    """Get timetable entries with their associated meetings"""
+    queryset = TimetableEntry.objects.all().prefetch_related('meetings', 'course')
+    
+    # Apply filters
+    year = request.query_params.get('year', None)
+    semester = request.query_params.get('semester', None)
+    
+    if year:
+        queryset = queryset.filter(course__year=year)
+    if semester:
+        queryset = queryset.filter(course__semester=semester)
+    
+    serializer = TimetableEntrySerializer(queryset.order_by('day', 'time'), many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def join_timetable_meeting(request, timetable_entry_id):
+    """Join the meeting associated with a timetable entry"""
+    try:
+        timetable_entry = TimetableEntry.objects.get(id=timetable_entry_id)
+        
+        # Get or create meeting for this timetable entry
+        meeting = timetable_entry.get_or_create_meeting_for_today(admin_host=request.user)
+        
+        if not meeting:
+            return Response({'error': 'Failed to create or retrieve meeting'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Check if user can join
+        if not meeting.can_join_now:
+            return Response({'error': 'Meeting is not available for joining at this time'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate join URL
+        user_name = request.user.get_full_name() or request.user.email
+        
+        if meeting.platform == 'daily':
+            # For Daily.co, we'll use the room URL directly
+            join_url = meeting.video_join_url
+            
+            # If Daily.co room URL is empty, fallback to Jitsi
+            if not join_url:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Daily.co room URL is empty for meeting {meeting.id}, falling back to Jitsi")
+                # Generate a Jitsi URL as fallback
+                jitsi_room_name = f"meeting-{meeting.id}-{meeting.course.code.lower().replace(' ', '-')}"
+                join_url = f"https://meet.jit.si/{jitsi_room_name}"
+        elif meeting.platform == 'jitsi':
+            base_url = meeting.jitsi_join_url
+            
+            if '?' in base_url:
+                join_url = f"{base_url}&userInfo.displayName={user_name}"
+            else:
+                join_url = f"{base_url}?userInfo.displayName={user_name}"
+        else:
+            join_url = meeting.meeting_url
+        
+        # Generate Daily.co token if needed
+        daily_token = None
+        if meeting.platform == 'daily' and meeting.daily_room_name:
+            try:
+                from .daily_service import daily_service
+                if daily_service.is_api_configured():
+                    is_owner = request.user == meeting.admin_host or request.user.is_admin
+                    token_data = daily_service.create_meeting_token(
+                        room_name=meeting.daily_room_name,
+                        user_id=str(request.user.id),
+                        user_name=user_name,
+                        is_owner=is_owner
+                    )
+                    daily_token = token_data.get('token')
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to generate Daily.co token: {str(e)}")
+        
+        # Determine the actual platform being used based on the URL
+        actual_platform = meeting.platform
+        if meeting.platform == 'daily' and 'daily.co' not in join_url:
+            actual_platform = 'jitsi'  # Fallback to Jitsi
+        
+        return Response({
+            'meeting_id': meeting.id,
+            'join_url': join_url,
+            'meeting_title': meeting.title,
+            'user_name': user_name,
+            'admin_host': meeting.admin_host.get_full_name() if meeting.admin_host else None,
+            'platform': actual_platform,
+            'daily_token': daily_token if actual_platform == 'daily' else None,
+            'daily_room_name': meeting.daily_room_name if actual_platform == 'daily' else None,
+            'timetable_entry': TimetableEntrySerializer(timetable_entry).data
+        })
+        
+    except TimetableEntry.DoesNotExist:
+        return Response({'error': 'Timetable entry not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_meeting_for_timetable_entry(request, timetable_entry_id):
+    """Delete the meeting associated with a timetable entry"""
+    try:
+        timetable_entry = TimetableEntry.objects.get(id=timetable_entry_id)
+        
+        # Check if user has permission (admin only)
+        if not request.user.is_admin:
+            return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+        
+        # Get meetings for this timetable entry
+        meetings = timetable_entry.meetings.all()
+        
+        if not meetings.exists():
+            return Response({'error': 'No meetings found for this timetable entry'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Delete meetings
+        meeting_count = meetings.count()
+        meetings.delete()
+        
+        # Update timetable entry
+        timetable_entry.has_video_call = False
+        timetable_entry.save()
+        
+        return Response({
+            'message': f'Successfully deleted {meeting_count} meeting(s) for this timetable entry'
+        })
+        
+    except TimetableEntry.DoesNotExist:
+        return Response({'error': 'Timetable entry not found'}, status=status.HTTP_404_NOT_FOUND)

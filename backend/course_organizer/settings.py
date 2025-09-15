@@ -272,6 +272,10 @@ LOGGING = {
             'django': {
                 'handlers': ['console'],
                 'level': 'INFO',
-            },
         },
+    },
 }
+
+# Daily.co Video Call Configuration
+DAILY_API_KEY = os.getenv('DAILY_API_KEY', '')
+DAILY_DOMAIN = os.getenv('DAILY_DOMAIN', 'daily.co')

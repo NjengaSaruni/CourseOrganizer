@@ -86,7 +86,7 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr *ngFor="let timeSlot of timeSlots" class="hover:bg-gray-50">
               <!-- Time Column -->
-              <td class="px-4 py-4 whitespace-nowrap bg-gray-50 border-r border-gray-200">
+              <td class="px-4 py-4 whitespace-nowrap bg-gray-50 border-r border-gray-200">up 
                 <div class="text-sm font-medium text-gray-900 text-center">{{ timeSlot }} - {{ getNextTimeSlot(timeSlot) }}</div>
               </td>
               
@@ -120,6 +120,27 @@
                       <div class="text-gray-600 truncate text-xs mt-1">{{ event.location }}</div>
                       <div class="text-gray-500 truncate text-xs">{{ event.lecturer }}</div>
                       <div class="text-gray-400 truncate text-xs mt-1">{{ event.time }}</div>
+                      
+                      <!-- Video Call Button -->
+                      <div class="mt-2">
+                        <button *ngIf="event.has_meeting && event.can_join_meeting"
+                                (click)="joinVideoCall(getTimetableEntryFromEvent(event))"
+                                [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(event))"
+                                class="w-full px-2 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors cursor-pointer">
+                          📹 Join Video Call
+                        </button>
+                        <button *ngIf="event.has_meeting && !event.can_join_meeting"
+                                [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(event))"
+                                class="w-full px-2 py-1 text-xs bg-blue-600 text-white rounded cursor-not-allowed opacity-75">
+                          📹 Video Call Scheduled
+                        </button>
+                        <button *ngIf="!event.has_meeting && isAdmin"
+                                (click)="createVideoCall(getTimetableEntryFromEvent(event))"
+                                [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(event))"
+                                class="w-full px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors cursor-pointer">
+                          📹 Create Video Call
+                        </button>
+                      </div>
                     </div>
                     
                     <!-- Continuation indicator for partial blocks -->
@@ -177,6 +198,27 @@
                         </svg>
                         {{ event.location }}
                       </div>
+                    </div>
+                    
+                    <!-- Video Call Button in Calendar View -->
+                    <div class="mt-2">
+                      <button *ngIf="event.has_meeting && event.can_join_meeting"
+                              (click)="joinVideoCall(getTimetableEntryFromEvent(event)); $event.stopPropagation()"
+                              [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(event))"
+                              class="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded transition-colors cursor-pointer">
+                        📹 Join Video Call
+                      </button>
+                      <button *ngIf="event.has_meeting && !event.can_join_meeting"
+                              [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(event))"
+                              class="px-3 py-1 text-xs bg-blue-600 text-white rounded cursor-not-allowed opacity-75">
+                        📹 Video Call Scheduled
+                      </button>
+                      <button *ngIf="!event.has_meeting && isAdmin"
+                              (click)="createVideoCall(getTimetableEntryFromEvent(event)); $event.stopPropagation()"
+                              [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(event))"
+                              class="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors cursor-pointer">
+                        📹 Create Video Call
+                      </button>
                     </div>
                   </div>
                   <div class="ml-2">
@@ -242,6 +284,33 @@
               </button>
               <button (click)="deleteEvent()" class="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200">
                 Delete
+              </button>
+            </div>
+            
+            <!-- Video Call Actions -->
+            <div class="flex space-x-2">
+              <button *ngIf="getTimetableEntryFromEvent(selectedEvent)?.has_meeting && getTimetableEntryFromEvent(selectedEvent)?.can_join_meeting"
+                      (click)="joinVideoCall(getTimetableEntryFromEvent(selectedEvent))"
+                      [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(selectedEvent))"
+                      class="px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 cursor-pointer">
+                📹 Join Video Call
+              </button>
+              <button *ngIf="getTimetableEntryFromEvent(selectedEvent)?.has_meeting && !getTimetableEntryFromEvent(selectedEvent)?.can_join_meeting"
+                      [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(selectedEvent))"
+                      class="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md cursor-not-allowed opacity-75">
+                📹 Video Call Scheduled
+              </button>
+              <button *ngIf="!getTimetableEntryFromEvent(selectedEvent)?.has_meeting && isAdmin"
+                      (click)="createVideoCall(getTimetableEntryFromEvent(selectedEvent))"
+                      [title]="getVideoCallButtonTooltip(getTimetableEntryFromEvent(selectedEvent))"
+                      class="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 cursor-pointer">
+                📹 Create Video Call
+              </button>
+              <button *ngIf="getTimetableEntryFromEvent(selectedEvent)?.has_meeting && isAdmin"
+                      (click)="deleteVideoCall(getTimetableEntryFromEvent(selectedEvent))"
+                      title="Delete the video call for this class"
+                      class="px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 cursor-pointer">
+                🗑️ Delete Video Call
               </button>
             </div>
             

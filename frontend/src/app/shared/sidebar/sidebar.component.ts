@@ -10,7 +10,7 @@ import { AuthService, User } from '../../core/auth.service';
   template: `
     <!-- Desktop Sidebar -->
     <div class="hidden md:flex md:w-72 md:flex-col">
-      <div class="flex flex-col flex-grow bg-white overflow-y-auto border-r border-gray-200">
+      <div class="flex flex-col h-screen bg-white overflow-y-auto border-r border-gray-200">
         <!-- Header -->
         <div class="flex items-center flex-shrink-0 px-6 py-6 space-x-3">
           <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -205,7 +205,7 @@ import { AuthService, User } from '../../core/auth.service';
             </svg>
           </button>
         </div>
-        <div class="flex-1 h-0 pt-6 pb-4 overflow-y-auto">
+        <div class="flex-1 pt-6 pb-4 overflow-y-auto max-h-screen">
           <!-- Header -->
           <div class="flex-shrink-0 flex items-center px-6 space-x-3 mb-8">
             <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -405,6 +405,20 @@ export class SidebarComponent {
     this.authService.currentUser$.subscribe(user => {
       this.currentUser = user;
     });
+    
+    // Refresh user data only if we don't have class rep role information
+    const user = this.authService.getCurrentUser();
+    if (user && user.user_type === 'student' && !user.class_rep_role) {
+      console.log('Refreshing user data to get class rep role information');
+      this.authService.refreshUserData().subscribe({
+        next: (refreshedUser) => {
+          console.log('User data refreshed in sidebar:', refreshedUser);
+        },
+        error: (error) => {
+          console.error('Error refreshing user data in sidebar:', error);
+        }
+      });
+    }
   }
 
   toggleSidebar(): void {
@@ -424,12 +438,6 @@ export class SidebarComponent {
       class_rep_role: user?.class_rep_role,
       is_active: user?.class_rep_role?.is_active
     });
-    
-    // For testing: show announcements link for all students
-    // TODO: Remove this and use proper class rep role check
-    if (user?.user_type === 'student') {
-      return true;
-    }
     
     return user?.user_type === 'student' && user?.class_rep_role?.is_active === true;
   }

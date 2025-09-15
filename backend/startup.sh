@@ -8,9 +8,14 @@ set -e
 echo "🚀 Starting Course Organizer Application..."
 echo "============================================="
 
+# Debug environment variables
+echo "🔍 Environment Debug:"
+echo "PORT: ${PORT:-'not set'}"
+
 # Wait for database to be ready
-echo "⏳ Waiting for database connection..."
+echo "⏳ Running database migrations..."
 python manage.py migrate --noinput
+echo "✅ Database migrations complete"
 
 # Set up admin account if ADMIN_PASSWORD is provided
 if [ ! -z "$ADMIN_PASSWORD" ]; then
@@ -40,5 +45,13 @@ fi
 
 echo "🌐 Starting Django server..."
 
+# Use Railway's PORT env var, but default to 8000 for development
+SERVER_PORT=${PORT:-8000}
+echo "Starting Django development server on port: $SERVER_PORT"
+
 # Start the Django server
-exec python manage.py runserver 0.0.0.0:$PORT
+echo "🚀 Starting Django development server..."
+echo "Server will be available at: http://0.0.0.0:$SERVER_PORT"
+
+# Start the Django server
+exec python manage.py runserver 0.0.0.0:$SERVER_PORT

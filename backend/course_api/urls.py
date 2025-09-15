@@ -30,11 +30,26 @@ urlpatterns = [
     path('timetable/create/', views.TimetableEntryCreateView.as_view(), name='timetable_create'),
     path('timetable/<int:pk>/update/', views.TimetableEntryUpdateView.as_view(), name='timetable_update'),
     path('timetable/<int:pk>/delete/', views.TimetableEntryDeleteView.as_view(), name='timetable_delete'),
+    path('timetable/with-meetings/', views.get_timetable_with_meetings, name='timetable_with_meetings'),
     
     # Other endpoints
     path('materials/', views.CourseMaterialListView.as_view(), name='materials_list'),
     path('recordings/', views.RecordingListView.as_view(), name='recordings_list'),
     path('meetings/', views.MeetingListView.as_view(), name='meetings_list'),
+    
+    # Jitsi Meeting endpoints
+    path('meetings/jitsi/create/', views.create_jitsi_meeting, name='create_jitsi_meeting'),
+    path('meetings/jitsi/<int:meeting_id>/', views.get_jitsi_meeting, name='get_jitsi_meeting'),
+    path('meetings/<int:meeting_id>/status/', views.update_meeting_status, name='update_meeting_status'),
+    path('meetings/<int:meeting_id>/join/', views.join_meeting, name='join_meeting'),
+    path('meetings/<int:meeting_id>/recording/start/', views.start_jitsi_recording, name='start_jitsi_recording'),
+    path('meetings/<int:meeting_id>/recording/stop/', views.stop_jitsi_recording, name='stop_jitsi_recording'),
+    path('meetings/<int:meeting_id>/recordings/', views.get_meeting_recordings, name='get_meeting_recordings'),
+    
+    # Timetable-Meeting Integration endpoints
+    path('timetable/<int:timetable_entry_id>/create-meeting/', views.create_meeting_for_timetable_entry, name='create_meeting_for_timetable_entry'),
+    path('timetable/<int:timetable_entry_id>/join-meeting/', views.join_timetable_meeting, name='join_timetable_meeting'),
+    path('timetable/<int:timetable_entry_id>/delete-meeting/', views.delete_meeting_for_timetable_entry, name='delete_meeting_for_timetable_entry'),
     
     # Admin course management endpoints
     path('admin/courses/', views.get_admin_courses, name='admin_courses'),

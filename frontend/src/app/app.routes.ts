@@ -4,6 +4,7 @@ import { AdminGuard } from './core/admin.guard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent) },
+  { path: 'about', loadComponent: () => import('./features/about/about.component').then(m => m.AboutComponent) },
   { path: 'login', loadComponent: () => import('./features/login/login.component').then(m => m.LoginComponent) },
   { path: 'register', loadComponent: () => import('./features/register/register.component').then(m => m.RegisterComponent) },
   { path: 'privacy-policy', loadComponent: () => import('./features/privacy-policy/privacy-policy.component').then(m => m.PrivacyPolicyComponent) },

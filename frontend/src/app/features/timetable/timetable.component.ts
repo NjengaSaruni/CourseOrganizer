@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { CourseService, TimetableEntry } from '../../core/course.service';
 import { AuthService } from '../../core/auth.service';
 import { CalendarService, CalendarEvent as CalendarEventType } from '../../core/calendar.service';
+import { VideoCallService, VideoCallResponse } from '../../core/video-call.service';
 import { LoaderComponent } from '../../shared/loader/loader.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 
@@ -19,6 +20,9 @@ interface CalendarEvent {
   color: string;
   day: string;
   time: string;
+  has_meeting?: boolean;
+  can_join_meeting?: boolean;
+  meeting_id?: number;
 }
 
 @Component({
@@ -57,6 +61,7 @@ export class TimetableComponent implements OnInit {
     private courseService: CourseService,
     private authService: AuthService,
     private calendarService: CalendarService,
+    private videoCallService: VideoCallService,
     private cdr: ChangeDetectorRef,
     private router: Router
   ) {}
@@ -76,7 +81,7 @@ export class TimetableComponent implements OnInit {
 
   private loadTimetable(): void {
     this.isLoading = true;
-    this.courseService.getTimetable().subscribe({
+    this.courseService.getTimetableWithMeetings().subscribe({
       next: (timetable) => {
         this.timetable = timetable;
         this.calendarEvents = this.convertToCalendarEvents(timetable);
@@ -106,7 +111,10 @@ export class TimetableComponent implements OnInit {
         course: entry.subject,
         color: color,
         day: entry.day,
-        time: entry.time
+        time: entry.time,
+        has_meeting: entry.has_meeting,
+        can_join_meeting: entry.can_join_meeting,
+        meeting_id: entry.meeting_id
       };
     });
   }
@@ -430,5 +438,117 @@ export class TimetableComponent implements OnInit {
         });
       }
     }
+  }
+
+  // Video Call Methods
+  createVideoCall(timetableEntry: any): void {
+    if (!this.isAdmin) {
+      alert('Only administrators can create video calls for classes.');
+      return;
+    }
+
+    this.videoCallService.createVideoCallForTimetable(timetableEntry.id).subscribe({
+      next: (response) => {
+        console.log('Video call created successfully:', response);
+        alert('Video call created successfully! Students can now join the class.');
+        this.loadTimetable(); // Reload timetable to show the new meeting
+      },
+      error: (error) => {
+        console.error('Error creating video call:', error);
+        if (error.error?.message) {
+          alert(error.error.message);
+        } else {
+          alert('Error creating video call. Please try again.');
+        }
+      }
+    });
+  }
+
+  joinVideoCall(timetableEntry: any): void {
+    this.videoCallService.joinTimetableMeeting(timetableEntry.id).subscribe({
+      next: (response: VideoCallResponse) => {
+        console.log('Joining video call:', response);
+        // Use the embedded video call service to open the video call in the header
+        this.videoCallService.openEmbeddedVideoCall(response);
+      },
+      error: (error) => {
+        console.error('Error joining video call:', error);
+        if (error.error?.message) {
+          alert(error.error.message);
+        } else {
+          alert('Error joining video call. Please try again.');
+        }
+      }
+    });
+  }
+
+  deleteVideoCall(timetableEntry: any): void {
+    if (!this.isAdmin) {
+      alert('Only administrators can delete video calls.');
+      return;
+    }
+
+    if (confirm('Are you sure you want to delete the video call for this class?')) {
+      this.videoCallService.deleteVideoCallForTimetable(timetableEntry.id).subscribe({
+        next: (response) => {
+          console.log('Video call deleted successfully:', response);
+          alert('Video call deleted successfully.');
+          this.loadTimetable(); // Reload timetable
+        },
+        error: (error) => {
+          console.error('Error deleting video call:', error);
+          if (error.error?.message) {
+            alert(error.error.message);
+          } else {
+            alert('Error deleting video call. Please try again.');
+          }
+        }
+      });
+    }
+  }
+
+  getVideoCallButtonText(timetableEntry: any): string {
+    if (timetableEntry.has_meeting) {
+      if (timetableEntry.can_join_meeting) {
+        return 'Join Video Call';
+      } else {
+        return 'Video Call Scheduled';
+      }
+    } else {
+      return 'Create Video Call';
+    }
+  }
+
+  getVideoCallButtonTooltip(timetableEntry: any): string {
+    if (timetableEntry.has_meeting) {
+      if (timetableEntry.can_join_meeting) {
+        return 'Click to join the video call';
+      } else {
+        return 'Video call is scheduled for this class';
+      }
+    } else {
+      return 'Create a video call for this class (Admin only)';
+    }
+  }
+
+  getVideoCallButtonClass(timetableEntry: any): string {
+    if (timetableEntry.has_meeting) {
+      if (timetableEntry.can_join_meeting) {
+        return 'bg-green-600 hover:bg-green-700 text-white';
+      } else {
+        return 'bg-blue-600 text-white cursor-not-allowed';
+      }
+    } else {
+      return 'bg-blue-600 hover:bg-blue-700 text-white';
+    }
+  }
+
+  getTimetableEntryFromEvent(event: CalendarEvent): any {
+    // Find the corresponding timetable entry from the calendar event
+    return this.timetable.find(entry => 
+      entry.day.toLowerCase() === event.day.toLowerCase() &&
+      entry.time === event.time &&
+      entry.subject === event.course
+    );
   }
 }

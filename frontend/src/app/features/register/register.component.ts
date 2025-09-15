@@ -18,14 +18,14 @@ import { AuthService, RegistrationResponse } from '../../core/auth.service';
                  class="h-12 w-auto">
           </div>
           <h2 class="text-3xl font-semibold text-gray-900 mb-2">
-            Join Class of 2029
+            Join Course Organizer
           </h2>
           <p class="text-gray-600 mb-4">
-            University of Nairobi - School of Law Module II Evening Students
+            University of Nairobi - Class of 2029 Students
           </p>
           <div class="bg-gray-50 border border-gray-200 rounded-xl p-4">
             <p class="text-sm text-gray-700">
-              <span class="font-semibold">Class of 2029:</span> First-year law students starting in 2025
+              <span class="font-semibold">Eligible:</span> First-year law students with GPR3/XXXXXX/2025 registration number
             </p>
           </div>
         </div>
@@ -175,11 +175,10 @@ import { AuthService, RegistrationResponse } from '../../core/auth.service';
             <div class="bg-blue-50 border border-blue-200 rounded-xl p-6">
               <div class="text-center">
                 <h3 class="text-sm font-semibold text-blue-900 mb-2">
-                  Manual Verification Process
+                  Verification Process
                 </h3>
                 <p class="text-sm text-blue-700">
-                  Your registration will be manually verified during in-person meetings with GRP3/*/2025 classmates. 
-                  You'll be notified once your account is approved.
+                  Your registration will be verified by administrators. You'll receive a passcode via SMS once approved.
                 </p>
               </div>
             </div>

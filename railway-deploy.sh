@@ -1,12 +1,14 @@
 #!/bin/bash
 
-# Railway Deployment Script
-# This script handles both first-time and subsequent Railway deployments
+# Railway Development/Staging Deployment Script
+# This script deploys to the 'uoncourseorganizer' project using Django dev server
+# Uses Dockerfile (not Dockerfile.prod) for development environment
 
 set -e
 
-echo "🚀 Railway Deployment Script"
-echo "============================"
+echo "🚀 Railway Development/Staging Deployment Script"
+echo "=================================================="
+echo "Target: uoncourseorganizer project (Django dev server)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -66,32 +68,84 @@ if [ -f "nixpacks.toml" ]; then
     rm nixpacks.toml
 fi
 
-# Ensure railway.json is configured for Dockerfile
+# Create development railway.json (remove production config)
 if [ -f "railway.json" ]; then
-    if grep -q '"builder": "NIXPACKS"' railway.json; then
-        print_status "Updating railway.json to use Dockerfile..."
-        sed -i.bak 's/"builder": "NIXPACKS"/"builder": "DOCKERFILE"/g' railway.json
-    fi
+    print_status "Creating development railway.json configuration..."
+    mv railway.json railway.json.prod.bak
+    print_warning "Backed up production railway.json as railway.json.prod.bak"
 fi
+
+# Create minimal railway.json for development
+cat > railway.json << EOF
+{
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "./startup.sh",
+    "healthcheckPath": "/api/",
+    "healthcheckTimeout": 300
+  }
+}
+EOF
+print_status "Created development railway.json configuration"
 
 print_success "Docker deployment preparation complete"
 
-# Check if this is a first-time deployment
+# Set target project
+TARGET_PROJECT="uoncourseorganizer"
+print_status "Target project: $TARGET_PROJECT"
+
+# Check if we can link to the target project
 print_status "Checking Railway project status..."
-if ! railway status >/dev/null 2>&1; then
-    print_status "First-time deployment detected. Setting up project..."
-    railway init course-organizer
+if railway link --project $TARGET_PROJECT >/dev/null 2>&1; then
+    print_status "Successfully linked to existing project: $TARGET_PROJECT"
+    
+    # Check if we're linked to a service
+    if ! railway service >/dev/null 2>&1; then
+        print_status "No service linked. Listing available services..."
+        railway service list
+        
+        print_status "Linking to development backend service..."
+        if railway service course-organizer-backend >/dev/null 2>&1; then
+            print_success "Linked to course-organizer-backend service"
+        else
+            print_warning "Service course-organizer-backend not found. Available services:"
+            railway service list
+            echo ""
+            print_warning "Please enter the correct service name from the list above:"
+            read -p "Service name: " SERVICE_NAME
+            if railway service "$SERVICE_NAME" >/dev/null 2>&1; then
+                print_success "Linked to $SERVICE_NAME service"
+            else
+                print_error "Failed to link to service: $SERVICE_NAME"
+                exit 1
+            fi
+        fi
+    fi
+else
+    print_status "Creating new development project: $TARGET_PROJECT"
+    railway init $TARGET_PROJECT
     print_status "Adding PostgreSQL database..."
     railway add --database postgres
     print_status "Adding main application service..."
     railway add --service course-organizer-backend
     print_status "Linking to main service..."
     railway service course-organizer-backend
-    print_success "Project setup complete"
-else
-    print_status "Existing project detected."
-    railway status
+    print_success "Development project setup complete"
 fi
+
+# Verify we're linked to the correct project and service
+print_status "Verifying project and service connection..."
+if ! railway service >/dev/null 2>&1; then
+    print_error "No service linked. Cannot continue with deployment."
+    exit 1
+fi
+
+# Show current project info
+print_status "Current project info:"
+railway status
 
 # Generate secret key
 SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))")
@@ -99,8 +153,8 @@ SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghi
 # Set environment variables
 print_status "Setting up environment variables..."
 railway variables --set "SECRET_KEY=$SECRET_KEY"
-railway variables --set "DEBUG=false"
-railway variables --set "ALLOWED_HOSTS=*.railway.app"
+railway variables --set "DEBUG=true"
+railway variables --set "ALLOWED_HOSTS=*.railway.app,healthcheck.railway.app,localhost,127.0.0.1"
 railway variables --set "CORS_ALLOWED_ORIGINS=https://*.railway.app"
 
 # Ask for admin password

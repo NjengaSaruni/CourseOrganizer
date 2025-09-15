@@ -1,12 +1,14 @@
 #!/bin/bash
 
 # Railway Production Deployment Script
-# This script deploys to a separate production Railway service with nginx and gunicorn
+# This script deploys to the 'course-organizer-prod' project using Nginx + Gunicorn
+# Uses Dockerfile.prod for production environment with optimized build
 
 set -e
 
 echo "🚀 Railway Production Deployment Script"
 echo "========================================"
+echo "Target: course-organizer-prod project (Nginx + Gunicorn)"
 
 # Colors for output
 RED='\033[0;31m'
@@ -50,6 +52,28 @@ if ! railway whoami >/dev/null 2>&1; then
 fi
 
 print_success "Prerequisites check passed"
+
+# Ensure railway.json exists for production deployment
+if [ ! -f "railway.json" ]; then
+    if [ -f "railway.json.prod.bak" ]; then
+        print_status "Restoring railway.json from backup for production deployment..."
+        mv railway.json.prod.bak railway.json
+    else
+        print_error "railway.json not found and no backup available!"
+        print_error "Please ensure railway.json exists for production deployment."
+        exit 1
+    fi
+fi
+
+# Verify railway.json is configured for production
+if [ -f "railway.json" ]; then
+    if grep -q '"dockerfilePath": "Dockerfile.prod"' railway.json; then
+        print_success "railway.json correctly configured for production (Dockerfile.prod)"
+    else
+        print_warning "railway.json may not be configured for production deployment"
+        print_warning "Expected: dockerfilePath: Dockerfile.prod"
+    fi
+fi
 
 # Check if production project exists
 print_status "Checking Railway production project status..."
@@ -104,6 +128,10 @@ fi
 CURRENT_SERVICE=$(railway service 2>/dev/null || echo "unknown")
 print_success "Linked to service: $CURRENT_SERVICE"
 
+# Show current project info
+print_status "Current project info:"
+railway status
+
 # Generate production secret key
 SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))")
 
@@ -111,7 +139,7 @@ SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghi
 print_status "Setting up production environment variables..."
 railway variables --set "SECRET_KEY=$SECRET_KEY"
 railway variables --set "DEBUG=false"
-railway variables --set "ALLOWED_HOSTS=*.railway.app,co.riverlearn.co.ke"
+railway variables --set "ALLOWED_HOSTS=*.railway.app,co.riverlearn.co.ke,healthcheck.railway.app"
 railway variables --set "CORS_ALLOWED_ORIGINS=https://*.railway.app,https://co.riverlearn.co.ke"
 railway variables --set "CSRF_TRUSTED_ORIGINS=https://*.railway.app,https://co.riverlearn.co.ke"
 

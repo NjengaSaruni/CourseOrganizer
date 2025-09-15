@@ -6,7 +6,6 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('course_api', '0002_alter_course_target_classes'),
         ('directory', '0003_alter_user_student_class'),
     ]
 

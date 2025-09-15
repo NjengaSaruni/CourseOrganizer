@@ -33,16 +33,16 @@ export interface Announcement {
   is_pinned: boolean;
   expires_at: string | null;
   attachment?: string | null;
+  student_class?: number | {
+    id: number;
+    display_name: string;
+  };
   created_at?: string;
   updated_at?: string;
   sender?: {
     id: number;
     full_name: string;
     registration_number: string;
-  };
-  student_class?: {
-    id: number;
-    display_name: string;
   };
 }
 
@@ -138,15 +138,7 @@ export class CommunicationService {
     );
   }
 
-  // Get current user's class rep role
-  getClassRepRole(): Observable<ClassRepRole | null> {
-    return this.http.get<ClassRepRole | null>(`${this.apiUrl}/communication/class-reps/my-role/`).pipe(
-      catchError(error => {
-        console.error('Error fetching class rep role:', error);
-        return throwError(() => error);
-      })
-    );
-  }
+  // Note: Class rep role is now included in user data, no separate endpoint needed
 
   deleteClassRep(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/communication/class-reps/${id}/`).pipe(
@@ -295,8 +287,9 @@ export class CommunicationService {
   }
 
   // Announcement methods
-  getAnnouncements(): Observable<Announcement[]> {
-    return this.http.get<Announcement[]>(`${this.apiUrl}/communication/announcements/`).pipe(
+  getAnnouncements(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/communication/announcements/`).pipe(
+      map(response => response),
       catchError(error => {
         console.error('Error fetching announcements:', error);
         return throwError(() => error);
@@ -306,6 +299,7 @@ export class CommunicationService {
 
   createAnnouncement(announcement: Announcement): Observable<Announcement> {
     return this.http.post<Announcement>(`${this.apiUrl}/communication/announcements/`, announcement).pipe(
+      map(response => response),
       catchError(error => {
         console.error('Error creating announcement:', error);
         return throwError(() => error);

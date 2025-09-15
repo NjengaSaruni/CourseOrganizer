@@ -152,6 +152,21 @@ export class AuthService {
     return user !== null && user.is_admin === true;
   }
 
+  refreshUserData(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/directory/auth/profile/`).pipe(
+      map(user => {
+        // Update stored user data
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        this.currentUserSubject.next(user);
+        return user;
+      }),
+      catchError(error => {
+        console.error('Error refreshing user data:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   getAuthToken(): string | null {
     return localStorage.getItem('authToken');
   }

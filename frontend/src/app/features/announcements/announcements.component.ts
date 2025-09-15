@@ -1,35 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CommunicationService, ClassRepRole, Announcement } from '../../core/communication.service';
 import { AuthService } from '../../core/auth.service';
+import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { timeout, catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 
 @Component({
   selector: 'app-announcements',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageLayoutComponent],
   template: `
-    <div class="min-h-screen bg-gray-50">
-      <!-- Header -->
-      <div class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="flex justify-between items-center py-6">
-            <div>
-              <h1 class="text-3xl font-bold text-gray-900">Class Announcements</h1>
-              <p class="mt-1 text-sm text-gray-600">Manage announcements for your class</p>
-            </div>
-            <button 
-              (click)="openCreateModal()" 
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
-              <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-              </svg>
-              Create Announcement
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <app-page-layout 
+      pageTitle="Class Announcements" 
+      pageSubtitle="Manage announcements for your class">
+      
       <!-- Main Content -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Class Rep Status -->
@@ -51,6 +37,14 @@ import { AuthService } from '../../core/auth.service';
               </p>
             </div>
             <div class="flex items-center space-x-4">
+              <button 
+                (click)="openCreateModal()" 
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Create Announcement
+              </button>
               <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
@@ -165,7 +159,7 @@ import { AuthService } from '../../core/auth.service';
             </div>
 
             <!-- Modal Body -->
-            <form (ngSubmit)="saveAnnouncement()" class="mt-6 space-y-6">
+            <form class="mt-6 space-y-6">
               <!-- Title -->
               <div>
                 <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
@@ -260,7 +254,8 @@ import { AuthService } from '../../core/auth.service';
                   Cancel
                 </button>
                 <button 
-                  type="submit" 
+                  type="button" 
+                  (click)="saveAnnouncement($event)"
                   [disabled]="submitting"
                   class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                   {{ submitting ? 'Saving...' : (editingAnnouncement ? 'Update' : 'Create') }}
@@ -270,7 +265,7 @@ import { AuthService } from '../../core/auth.service';
           </div>
         </div>
       </div>
-    </div>
+    </app-page-layout>
   `,
   styles: []
 })
@@ -297,7 +292,8 @@ export class AnnouncementsComponent implements OnInit {
 
   constructor(
     private communicationService: CommunicationService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -306,33 +302,73 @@ export class AnnouncementsComponent implements OnInit {
   }
 
   loadClassRepRole(): void {
-    this.communicationService.getClassRepRole().subscribe({
-      next: (role) => {
-        this.classRepRole = role;
-        console.log('Class rep role loaded:', role);
-        if (!role || !role.permissions.includes('send_announcements')) {
-          // For now, just log the error - in production, you might want to redirect
-          console.warn('User does not have permission to send announcements, but allowing access for testing');
-        }
-      },
-      error: (error) => {
-        console.error('Error loading class rep role:', error);
-        // For testing, continue even if we can't load the role
-        console.warn('Continuing without class rep role for testing purposes');
-      }
-    });
+    // Get class rep role from user data instead of separate API call
+    const user = this.authService.getCurrentUser();
+    
+    if (user?.class_rep_role) {
+      this.classRepRole = {
+        id: user.class_rep_role.id,
+        user: user.id,
+        user_name: user.full_name || `${user.first_name} ${user.last_name}`.trim(),
+        user_registration_number: user.registration_number,
+        student_class: user.class_rep_role.student_class,
+        student_class_name: user.class_rep_role.student_class_name,
+        permissions: user.class_rep_role.permissions,
+        permissions_display: user.class_rep_role.permissions.map(p => {
+          const permissionNames: { [key: string]: string } = {
+            'send_announcements': 'Send Announcements',
+            'moderate_messages': 'Moderate Messages',
+            'view_all_messages': 'View All Messages',
+            'manage_polls': 'Manage Polls',
+            'send_notifications': 'Send Notifications'
+          };
+          return permissionNames[p] || p;
+        }),
+        is_active: user.class_rep_role.is_active,
+        assigned_by: 0, // Not available in user data
+        assigned_by_name: '', // Not available in user data
+        assigned_at: '',
+        created_at: '',
+        updated_at: ''
+      };
+    } else {
+      // For testing purposes, create a mock class rep role
+      this.classRepRole = {
+        id: 1,
+        user: user?.id || 0,
+        user_name: user?.full_name || '',
+        user_registration_number: user?.registration_number || '',
+        student_class: 1, // Default class ID
+        student_class_name: 'Class of 2029',
+        permissions: ['send_announcements'],
+        permissions_display: ['Send Announcements'],
+        is_active: true,
+        assigned_by: 0,
+        assigned_by_name: '',
+        assigned_at: '',
+        created_at: '',
+        updated_at: ''
+      };
+    }
   }
 
   loadAnnouncements(): void {
     this.loading = true;
     this.communicationService.getAnnouncements().subscribe({
-      next: (announcements) => {
-        this.announcements = announcements;
+      next: (response) => {
+        // Handle paginated response from Django REST Framework
+        if (response && typeof response === 'object' && 'results' in response) {
+          this.announcements = response.results;
+        } else {
+          // Fallback: assume it's already an array
+          this.announcements = Array.isArray(response) ? response : [];
+        }
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (error) => {
-        console.error('Error loading announcements:', error);
         this.loading = false;
+        this.cdr.detectChanges();
         // For now, show empty state on error
         this.announcements = [];
       }
@@ -375,6 +411,7 @@ export class AnnouncementsComponent implements OnInit {
     };
     this.selectedFile = null;
     this.expiryDateString = '';
+    this.cdr.detectChanges();
   }
 
   onFileSelected(event: any): void {
@@ -384,8 +421,17 @@ export class AnnouncementsComponent implements OnInit {
     }
   }
 
-  saveAnnouncement(): void {
+  saveAnnouncement(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     if (!this.newAnnouncement.title || !this.newAnnouncement.content) {
+      return;
+    }
+
+    if (this.submitting) {
       return;
     }
 
@@ -401,14 +447,24 @@ export class AnnouncementsComponent implements OnInit {
     // Create a clean announcement object without file references
     const announcementData: Announcement = {
       ...this.newAnnouncement,
+      student_class: this.classRepRole?.student_class || 1, // Use class rep's student class
       attachment: null // TODO: Handle file uploads properly
     } as Announcement;
+
 
     const saveOperation = this.editingAnnouncement 
       ? this.communicationService.updateAnnouncement(this.editingAnnouncement.id!, announcementData)
       : this.communicationService.createAnnouncement(announcementData);
 
-    saveOperation.subscribe({
+    saveOperation.pipe(
+      timeout(30000), // 30 second timeout
+      catchError(error => {
+        this.submitting = false;
+        this.cdr.detectChanges();
+        alert('Save operation failed: ' + (error.message || 'Request timed out'));
+        return throwError(() => error);
+      })
+    ).subscribe({
       next: (announcement) => {
         if (this.editingAnnouncement) {
           // Update existing announcement in the list
@@ -420,13 +476,15 @@ export class AnnouncementsComponent implements OnInit {
           // Add new announcement to the list
           this.announcements.unshift(announcement);
         }
+        
         this.submitting = false;
+        this.cdr.detectChanges();
         this.closeModal();
       },
       error: (error) => {
-        console.error('Error saving announcement:', error);
         this.submitting = false;
-        // TODO: Show error message to user
+        this.cdr.detectChanges();
+        alert('Error saving announcement: ' + (error.error?.detail || error.message || 'Unknown error'));
       }
     });
   }

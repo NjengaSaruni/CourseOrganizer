@@ -34,6 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
     is_class_of_2029 = serializers.ReadOnlyField()
     is_first_year_law_student = serializers.ReadOnlyField()
     is_admin = serializers.ReadOnlyField()
+    class_rep_role = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -42,9 +43,26 @@ class UserSerializer(serializers.ModelSerializer):
                  'academic_year', 'academic_year_display', 'student_class', 'student_class_display',
                  'current_year', 'current_semester', 'year_display', 'semester_display', 
                  'class_of', 'class_display_name', 'is_class_of_2029', 'is_first_year_law_student',
-                 'profile_picture', 'bio', 'registration_info', 'is_active', 'date_joined', 'is_admin']
+                 'profile_picture', 'bio', 'registration_info', 'is_active', 'date_joined', 'is_admin', 'class_rep_role']
         read_only_fields = ['id', 'date_joined', 'registration_info', 'class_display_name', 
-                           'is_class_of_2029', 'is_first_year_law_student', 'is_admin']
+                           'is_class_of_2029', 'is_first_year_law_student', 'is_admin', 'class_rep_role']
+
+    def get_class_rep_role(self, obj):
+        """Get class rep role information for the user"""
+        try:
+            from communication.models import ClassRepRole
+            class_rep_role = ClassRepRole.objects.get(user=obj, is_active=True)
+            return {
+                'id': class_rep_role.id,
+                'is_active': class_rep_role.is_active,
+                'permissions': class_rep_role.permissions,
+                'student_class': class_rep_role.student_class.id,
+                'student_class_name': class_rep_role.student_class.display_name,
+                'assigned_at': class_rep_role.assigned_at.isoformat() if class_rep_role.assigned_at else None,
+                'assigned_by_name': class_rep_role.assigned_by.get_full_name() if class_rep_role.assigned_by else None
+            }
+        except:
+            return None
 
 
 class StudentSerializer(serializers.ModelSerializer):

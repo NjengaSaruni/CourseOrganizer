@@ -35,12 +35,29 @@ export interface Meeting {
   title: string;
   description: string;
   meeting_url: string;
+  meeting_id: string;
+  platform: string;
+  platform_display: string;
+  status: string;
+  status_display: string;
   scheduled_time: string;
   duration: string;
+  is_recording_enabled: boolean;
+  recording_url: string;
   course: number;
   created_by: number;
   created_by_name: string;
   created_at: string;
+  updated_at: string;
+  is_live: boolean;
+  can_join: boolean;
+  
+  // Daily.co specific fields
+  daily_room_name?: string;
+  daily_room_id?: string;
+  daily_room_url?: string;
+  max_participants?: number;
+  video_join_url?: string;
 }
 
 export interface Recording {
@@ -64,6 +81,10 @@ export interface TimetableEntry {
   group: string;
   lecturer: string;
   course: number;
+  has_video_call: boolean;
+  has_meeting: boolean;
+  meeting_id?: number;
+  can_join_meeting: boolean;
   created_at: string;
 }
 
@@ -186,6 +207,80 @@ export class CourseService {
         }
         return response;
       }),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  // Jitsi Meeting Methods
+  createJitsiMeeting(meetingData: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/meetings/jitsi/create/`, meetingData).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  getJitsiMeeting(meetingId: number): Observable<Meeting> {
+    return this.http.get<Meeting>(`${this.apiUrl}/meetings/jitsi/${meetingId}/`).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  updateMeetingStatus(meetingId: number, status: string): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/meetings/${meetingId}/status/`, { status }).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  joinMeeting(meetingId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/meetings/${meetingId}/join/`, {}).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  startJitsiRecording(meetingId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/meetings/${meetingId}/recording/start/`, {}).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  stopJitsiRecording(meetingId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/meetings/${meetingId}/recording/stop/`, {}).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  getMeetingRecordings(meetingId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/meetings/${meetingId}/recordings/`).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  // Timetable-Meeting Integration Methods
+  getTimetableWithMeetings(): Observable<TimetableEntry[]> {
+    return this.http.get<any>(`${this.apiUrl}/timetable/with-meetings/`).pipe(
+      map(response => {
+        if (response.results) {
+          return response.results;
+        }
+        return response;
+      }),
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  createMeetingForTimetableEntry(timetableEntryId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/timetable/${timetableEntryId}/create-meeting/`, {}).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  joinTimetableMeeting(timetableEntryId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/timetable/${timetableEntryId}/join-meeting/`, {}).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  deleteMeetingForTimetableEntry(timetableEntryId: number): Observable<any> {
+    return this.http.delete<any>(`${this.apiUrl}/timetable/${timetableEntryId}/delete-meeting/`).pipe(
       catchError(this.handleAuthError.bind(this))
     );
   }

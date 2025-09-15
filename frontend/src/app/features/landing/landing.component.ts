@@ -11,23 +11,23 @@ import { AuthService } from '../../core/auth.service';
     <div class="min-h-screen bg-white">
       <!-- Header -->
       <div class="bg-white border-b border-gray-200">
-        <div class="max-w-6xl mx-auto px-6">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
           <div class="flex justify-between items-center py-4">
             <div class="flex items-center">
-              <div class="flex-shrink-0 flex items-center space-x-3">
+              <div class="flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
                 <img src="/courseorganizerlogo.png" 
                      alt="Course Organizer Logo" 
-                     class="h-10 w-auto">
-                <h1 class="text-xl font-semibold text-gray-900">Course Organizer</h1>
+                     class="h-8 sm:h-10 w-auto">
+                <h1 class="text-lg sm:text-xl font-semibold text-gray-900">Course Organizer</h1>
               </div>
             </div>
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-1 sm:space-x-3">
               <a routerLink="/login" 
-                 class="text-gray-600 hover:text-gray-900 px-4 py-2 text-sm font-medium transition-colors">
+                 class="text-gray-600 hover:text-gray-900 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors">
                 Sign In
               </a>
               <a routerLink="/register" 
-                 class="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2 rounded-full text-sm font-medium transition-colors">
+                 class="bg-gray-900 hover:bg-gray-800 text-white px-3 sm:px-6 py-2 rounded-full text-xs sm:text-sm font-medium transition-colors">
                 Get Started
               </a>
             </div>
@@ -603,19 +603,103 @@ import { AuthService } from '../../core/auth.service';
       </div>
 
       <!-- Footer -->
-      <div class="bg-gray-900 text-white py-12">
-        <div class="max-w-4xl mx-auto px-6">
-          <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div class="text-center md:text-left">
-              <p class="text-gray-400">
-                © 2025 RiverLearn Inc. - Course Organizer. All rights reserved.
+      <div class="bg-gray-900 text-white">
+        <div class="max-w-6xl mx-auto px-6 py-16">
+          <!-- Main Footer Content -->
+          <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+            <!-- Company Info -->
+            <div class="lg:col-span-2">
+              <div class="flex items-center space-x-3 mb-4">
+                <img src="/courseorganizerlogo.png" 
+                     alt="Course Organizer Logo" 
+                     class="h-8 w-auto">
+                <h3 class="text-xl font-semibold">Course Organizer</h3>
+              </div>
+              <p class="text-gray-400 mb-6 max-w-md">
+                Empowering University of Nairobi students with a comprehensive digital platform for academic success. Built by RiverLearn Inc.
               </p>
+              <div class="space-y-2">
+                <p class="text-gray-400 text-sm">
+                  <span class="font-medium text-white">Company:</span> RiverLearn Inc.
+                </p>
+                <p class="text-gray-400 text-sm">
+                  <span class="font-medium text-white">Location:</span> Nairobi, Kenya
+                </p>
+                <p class="text-gray-400 text-sm">
+                  <span class="font-medium text-white">Established:</span> 2025
+                </p>
+              </div>
             </div>
-            <div class="flex space-x-6">
-              <a routerLink="/privacy-policy" 
-                 class="text-gray-400 hover:text-white transition-colors text-sm">
-                Privacy Policy
-              </a>
+
+            <!-- Quick Links -->
+            <div>
+              <h4 class="text-lg font-semibold mb-4">Quick Links</h4>
+              <ul class="space-y-3">
+                <li>
+                  <a routerLink="/" class="text-gray-400 hover:text-white transition-colors">
+                    Home
+                  </a>
+                </li>
+                <li>
+                  <a routerLink="/about" class="text-gray-400 hover:text-white transition-colors">
+                    About Us
+                  </a>
+                </li>
+                <li>
+                  <a routerLink="/register" class="text-gray-400 hover:text-white transition-colors">
+                    Register
+                  </a>
+                </li>
+                <li>
+                  <a routerLink="/login" class="text-gray-400 hover:text-white transition-colors">
+                    Sign In
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Support -->
+            <div>
+              <h4 class="text-lg font-semibold mb-4">Support</h4>
+              <ul class="space-y-3">
+                <li>
+                  <a routerLink="/privacy-policy" class="text-gray-400 hover:text-white transition-colors">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="mailto:support@riverlearn.co.ke" class="text-gray-400 hover:text-white transition-colors">
+                    Contact Support
+                  </a>
+                </li>
+                <li>
+                  <span class="text-gray-400">For Class of 2029 Students</span>
+                </li>
+                <li>
+                  <span class="text-gray-400">University of Nairobi</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Bottom Footer -->
+          <div class="border-t border-gray-800 pt-8">
+            <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+              <div class="text-center md:text-left">
+                <p class="text-gray-400 text-sm">
+                  © 2025 RiverLearn Inc. All rights reserved. | Incorporated in Kenya
+                </p>
+                <p class="text-gray-500 text-xs mt-1">
+                  Course Organizer is a product of RiverLearn Inc., a technology company focused on educational solutions.
+                </p>
+              </div>
+              <div class="flex items-center space-x-6">
+                <span class="text-gray-500 text-sm">Made with ❤️ in Kenya</span>
+                <div class="flex items-center space-x-2">
+                  <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span class="text-gray-400 text-sm">System Online</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
