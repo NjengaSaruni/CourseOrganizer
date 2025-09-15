@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { CourseService } from './course.service';
 
 export interface VideoCallResponse {
   meeting_id: number;
@@ -25,7 +26,7 @@ export class VideoCallService {
   private currentCallFrame: any = null;
   private pendingVideoCallData: VideoCallResponse | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private courseService: CourseService) {}
 
   /**
    * Check if Daily.co SDK is properly loaded
@@ -502,7 +503,7 @@ export class VideoCallService {
   private proceedWithVideoCall(videoCallData: VideoCallResponse): void {
     // Determine the actual platform based on the URL, not just the platform field
     const isDailyUrl = videoCallData.join_url && videoCallData.join_url.includes('daily.co');
-    const isJitsiUrl = videoCallData.join_url && videoCallData.join_url.includes('meet.jit.si');
+    const isJitsiUrl = videoCallData.join_url && (videoCallData.join_url.includes('meet.jit.si') || videoCallData.join_url.includes('jitsi.riverlearn.co.ke'));
     
     console.log('Video call platform detection:', {
       declaredPlatform: videoCallData.platform,
@@ -993,7 +994,7 @@ export class VideoCallService {
   private initializeEmbeddedVideoCall(videoCallData: VideoCallResponse, iframe: HTMLIFrameElement, loading: HTMLElement): void {
     // Determine the actual platform based on the URL, not just the platform field
     const isDailyUrl = videoCallData.join_url && videoCallData.join_url.includes('daily.co');
-    const isJitsiUrl = videoCallData.join_url && videoCallData.join_url.includes('meet.jit.si');
+    const isJitsiUrl = videoCallData.join_url && (videoCallData.join_url.includes('meet.jit.si') || videoCallData.join_url.includes('jitsi.riverlearn.co.ke'));
     
     console.log('Platform detection:', {
       declaredPlatform: videoCallData.platform,
@@ -1164,25 +1165,8 @@ export class VideoCallService {
     // Ensure iframe has proper permissions
     this.ensureIframePermissions(iframe);
 
-    // Use join_url or fallback to a generic Jitsi room
-    let jitsiUrl = videoCallData.join_url;
-    if (!jitsiUrl || jitsiUrl.trim() === '') {
-      // Generate a fallback Jitsi URL
-      const roomName = `meeting-${videoCallData.meeting_id}-${Date.now()}`;
-      jitsiUrl = `https://meet.jit.si/${roomName}`;
-      console.log('Generated fallback Jitsi URL:', jitsiUrl);
-    }
-
-    // Set iframe source
-    iframe.src = jitsiUrl;
-    
-    // Handle iframe load
-    iframe.onload = () => {
-      clearTimeout(connectionTimeout);
-      loading.style.display = 'none';
-      iframe.style.display = 'block';
-      console.log('Jitsi iframe loaded successfully');
-    };
+    // Generate JWT token for authenticated Jitsi access
+    this.generateJitsiTokenForCall(videoCallData, iframe, loading, connectionTimeout);
 
     iframe.onerror = () => {
       clearTimeout(connectionTimeout);
@@ -1202,6 +1186,75 @@ export class VideoCallService {
         </div>
       `;
     };
+  }
+
+  /**
+   * Generate JWT token for Jitsi call
+   */
+  private generateJitsiTokenForCall(videoCallData: VideoCallResponse, iframe: HTMLIFrameElement, loading: HTMLElement, connectionTimeout: any): void {
+    // Extract room name from URL or generate one
+    let roomName = this.extractRoomNameFromUrl(videoCallData.join_url);
+    if (!roomName) {
+      roomName = `meeting-${videoCallData.meeting_id}-${Date.now()}`;
+    }
+
+    // Generate JWT token
+    this.courseService.generateJitsiToken(roomName, videoCallData.meeting_id).subscribe({
+      next: (tokenResponse: any) => {
+        console.log('JWT token generated:', tokenResponse);
+        
+        // Use the authenticated room URL
+        const authenticatedUrl = tokenResponse.room_url;
+        iframe.src = authenticatedUrl;
+
+        // Handle iframe load
+        iframe.onload = () => {
+          clearTimeout(connectionTimeout);
+          loading.style.display = 'none';
+          iframe.style.display = 'block';
+          console.log('Authenticated Jitsi iframe loaded successfully');
+        };
+
+        iframe.onerror = () => {
+          clearTimeout(connectionTimeout);
+          console.error('Failed to load authenticated Jitsi iframe');
+          // Fallback to non-authenticated URL
+          const fallbackUrl = `https://jitsi.riverlearn.co.ke/${roomName}`;
+          iframe.src = fallbackUrl;
+        };
+      },
+      error: (error: any) => {
+        console.error('Failed to generate JWT token:', error);
+        clearTimeout(connectionTimeout);
+        
+        // Fallback to non-authenticated URL
+        const fallbackUrl = videoCallData.join_url || `https://jitsi.riverlearn.co.ke/${roomName}`;
+        iframe.src = fallbackUrl;
+        
+        // Handle iframe load for fallback
+        iframe.onload = () => {
+          loading.style.display = 'none';
+          iframe.style.display = 'block';
+          console.log('Fallback Jitsi iframe loaded successfully');
+        };
+      }
+    });
+  }
+
+  /**
+   * Extract room name from Jitsi URL
+   */
+  private extractRoomNameFromUrl(url: string): string | null {
+    if (!url) return null;
+    
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/').filter(part => part);
+      return pathParts[pathParts.length - 1] || null;
+    } catch (error) {
+      console.error('Error parsing URL:', error);
+      return null;
+    }
   }
 
   /**
