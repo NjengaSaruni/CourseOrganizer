@@ -224,6 +224,28 @@ export class CourseService {
     );
   }
 
+  // Jitsi JWT Authentication Methods
+  generateJitsiToken(roomName: string, meetingId?: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/jitsi/token/`, {
+      room_name: roomName,
+      meeting_id: meetingId
+    }).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  generateMeetingToken(meetingId: number): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/jitsi/token/${meetingId}/`, {}).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
+  verifyJitsiToken(token: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/jitsi/verify/`, { token }).pipe(
+      catchError(this.handleAuthError.bind(this))
+    );
+  }
+
   updateMeetingStatus(meetingId: number, status: string): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/meetings/${meetingId}/status/`, { status }).pipe(
       catchError(this.handleAuthError.bind(this))

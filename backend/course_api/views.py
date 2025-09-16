@@ -14,6 +14,7 @@ from .serializers import (
     RecordingSerializer, MeetingSerializer, JitsiRecordingSerializer, TimetableEntryWithRecordingsSerializer,
     CourseWithDetailsSerializer
 )
+from .jitsi_auth import jitsi_auth
 
 
 @api_view(['GET'])
@@ -961,3 +962,123 @@ def delete_meeting_for_timetable_entry(request, timetable_entry_id):
         
     except TimetableEntry.DoesNotExist:
         return Response({'error': 'Timetable entry not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+# Jitsi JWT Authentication Views
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_jitsi_token(request):
+    """Generate JWT token for Jitsi Meet authentication"""
+    try:
+        data = request.data
+        room_name = data.get('room_name')
+        meeting_id = data.get('meeting_id')
+        
+        if not room_name:
+            return Response({'error': 'Room name is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Check if user has permission to join this room
+        user = request.user
+        
+        # Determine if user should be moderator
+        is_moderator = jitsi_auth.is_user_moderator(user, meeting_id)
+        
+        # Generate JWT token
+        token = jitsi_auth.generate_token(
+            user=user,
+            room_name=room_name,
+            moderator=is_moderator,
+            display_name=f"{user.first_name} {user.last_name}".strip() or user.username
+        )
+        
+        # Generate authenticated room URL
+        room_url = jitsi_auth.generate_room_url(room_name, token)
+        
+        return Response({
+            'token': token,
+            'room_url': room_url,
+            'room_name': room_name,
+            'is_moderator': is_moderator,
+            'user': {
+                'id': user.id,
+                'name': f"{user.first_name} {user.last_name}".strip() or user.username,
+                'email': user.email
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error generating Jitsi token: {str(e)}")
+        return Response({'error': 'Failed to generate token'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def generate_meeting_token(request, meeting_id):
+    """Generate JWT token for a specific meeting"""
+    try:
+        meeting = Meeting.objects.get(id=meeting_id)
+        user = request.user
+        
+        # Check if user has permission to join this meeting
+        # For now, allow all authenticated users to join
+        # You can add more specific permission checks here
+        
+        # Generate room name from meeting
+        room_name = f"meeting-{meeting.id}-{meeting.course.code.lower().replace(' ', '-')}"
+        
+        # Determine if user should be moderator
+        is_moderator = jitsi_auth.is_user_moderator(user, meeting_id)
+        
+        # Generate JWT token
+        token = jitsi_auth.generate_token(
+            user=user,
+            room_name=room_name,
+            moderator=is_moderator,
+            display_name=f"{user.first_name} {user.last_name}".strip() or user.username
+        )
+        
+        # Generate authenticated room URL
+        room_url = jitsi_auth.generate_room_url(room_name, token)
+        
+        return Response({
+            'token': token,
+            'room_url': room_url,
+            'room_name': room_name,
+            'meeting_id': meeting.id,
+            'is_moderator': is_moderator,
+            'user': {
+                'id': user.id,
+                'name': f"{user.first_name} {user.last_name}".strip() or user.username,
+                'email': user.email
+            }
+        })
+        
+    except Meeting.DoesNotExist:
+        return Response({'error': 'Meeting not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error generating meeting token: {str(e)}")
+        return Response({'error': 'Failed to generate token'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_jitsi_token(request):
+    """Verify JWT token (for Jitsi server callback)"""
+    try:
+        token = request.data.get('token')
+        if not token:
+            return Response({'error': 'Token is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Verify token
+        payload = jitsi_auth.verify_token(token)
+        
+        return Response({
+            'valid': True,
+            'payload': payload
+        })
+        
+    except Exception as e:
+        return Response({
+            'valid': False,
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)

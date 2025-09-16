@@ -93,7 +93,7 @@ export class CourseDetailComponent implements OnInit {
     }
 
     this.route.params.subscribe(params => {
-      const courseId = params['id'];
+      const courseId = decodeURIComponent(params['id']);
       if (courseId) {
         this.loadCourseDetail(courseId);
       }
@@ -107,130 +107,26 @@ export class CourseDetailComponent implements OnInit {
   private loadCourseDetail(courseId: string): void {
     this.isLoading = true;
     
-    // For now, we'll create mock data. In a real app, this would come from the backend
+    // Temporary dynamic placeholder using the ID as course name until backend endpoint is wired
     this.course = {
       id: courseId,
-      name: 'Constitutional Law I',
-      code: 'LAW 201',
-      description: 'This course covers the fundamental principles of constitutional law, including the structure of government, separation of powers, and fundamental rights.',
-      lecturer: 'Prof. Sarah Alosa',
-      credits: 3,
-      semester: 'First Semester',
-      academicYear: '2025/2026'
+      name: courseId,
+      code: '',
+      description: '',
+      lecturer: '',
+      credits: 0,
+      semester: '',
+      academicYear: ''
     };
 
-    // Mock meetings data
-    this.meetings = [
-      {
-        id: '1',
-        title: 'Introduction to Constitutional Law',
-        date: new Date('2025-01-15'),
-        time: '17:30 - 20:30',
-        location: 'Online',
-        type: 'lecture',
-        status: 'completed',
-        recordingUrl: 'https://example.com/recording1',
-        notes: 'Overview of constitutional principles and historical development'
-      },
-      {
-        id: '2',
-        title: 'Separation of Powers',
-        date: new Date('2025-01-22'),
-        time: '17:30 - 20:30',
-        location: 'Online',
-        type: 'lecture',
-        status: 'completed',
-        recordingUrl: 'https://example.com/recording2',
-        notes: 'Analysis of executive, legislative, and judicial powers'
-      },
-      {
-        id: '3',
-        title: 'Fundamental Rights and Freedoms',
-        date: new Date('2025-01-29'),
-        time: '17:30 - 20:30',
-        location: 'Online',
-        type: 'lecture',
-        status: 'upcoming',
-        notes: 'Discussion on human rights and constitutional protections'
-      }
-    ];
+    // Clear placeholder arrays for now
+    this.meetings = [];
 
-    // Mock materials data
-    this.materials = [
-      {
-        id: '1',
-        title: 'Constitutional Law Textbook - Chapter 1',
-        type: 'document',
-        url: 'https://example.com/textbook-ch1.pdf',
-        uploadDate: new Date('2025-01-10'),
-        description: 'Introduction to constitutional law principles',
-        size: '2.5 MB'
-      },
-      {
-        id: '2',
-        title: 'Lecture Slides - Week 1',
-        type: 'presentation',
-        url: 'https://example.com/slides-week1.pptx',
-        uploadDate: new Date('2025-01-12'),
-        description: 'PowerPoint presentation for first lecture',
-        size: '1.8 MB'
-      },
-      {
-        id: '3',
-        title: 'Constitutional History Video',
-        type: 'video',
-        url: 'https://example.com/history-video.mp4',
-        uploadDate: new Date('2025-01-14'),
-        description: 'Documentary on constitutional development',
-        size: '45.2 MB'
-      }
-    ];
+    this.materials = [];
 
-    // Mock assignments data
-    this.assignments = [
-      {
-        id: '1',
-        title: 'Constitutional Analysis Essay',
-        description: 'Write a 2000-word essay analyzing the separation of powers in the Kenyan Constitution',
-        dueDate: new Date('2025-02-15'),
-        status: 'not_started',
-        maxMarks: 100
-      },
-      {
-        id: '2',
-        title: 'Case Study: Marbury v. Madison',
-        description: 'Analyze the landmark case and its impact on constitutional law',
-        dueDate: new Date('2025-02-28'),
-        status: 'not_started',
-        maxMarks: 50
-      }
-    ];
+    this.assignments = [];
 
-    // Mock examinations data
-    this.examinations = [
-      {
-        id: '1',
-        title: 'Midterm Examination',
-        type: 'midterm',
-        date: new Date('2025-03-15'),
-        time: '09:00 - 12:00',
-        location: 'Main Campus - Room 101',
-        duration: 180,
-        maxMarks: 100,
-        status: 'upcoming'
-      },
-      {
-        id: '2',
-        title: 'Final Examination',
-        type: 'final',
-        date: new Date('2025-05-20'),
-        time: '09:00 - 12:00',
-        location: 'Main Campus - Room 101',
-        duration: 180,
-        maxMarks: 100,
-        status: 'upcoming'
-      }
-    ];
+    this.examinations = [];
 
     this.isLoading = false;
   }

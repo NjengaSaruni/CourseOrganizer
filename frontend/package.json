@@ -31,6 +31,7 @@
     "@angular/router": "^20.2.0",
     "@daily-co/daily-js": "^0.84.0",
     "@tailwindcss/postcss": "^4.1.13",
+    "lib-jitsi-meet": "github:jitsi/lib-jitsi-meet",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

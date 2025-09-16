@@ -165,6 +165,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Custom User Model
 AUTH_USER_MODEL = 'directory.User'
 
+# Jitsi Meet JWT Configuration
+JITSI_APP_ID = 'course-organizer'
+JITSI_APP_SECRET = os.environ.get('JITSI_APP_SECRET', 'your-jitsi-app-secret-change-in-production')
+JITSI_ISSUER = 'course-organizer'
+JITSI_AUDIENCE = 'jitsi'
+JITSI_DOMAIN = os.environ.get('JITSI_DOMAIN', 'jitsi.riverlearn.co.ke')
+
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -180,7 +187,7 @@ REST_FRAMEWORK = {
 # CORS settings
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
-    default="http://localhost:4200,http://127.0.0.1:4200,https://co.riverlearn.co.ke",
+    default="http://localhost:4200,http://127.0.0.1:4200,https://co.riverlearn.co.ke,https://jitsi.riverlearn.co.ke",
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
@@ -195,11 +202,12 @@ if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     # In production, allow Railway domains and custom domain
-    CORS_ALLOWED_ORIGINS.extend(['https://*.railway.app', 'http://*.railway.app', 'https://co.riverlearn.co.ke'])
+    CORS_ALLOWED_ORIGINS.extend(['https://*.railway.app', 'http://*.railway.app', 'https://co.riverlearn.co.ke', 'https://jitsi.riverlearn.co.ke'])
     
-    # Ensure co.riverlearn.co.ke is always included
-    if 'https://co.riverlearn.co.ke' not in CORS_ALLOWED_ORIGINS:
-        CORS_ALLOWED_ORIGINS.append('https://co.riverlearn.co.ke')
+    # Ensure required domains are always included
+    for domain in ['https://co.riverlearn.co.ke', 'https://jitsi.riverlearn.co.ke']:
+        if domain not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(domain)
     
     # Also try allowing all origins temporarily to debug
     CORS_ALLOW_ALL_ORIGINS = True  # Temporarily allow all origins for debugging
@@ -229,7 +237,7 @@ CORS_ALLOW_METHODS = [
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
-    default="http://localhost:4200,http://127.0.0.1:4200,https://co.riverlearn.co.ke",
+    default="http://localhost:4200,http://127.0.0.1:4200,https://co.riverlearn.co.ke,https://jitsi.riverlearn.co.ke",
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 

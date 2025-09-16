@@ -1,0 +1,9 @@
+# Ignore everything in parent directory
+../*
+
+# Only include our Jitsi service files
+!package.json
+!server.js
+!config.js
+!public/
+!public/*

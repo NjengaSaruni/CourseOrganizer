@@ -40,6 +40,11 @@ urlpatterns = [
     # Jitsi Meeting endpoints
     path('meetings/jitsi/create/', views.create_jitsi_meeting, name='create_jitsi_meeting'),
     path('meetings/jitsi/<int:meeting_id>/', views.get_jitsi_meeting, name='get_jitsi_meeting'),
+    
+    # Jitsi JWT Authentication endpoints
+    path('jitsi/token/', views.generate_jitsi_token, name='generate_jitsi_token'),
+    path('jitsi/token/<int:meeting_id>/', views.generate_meeting_token, name='generate_meeting_token'),
+    path('jitsi/verify/', views.verify_jitsi_token, name='verify_jitsi_token'),
     path('meetings/<int:meeting_id>/status/', views.update_meeting_status, name='update_meeting_status'),
     path('meetings/<int:meeting_id>/join/', views.join_meeting, name='join_meeting'),
     path('meetings/<int:meeting_id>/recording/start/', views.start_jitsi_recording, name='start_jitsi_recording'),

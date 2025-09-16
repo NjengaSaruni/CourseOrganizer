@@ -21,6 +21,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError("Passwords don't match")
+        # Enforce UoN student email domain
+        email = attrs.get('email', '')
+        allowed_domain = '@students.uonbi.ac.ke'
+        if not isinstance(email, str) or not email.lower().endswith(allowed_domain):
+            raise serializers.ValidationError({
+                'email': f'Please use your official school email ending with {allowed_domain}'
+            })
         return attrs
 
     def validate_registration_number(self, value):

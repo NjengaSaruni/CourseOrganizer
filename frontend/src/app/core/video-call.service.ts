@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { CourseService } from './course.service';
+import { LibJitsiCallService, LibJitsiCallData } from './lib-jitsi-call.service';
 
 export interface VideoCallResponse {
   meeting_id: number;
@@ -26,7 +27,42 @@ export class VideoCallService {
   private currentCallFrame: any = null;
   private pendingVideoCallData: VideoCallResponse | null = null;
 
-  constructor(private http: HttpClient, private courseService: CourseService) {}
+  constructor(
+    private http: HttpClient, 
+    private courseService: CourseService,
+    private libJitsiCallService: LibJitsiCallService
+  ) {}
+
+  /**
+   * Start a Lib-Jitsi-Meet video call (new implementation)
+   */
+  startLibJitsiCall(videoCallData: VideoCallResponse): void {
+    console.log('Starting Lib-Jitsi-Meet call with data:', videoCallData);
+    
+    // Extract room name from URL or generate one
+    let roomName = this.extractRoomNameFromUrl(videoCallData.join_url);
+    if (!roomName) {
+      roomName = `meeting-${videoCallData.meeting_id}-${Date.now()}`;
+    }
+
+    // Create user info
+    const userInfo = {
+      displayName: videoCallData.user_name || 'User',
+      email: '', // Add email if available
+      avatar: '' // Add avatar if available
+    };
+
+    // Create call data
+    const callData: LibJitsiCallData = {
+      roomName: roomName,
+      meetingTitle: videoCallData.meeting_title || 'Video Meeting',
+      userInfo: userInfo,
+      meetingId: videoCallData.meeting_id
+    };
+
+    // Start the call using the service
+    this.libJitsiCallService.startCall(callData);
+  }
 
   /**
    * Check if Daily.co SDK is properly loaded
@@ -504,19 +540,25 @@ export class VideoCallService {
     // Determine the actual platform based on the URL, not just the platform field
     const isDailyUrl = videoCallData.join_url && videoCallData.join_url.includes('daily.co');
     const isJitsiUrl = videoCallData.join_url && (videoCallData.join_url.includes('meet.jit.si') || videoCallData.join_url.includes('jitsi.riverlearn.co.ke'));
+    const isRiverLearnJitsi = videoCallData.join_url && videoCallData.join_url.includes('jitsi.riverlearn.co.ke');
     
     console.log('Video call platform detection:', {
       declaredPlatform: videoCallData.platform,
       isDailyUrl,
       isJitsiUrl,
+      isRiverLearnJitsi,
       joinUrl: videoCallData.join_url
     });
 
-    if (videoCallData.platform === 'daily' && isDailyUrl && this.isDailyCoAvailable()) {
+    if (isRiverLearnJitsi) {
+      // Use Lib-Jitsi-Meet for our self-hosted server
+      console.log('Using Lib-Jitsi-Meet for RiverLearn server');
+      this.startLibJitsiCall(videoCallData);
+    } else if (videoCallData.platform === 'daily' && isDailyUrl && this.isDailyCoAvailable()) {
       this.embedDailyCall(videoCallData);
     } else {
-      // Use Jitsi for any non-Daily URL or when Daily is not available
-      console.log('Using Jitsi call method');
+      // Use iframe Jitsi for other Jitsi URLs
+      console.log('Using iframe Jitsi call method');
       this.embedJitsiCall(videoCallData);
     }
   }
@@ -573,6 +615,16 @@ export class VideoCallService {
    * Create embedded video call in page header
    */
   private createEmbeddedVideoCall(videoCallData: VideoCallResponse): void {
+    // Check if this is our self-hosted Jitsi server
+    const isRiverLearnJitsi = videoCallData.join_url && videoCallData.join_url.includes('jitsi.riverlearn.co.ke');
+    
+    if (isRiverLearnJitsi) {
+      // Use Lib-Jitsi-Meet component for our self-hosted server
+      console.log('Using Lib-Jitsi-Meet for RiverLearn server');
+      this.startLibJitsiCall(videoCallData);
+      return;
+    }
+
     // Remove existing embedded call if it exists
     this.closeEmbeddedVideoCall();
 

@@ -86,7 +86,7 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr *ngFor="let timeSlot of timeSlots" class="hover:bg-gray-50">
               <!-- Time Column -->
-              <td class="px-4 py-4 whitespace-nowrap bg-gray-50 border-r border-gray-200">up 
+              <td class="px-4 py-4 whitespace-nowrap bg-gray-50 border-r border-gray-200">
                 <div class="text-sm font-medium text-gray-900 text-center">{{ timeSlot }} - {{ getNextTimeSlot(timeSlot) }}</div>
               </td>
               
@@ -94,10 +94,10 @@
               <td *ngFor="let day of days" 
                   class="px-2 py-4 align-top border-r border-gray-200 h-32 relative"
                   [class.bg-blue-50]="isToday(day)">
-                <!-- Current time indicator line -->
-                <div *ngIf="getCurrentTimePosition().visible && isToday(day)" 
+                <!-- Current time indicator line (only once in today's active slot) -->
+                <div *ngIf="isToday(day) && isCurrentTimeInSlot(timeSlot)" 
                      class="absolute left-0 right-0 h-0.5 bg-red-500 z-10"
-                     [style.top]="getCurrentTimePosition().top">
+                     [style.top]="getCurrentTimePositionInSlot(timeSlot).top">
                   <div class="absolute -left-1 -top-1 w-2 h-2 bg-red-500 rounded-full"></div>
                 </div>
                 <div class="relative h-full w-full">

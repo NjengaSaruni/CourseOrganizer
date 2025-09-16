@@ -88,7 +88,7 @@ import { AuthService, RegistrationResponse } from '../../core/auth.service';
 
             <div>
               <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
+                School Email Address
               </label>
               <input id="email" 
                      name="email" 
@@ -96,7 +96,12 @@ import { AuthService, RegistrationResponse } from '../../core/auth.service';
                      required 
                      [disabled]="isLoading"
                      [(ngModel)]="registrationData.email"
-                     class="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed">
+                     (blur)="registrationData.email = registrationData.email.trim()"
+                     placeholder="your.name@students.uonbi.ac.ke"
+                     class="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                     [pattern]="'.+@students\\.uonbi\\.ac\\.ke'"
+                     title="Use your official school email ending with @students.uonbi.ac.ke">
+              <p class="mt-2 text-xs text-gray-500">Use your official school email: <span class="font-medium">@students.uonbi.ac.ke</span></p>
             </div>
 
             <div>
@@ -323,10 +328,11 @@ export class RegisterComponent implements OnInit {
   isFormValid(): boolean {
     const regNumber = this.registrationData.registration_number.trim();
     const flexiblePattern = /^[A-Z]{1,4}\d{0,2}\/\d{1,6}\/\d{4}$/;
+    const emailValid = /.+@students\.uonbi\.ac\.ke$/i.test(this.registrationData.email.trim());
     
     return this.registrationData.first_name.trim() !== '' &&
            this.registrationData.last_name.trim() !== '' &&
-           this.registrationData.email.trim() !== '' &&
+           emailValid &&
            this.registrationData.registration_number.trim() !== '' &&
            this.registrationData.phone_number.trim() !== '' &&
            this.registrationData.password.trim() !== '' &&

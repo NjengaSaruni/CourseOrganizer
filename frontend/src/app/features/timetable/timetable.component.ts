@@ -242,27 +242,54 @@ export class TimetableComponent implements OnInit {
 
   // Get current time position for the time indicator line
   getCurrentTimePosition(): { top: string, visible: boolean } {
+    // Deprecated for per-slot indicator; retained for compatibility if needed
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const currentTime = currentHour + (currentMinute / 60);
-    
-    // Check if current time is within our timetable hours (8:00 - 22:00)
     if (currentTime < 8 || currentTime > 22) {
       return { top: '0%', visible: false };
     }
-    
-    // Calculate position within the timetable
     const startHour = 8;
     const endHour = 22;
     const totalHours = endHour - startHour;
     const timeFromStart = currentTime - startHour;
     const percentage = (timeFromStart / totalHours) * 100;
-    
-    return { 
-      top: `${percentage}%`, 
-      visible: true 
-    };
+    return { top: `${percentage}%`, visible: true };
+  }
+
+  // New: whether now falls within a given time slot (2-hour slot)
+  isCurrentTimeInSlot(timeSlot: string): boolean {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTime = currentHour + (currentMinute / 60);
+
+    const slotHour = parseInt(timeSlot.split(':')[0]);
+    const slotStart = slotHour;
+    const slotEnd = slotHour + 2; // 2-hour slots
+
+    return currentTime >= slotStart && currentTime < slotEnd;
+  }
+
+  // New: position of the indicator within a specific time slot
+  getCurrentTimePositionInSlot(timeSlot: string): { top: string, visible: boolean } {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTime = currentHour + (currentMinute / 60);
+
+    const slotHour = parseInt(timeSlot.split(':')[0]);
+    const slotStart = slotHour;
+    const slotEnd = slotHour + 2; // 2-hour slots
+
+    // Only visible within timetable hours and the active slot
+    if (currentTime < 8 || currentTime > 22 || !(currentTime >= slotStart && currentTime < slotEnd)) {
+      return { top: '0%', visible: false };
+    }
+
+    const percentage = ((currentTime - slotStart) / (slotEnd - slotStart)) * 100;
+    return { top: `${percentage}%`, visible: true };
   }
 
 
@@ -272,8 +299,8 @@ export class TimetableComponent implements OnInit {
     this.selectedEvent = event;
     } else {
       // Non-admin users navigate to course detail page
-      // For now, we'll use the course name as the ID. In a real app, this would be a proper course ID
-      const courseId = event.course.toLowerCase().replace(/\s+/g, '-');
+      // Use the subject/course name as identifier (URL-encoded) so details page can load dynamically
+      const courseId = encodeURIComponent(event.course);
       this.router.navigate(['/course', courseId]);
     }
   }
