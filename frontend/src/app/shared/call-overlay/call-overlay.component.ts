@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LibJitsiCallService, LibJitsiCallData } from '../../core/lib-jitsi-call.service';
 import { LibJitsiVideoCallComponent } from '../../features/video-call/lib-jitsi-video-call.component';
@@ -59,7 +59,11 @@ export class CallOverlayComponent implements OnInit, OnDestroy {
   
   private subscriptions: Subscription[] = [];
 
-  constructor(private libJitsiCallService: LibJitsiCallService) {}
+  constructor(
+    private libJitsiCallService: LibJitsiCallService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
+  ) {}
 
   ngOnInit() {
     console.log('CallOverlayComponent: Initializing');
@@ -68,14 +72,20 @@ export class CallOverlayComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.libJitsiCallService.isCallActive$.subscribe(active => {
         console.log('CallOverlayComponent: isCallActive changed to:', active);
-        this.isCallActive = active;
+        this.ngZone.run(() => {
+          this.isCallActive = active;
+          this.cdr.detectChanges();
+        });
       })
     );
 
     this.subscriptions.push(
       this.libJitsiCallService.callData$.subscribe(data => {
         console.log('CallOverlayComponent: callData changed to:', data);
-        this.callData = data;
+        this.ngZone.run(() => {
+          this.callData = data;
+          this.cdr.detectChanges();
+        });
       })
     );
   }
@@ -85,29 +95,50 @@ export class CallOverlayComponent implements OnInit, OnDestroy {
   }
 
   endCall() {
-    this.libJitsiCallService.endCall();
+    console.log('CallOverlayComponent: endCall() called');
+    
+    // First, tell the Jitsi component to leave the meeting
+    if (this.jitsiComponent) {
+      console.log('CallOverlayComponent: Calling leaveMeeting on Jitsi component');
+      this.jitsiComponent.leaveMeeting();
+    }
+    
+    // Then close the overlay
+    this.ngZone.run(() => {
+      this.libJitsiCallService.endCall();
+      this.cdr.detectChanges();
+    });
   }
 
   onMeetingEnded() {
     console.log('Meeting ended, closing overlay');
-    this.libJitsiCallService.endCall();
+    this.ngZone.run(() => {
+      this.libJitsiCallService.endCall();
+      this.cdr.detectChanges();
+    });
   }
 
   onCloseRequested() {
     console.log('Close requested, closing overlay');
-    this.libJitsiCallService.endCall();
+    this.ngZone.run(() => {
+      this.libJitsiCallService.endCall();
+      this.cdr.detectChanges();
+    });
   }
 
   forceClose() {
     console.log('Force close requested, immediately closing overlay');
     
-    // Try to force close the Jitsi component first
-    if (this.jitsiComponent) {
-      console.log('CallOverlayComponent: Calling forceClose on Jitsi component');
-      this.jitsiComponent.forceClose();
-    }
-    
-    // Then close the overlay
-    this.libJitsiCallService.endCall();
+    this.ngZone.run(() => {
+      // Try to force close the Jitsi component first
+      if (this.jitsiComponent) {
+        console.log('CallOverlayComponent: Calling forceClose on Jitsi component');
+        this.jitsiComponent.forceClose();
+      }
+      
+      // Then close the overlay
+      this.libJitsiCallService.endCall();
+      this.cdr.detectChanges();
+    });
   }
 }

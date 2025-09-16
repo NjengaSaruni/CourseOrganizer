@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, Input, Output, EventEmitter, ViewChild, ElementRef, AfterViewInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
@@ -180,6 +180,7 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
   isLoading: boolean = true;
   error: string | null = null;
   jitsiApi: any = null;
+  private cleanupTimeout: any = null;
 
   // Meeting controls state
   isAudioMuted: boolean = false;
@@ -188,8 +189,29 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
   isChatOpen: boolean = false;
   isParticipantsOpen: boolean = false;
 
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
+  ) {}
+
   ngOnInit() {
     this.loadJitsiMeetScript();
+    
+    // Add global WebSocket error handler
+    this.setupWebSocketErrorHandler();
+  }
+
+  private setupWebSocketErrorHandler() {
+    // Override console.error to catch WebSocket errors
+    const originalError = console.error;
+    console.error = (...args) => {
+      const message = args.join(' ');
+      if (message.includes('WebSocket connection to') && message.includes('failed')) {
+        console.log('LibJitsiVideoCall: WebSocket connection failed, cleaning up');
+        this.cleanupAndEmitMeetingEnded();
+      }
+      originalError.apply(console, args);
+    };
   }
 
   ngAfterViewInit() {
@@ -198,11 +220,15 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
 
   ngOnDestroy() {
     console.log('LibJitsiVideoCall: Component destroying, disposing API');
-    if (this.jitsiApi) {
-      console.log('LibJitsiVideoCall: Disposing Jitsi API');
-      this.jitsiApi.dispose();
-      this.jitsiApi = null;
+    
+    // Clear any pending timeout
+    if (this.cleanupTimeout) {
+      clearTimeout(this.cleanupTimeout);
+      this.cleanupTimeout = null;
     }
+    
+    // Clean up the Jitsi API
+    this.cleanupAndEmitMeetingEnded();
   }
 
   private loadJitsiMeetScript() {
@@ -232,7 +258,11 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
         parentNode: this.jitsiContainer.nativeElement,
         width: '100%',
         height: '100%',
-        userInfo: this.userInfo,
+        userInfo: {
+          displayName: this.userInfo.displayName,
+          email: this.userInfo.email || undefined, // Don't pass empty string to avoid Gravatar 404
+          avatar: this.userInfo.avatar || undefined // Don't pass empty string
+        },
         configOverwrite: {
           // Custom configuration for our server
           startWithAudioMuted: false,
@@ -259,6 +289,7 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
           enableLipSync: false,
           enableFaceExpressions: false,
           enableP2P: true,
+          disableThirdPartyRequests: true, // Disable Gravatar and other third-party requests
           p2p: {
             enabled: true,
             stunServers: [
@@ -330,23 +361,26 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
         console.log('LibJitsiVideoCall: Joined video conference');
         this.isLoading = false;
         this.error = null;
+        
+        // Set up a timeout to handle cases where conference is destroyed but events don't fire
+        this.cleanupTimeout = setTimeout(() => {
+          console.log('LibJitsiVideoCall: Cleanup timeout reached, checking if still connected');
+          if (this.jitsiApi) {
+            try {
+              // Try to check if the conference is still active
+              const participants = this.jitsiApi.getParticipantsInfo();
+              if (!participants || participants.length === 0) {
+                console.log('LibJitsiVideoCall: No participants found, cleaning up');
+                this.cleanupAndEmitMeetingEnded();
+              }
+            } catch (error) {
+              console.log('LibJitsiVideoCall: Error checking participants, cleaning up:', error);
+              this.cleanupAndEmitMeetingEnded();
+            }
+          }
+        }, 30000); // 30 second timeout
       });
 
-      this.jitsiApi.addListener('videoConferenceLeft', () => {
-        console.log('LibJitsiVideoCall: Left video conference - emitting meetingEnded event');
-        this.meetingEnded.emit();
-      });
-
-      // Add more event listeners for debugging
-      this.jitsiApi.addListener('readyToClose', () => {
-        console.log('LibJitsiVideoCall: readyToClose event received');
-        this.meetingEnded.emit();
-      });
-
-      this.jitsiApi.addListener('hangup', () => {
-        console.log('LibJitsiVideoCall: hangup event received');
-        this.meetingEnded.emit();
-      });
 
       this.jitsiApi.addListener('participantJoined', (participant: any) => {
         console.log('Participant joined:', participant);
@@ -368,6 +402,62 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
 
       this.jitsiApi.addListener('screenShareToggled', (data: any) => {
         this.isScreenSharing = data.isSharing;
+      });
+
+      // Add event listeners for conference failures and termination
+      this.jitsiApi.addListener('videoConferenceLeft', () => {
+        console.log('LibJitsiVideoCall: videoConferenceLeft event received');
+        this.cleanupAndEmitMeetingEnded();
+      });
+
+      this.jitsiApi.addListener('readyToClose', () => {
+        console.log('LibJitsiVideoCall: readyToClose event received');
+        this.cleanupAndEmitMeetingEnded();
+      });
+
+      this.jitsiApi.addListener('hangup', () => {
+        console.log('LibJitsiVideoCall: hangup event received - cleaning up immediately');
+        // Add a small delay to ensure the hangup command is processed
+        setTimeout(() => {
+          this.cleanupAndEmitMeetingEnded();
+        }, 100);
+      });
+
+      // Handle conference failures and destruction
+      this.jitsiApi.addListener('conferenceFailed', (error: any) => {
+        console.log('LibJitsiVideoCall: conferenceFailed event received:', error);
+        this.cleanupAndEmitMeetingEnded();
+      });
+
+      this.jitsiApi.addListener('conferenceDestroyed', (error: any) => {
+        console.log('LibJitsiVideoCall: conferenceDestroyed event received:', error);
+        this.cleanupAndEmitMeetingEnded();
+      });
+
+      // Handle moderator ending meeting for all
+      this.jitsiApi.addListener('meetingEnded', () => {
+        console.log('LibJitsiVideoCall: meetingEnded event received (moderator ended meeting for all)');
+        this.cleanupAndEmitMeetingEnded();
+      });
+
+      // Add listener for any button clicks to help debug
+      this.jitsiApi.addListener('toolbarButtonClicked', (buttonName: string) => {
+        console.log('LibJitsiVideoCall: Toolbar button clicked:', buttonName);
+        if (buttonName === 'hangup') {
+          console.log('LibJitsiVideoCall: Hangup button clicked in toolbar');
+        }
+      });
+
+      // Handle WebSocket connection errors
+      this.jitsiApi.addListener('connectionFailed', (error: any) => {
+        console.log('LibJitsiVideoCall: connectionFailed event received:', error);
+        this.cleanupAndEmitMeetingEnded();
+      });
+
+      // Handle any other errors
+      this.jitsiApi.addListener('error', (error: any) => {
+        console.log('LibJitsiVideoCall: error event received:', error);
+        this.cleanupAndEmitMeetingEnded();
       });
 
     } catch (error) {
@@ -417,11 +507,61 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
   leaveMeeting() {
     console.log('Leave meeting called');
     if (this.jitsiApi) {
+      console.log('LibJitsiVideoCall: Executing hangup command');
       this.jitsiApi.executeCommand('hangup');
+      
+      // Add a backup cleanup in case the hangup event doesn't fire
+      setTimeout(() => {
+        if (this.jitsiApi) {
+          console.log('LibJitsiVideoCall: Backup cleanup triggered - hangup event may not have fired');
+          this.cleanupAndEmitMeetingEnded();
+        }
+      }, 2000); // 2 second backup
+    } else {
+      console.log('LibJitsiVideoCall: No Jitsi API available, cleaning up immediately');
+      this.cleanupAndEmitMeetingEnded();
     }
-    // Also emit the meeting ended event immediately
-    console.log('Emitting meetingEnded event from leaveMeeting');
-    this.meetingEnded.emit();
+  }
+
+  /**
+   * Clean up Jitsi API and emit meeting ended event
+   */
+  private cleanupAndEmitMeetingEnded() {
+    console.log('LibJitsiVideoCall: Cleaning up and emitting meeting ended');
+    
+    // Run cleanup inside Angular zone to ensure change detection
+    this.ngZone.run(() => {
+      // Clear any pending timeout
+      if (this.cleanupTimeout) {
+        clearTimeout(this.cleanupTimeout);
+        this.cleanupTimeout = null;
+      }
+      
+      // Clean up the Jitsi API
+      if (this.jitsiApi) {
+        try {
+          this.jitsiApi.dispose();
+        } catch (error) {
+          console.warn('Error disposing Jitsi API:', error);
+        }
+        this.jitsiApi = null;
+      }
+      
+      // Reset state
+      this.isLoading = false;
+      this.error = null;
+      this.isAudioMuted = false;
+      this.isVideoMuted = false;
+      this.isScreenSharing = false;
+      this.isChatOpen = false;
+      this.isParticipantsOpen = false;
+      
+      // Trigger change detection
+      this.cdr.detectChanges();
+      
+      // Emit the meeting ended event
+      this.meetingEnded.emit();
+    });
   }
 
   retryConnection() {
@@ -444,10 +584,6 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
    */
   forceClose() {
     console.log('LibJitsiVideoCall: Force closing call');
-    if (this.jitsiApi) {
-      this.jitsiApi.dispose();
-      this.jitsiApi = null;
-    }
-    this.meetingEnded.emit();
+    this.cleanupAndEmitMeetingEnded();
   }
 }

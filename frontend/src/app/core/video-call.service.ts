@@ -11,6 +11,8 @@ export interface VideoCallResponse {
   join_url: string;
   meeting_title: string;
   user_name: string;
+  user_email?: string;
+  user_avatar?: string;
   admin_host: string;
   platform: string;
   daily_token?: string;
@@ -48,8 +50,8 @@ export class VideoCallService {
     // Create user info
     const userInfo = {
       displayName: videoCallData.user_name || 'User',
-      email: '', // Add email if available
-      avatar: '' // Add avatar if available
+      email: videoCallData.user_email || '', // Use actual email if available
+      avatar: videoCallData.user_avatar || '' // Use actual avatar if available
     };
 
     // Create call data
