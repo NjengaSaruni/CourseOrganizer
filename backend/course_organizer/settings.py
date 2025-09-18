@@ -172,6 +172,11 @@ JITSI_ISSUER = 'course-organizer'
 JITSI_AUDIENCE = 'jitsi'
 JITSI_DOMAIN = os.environ.get('JITSI_DOMAIN', 'jitsi.riverlearn.co.ke')
 
+# Jitsi JWT key material (RS256)
+# PRIVATE key is used by backend to sign JWTs; PUBLIC key can be used for internal verification if needed
+JITSI_PRIVATE_KEY = os.environ.get('JITSI_PRIVATE_KEY')
+JITSI_PUBLIC_KEY = os.environ.get('JITSI_PUBLIC_KEY')
+
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

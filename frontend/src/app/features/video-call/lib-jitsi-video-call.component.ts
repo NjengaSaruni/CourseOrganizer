@@ -161,6 +161,65 @@ export interface JitsiMeetConfig {
     .hidden {
       display: none !important;
     }
+    
+    /* Hide Jitsi watermarks completely */
+    :host ::ng-deep .watermark,
+    :host ::ng-deep .leftwatermark,
+    :host ::ng-deep .rightwatermark,
+    :host ::ng-deep .poweredby,
+    :host ::ng-deep .powered-by,
+    :host ::ng-deep .jitsi-watermark,
+    :host ::ng-deep .jitsi-logo,
+    :host ::ng-deep .jitsi-brand,
+    :host ::ng-deep .brand-watermark,
+    :host ::ng-deep .brand-logo,
+    :host ::ng-deep .meet-logo,
+    :host ::ng-deep .meet-watermark,
+    :host ::ng-deep [class*="watermark"],
+    :host ::ng-deep [class*="logo"],
+    :host ::ng-deep [class*="brand"],
+    :host ::ng-deep [class*="powered"],
+    :host ::ng-deep [id*="watermark"],
+    :host ::ng-deep [id*="logo"],
+    :host ::ng-deep [id*="brand"],
+    :host ::ng-deep [id*="powered"] {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      width: 0 !important;
+      height: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+      z-index: -1 !important;
+    }
+    
+    /* Additional targeting for iframe content */
+    :host ::ng-deep iframe {
+      position: relative;
+    }
+    
+    /* Hide any remaining watermarks with more specific selectors */
+    :host ::ng-deep .videocontainer .watermark,
+    :host ::ng-deep .videocontainer .leftwatermark,
+    :host ::ng-deep .videocontainer .rightwatermark,
+    :host ::ng-deep .videocontainer .poweredby,
+    :host ::ng-deep .videocontainer .jitsi-watermark,
+    :host ::ng-deep .videocontainer .jitsi-logo,
+    :host ::ng-deep .videocontainer .brand-watermark,
+    :host ::ng-deep .videocontainer .brand-logo,
+    :host ::ng-deep .videocontainer .meet-logo,
+    :host ::ng-deep .videocontainer .meet-watermark {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      width: 0 !important;
+      height: 0 !important;
+      position: absolute !important;
+      left: -9999px !important;
+      top: -9999px !important;
+      z-index: -1 !important;
+    }
   `]
 })
 export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDestroy {
@@ -227,6 +286,9 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
       this.cleanupTimeout = null;
     }
     
+    // Clean up injected watermark hiding CSS
+    this.cleanupWatermarkHidingCSS();
+    
     // Clean up the Jitsi API
     this.cleanupAndEmitMeetingEnded();
   }
@@ -288,14 +350,17 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
           enableNoAudioDetection: true,
           enableLipSync: false,
           enableFaceExpressions: false,
-          enableP2P: true,
+          // Force routing via JVB to improve cross-network connectivity
+          enableP2P: false,
           disableThirdPartyRequests: true, // Disable Gravatar and other third-party requests
           p2p: {
-            enabled: true,
+            enabled: false,
             stunServers: [
               { urls: 'stun:meet-jit-si-turnrelay.jitsi.net:443' }
             ]
-          }
+          },
+          disableDeepLinking: true,
+          startAudioOnly: false
         },
         interfaceConfigOverwrite: {
           // Custom interface configuration
@@ -305,6 +370,21 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
           SHOW_WATERMARK_FOR_GUESTS: false,
           SHOW_POWERED_BY: false,
           SHOW_POLICY_WATERMARK: false,
+          // Additional watermark hiding options
+          SHOW_LOGO: false,
+          SHOW_BRAND: false,
+          SHOW_JITSI_LOGO: false,
+          SHOW_BRAND_LOGO: false,
+          SHOW_MEET_LOGO: false,
+          SHOW_MEET_WATERMARK: false,
+          SHOW_LEFT_WATERMARK: false,
+          SHOW_RIGHT_WATERMARK: false,
+          SHOW_POWERED_BY_JITSI: false,
+          SHOW_POWERED_BY_LOGO: false,
+          // Disable all branding
+          DISABLE_BRANDING: true,
+          DISABLE_WATERMARKS: true,
+          DISABLE_LOGO: true,
           SHOW_LOBBY_BUTTON: true,
           SHOW_MEETING_TIMER: true,
           SHOW_DEEP_LINKING_PAGE: false,
@@ -361,6 +441,12 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
         console.log('LibJitsiVideoCall: Joined video conference');
         this.isLoading = false;
         this.error = null;
+        
+        // Hide watermarks after joining
+        this.hideJitsiWatermarks();
+        
+        // Try to use Jitsi API commands to hide watermarks
+        this.tryJitsiWatermarkCommands();
         
         // Set up a timeout to handle cases where conference is destroyed but events don't fire
         this.cleanupTimeout = setTimeout(() => {
@@ -421,6 +507,7 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
         setTimeout(() => {
           this.cleanupAndEmitMeetingEnded();
         }, 100);
+        
       });
 
       // Handle conference failures and destruction
@@ -441,10 +528,19 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
       });
 
       // Add listener for any button clicks to help debug
-      this.jitsiApi.addListener('toolbarButtonClicked', (buttonName: string) => {
-        console.log('LibJitsiVideoCall: Toolbar button clicked:', buttonName);
-        if (buttonName === 'hangup') {
-          console.log('LibJitsiVideoCall: Hangup button clicked in toolbar');
+      this.jitsiApi.addListener('toolbarButtonClicked', (event: any) => {
+        try {
+          const key = event?.key ?? event;
+          console.log('LibJitsiVideoCall: Toolbar button clicked:', key);
+          if (key === 'hangup') {
+            console.log('LibJitsiVideoCall: Hangup toolbar button detected - cleaning up');
+            // Ensure consistent cleanup when user clicks the in-call hangup
+            setTimeout(() => {
+              this.cleanupAndEmitMeetingEnded();
+            }, 100);
+          }
+        } catch (err) {
+          console.log('LibJitsiVideoCall: error handling toolbarButtonClicked', err);
         }
       });
 
@@ -585,5 +681,681 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
   forceClose() {
     console.log('LibJitsiVideoCall: Force closing call');
     this.cleanupAndEmitMeetingEnded();
+  }
+
+  /**
+   * Hide Jitsi watermarks by injecting CSS and manipulating DOM elements
+   */
+  private hideJitsiWatermarks() {
+    console.log('LibJitsiVideoCall: Hiding Jitsi watermarks');
+    
+    // Inject CSS to hide watermarks
+    this.injectWatermarkHidingCSS();
+    
+    // Try to inject CSS into the iframe
+    this.tryInjectIframeCSS();
+    
+    // Use a MutationObserver to hide watermarks as they appear
+    this.setupWatermarkObserver();
+    
+    // Also try to hide watermarks immediately
+    setTimeout(() => {
+      this.hideWatermarkElements();
+    }, 1000);
+    
+    // Keep trying to hide watermarks periodically
+    const hideInterval = setInterval(() => {
+      this.hideWatermarkElements();
+      this.tryInjectIframeCSS();
+      this.tryOverlayWatermarks();
+      this.tryInterceptWatermarkCreation();
+    }, 2000);
+    
+    // Clear interval after 30 seconds
+    setTimeout(() => {
+      clearInterval(hideInterval);
+    }, 30000);
+  }
+
+  /**
+   * Inject CSS to hide watermarks
+   */
+  private injectWatermarkHidingCSS() {
+    const styleId = 'jitsi-watermark-hider';
+    
+    // Remove existing style if it exists
+    const existingStyle = document.getElementById(styleId);
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    // Create new style element
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = this.getWatermarkHidingCSS();
+    
+    document.head.appendChild(style);
+  }
+
+  /**
+   * Set up MutationObserver to hide watermarks as they appear
+   */
+  private setupWatermarkObserver() {
+    const container = this.jitsiContainer?.nativeElement;
+    if (!container) return;
+    
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              this.hideWatermarkInElement(node as Element);
+            }
+          });
+        }
+      });
+    });
+    
+    observer.observe(container, {
+      childList: true,
+      subtree: true
+    });
+    
+    // Stop observing after 30 seconds
+    setTimeout(() => {
+      observer.disconnect();
+    }, 30000);
+  }
+
+  /**
+   * Hide watermark elements in a specific element
+   */
+  private hideWatermarkInElement(element: Element) {
+    const watermarkSelectors = [
+      '.watermark',
+      '.leftwatermark',
+      '.rightwatermark',
+      '.poweredby',
+      '.powered-by',
+      '.jitsi-watermark',
+      '.jitsi-logo',
+      '.jitsi-brand',
+      '.brand-watermark',
+      '.brand-logo',
+      '.meet-logo',
+      '.meet-watermark',
+      '[class*="watermark"]',
+      '[class*="logo"]',
+      '[class*="brand"]',
+      '[class*="powered"]',
+      '[id*="watermark"]',
+      '[id*="logo"]',
+      '[id*="brand"]',
+      '[id*="powered"]'
+    ];
+    
+    watermarkSelectors.forEach(selector => {
+      const elements = element.querySelectorAll(selector);
+      elements.forEach((el: Element) => {
+        this.hideElement(el as HTMLElement);
+      });
+    });
+    
+    // Also check if the element itself is a watermark
+    watermarkSelectors.forEach(selector => {
+      if (element.matches(selector)) {
+        this.hideElement(element as HTMLElement);
+      }
+    });
+  }
+
+  /**
+   * Hide watermark elements throughout the container
+   */
+  private hideWatermarkElements() {
+    const container = this.jitsiContainer?.nativeElement;
+    if (!container) return;
+    
+    const watermarkSelectors = [
+      '.watermark',
+      '.leftwatermark',
+      '.rightwatermark',
+      '.poweredby',
+      '.powered-by',
+      '.jitsi-watermark',
+      '.jitsi-logo',
+      '.jitsi-brand',
+      '.brand-watermark',
+      '.brand-logo',
+      '.meet-logo',
+      '.meet-watermark',
+      '[class*="watermark"]',
+      '[class*="logo"]',
+      '[class*="brand"]',
+      '[class*="powered"]',
+      '[id*="watermark"]',
+      '[id*="logo"]',
+      '[id*="brand"]',
+      '[id*="powered"]',
+      // Specific selectors for the element we found
+      'a.watermark.leftwatermark',
+      'a[class*="watermark"]',
+      'a[class*="logo"]',
+      'a[class*="brand"]',
+      'a[class*="powered"]'
+    ];
+    
+    watermarkSelectors.forEach(selector => {
+      const elements = container.querySelectorAll(selector);
+      elements.forEach((el: Element) => {
+        this.hideElement(el as HTMLElement);
+      });
+    });
+    
+    // Also try to find and hide the specific element by its attributes
+    this.hideSpecificWatermarkElement(container);
+  }
+
+  /**
+   * Hide the specific watermark element we found
+   */
+  private hideSpecificWatermarkElement(container: Element) {
+    // Look for the specific element with aria-label containing "Jitsi Meet Logo"
+    const specificElement = container.querySelector('a[aria-label*="Jitsi Meet Logo"]');
+    if (specificElement) {
+      console.log('LibJitsiVideoCall: Found specific Jitsi watermark element, hiding it');
+      this.hideElement(specificElement as HTMLElement);
+    }
+    
+    // Also look for elements with href to jitsi.org
+    const jitsiLinkElements = container.querySelectorAll('a[href*="jitsi.org"]');
+    jitsiLinkElements.forEach(el => {
+      if (el.classList.contains('watermark') || el.classList.contains('leftwatermark')) {
+        console.log('LibJitsiVideoCall: Found Jitsi.org watermark link, hiding it');
+        this.hideElement(el as HTMLElement);
+      }
+    });
+    
+    // Look for elements with background-image containing watermark.svg
+    const watermarkSvgElements = container.querySelectorAll('[style*="watermark.svg"]');
+    watermarkSvgElements.forEach(el => {
+      console.log('LibJitsiVideoCall: Found watermark.svg element, hiding it');
+      this.hideElement(el as HTMLElement);
+    });
+  }
+
+  /**
+   * Hide a specific element
+   */
+  private hideElement(element: HTMLElement) {
+    if (!element) return;
+    
+    // Remove the element from DOM completely if it's a watermark
+    if (this.isWatermarkElement(element)) {
+      console.log('LibJitsiVideoCall: Removing watermark element from DOM:', element);
+      element.remove();
+      return;
+    }
+    
+    // Otherwise, hide it with styles
+    element.style.setProperty('display', 'none', 'important');
+    element.style.setProperty('visibility', 'hidden', 'important');
+    element.style.setProperty('opacity', '0', 'important');
+    element.style.setProperty('width', '0', 'important');
+    element.style.setProperty('height', '0', 'important');
+    element.style.setProperty('position', 'absolute', 'important');
+    element.style.setProperty('left', '-9999px', 'important');
+    element.style.setProperty('top', '-9999px', 'important');
+    element.style.setProperty('z-index', '-1', 'important');
+    element.style.setProperty('pointer-events', 'none', 'important');
+    element.style.setProperty('background', 'none', 'important');
+    element.style.setProperty('background-image', 'none', 'important');
+    element.style.setProperty('transform', 'scale(0)', 'important');
+    element.style.setProperty('clip-path', 'inset(100%)', 'important');
+  }
+
+  /**
+   * Check if an element is a watermark element
+   */
+  private isWatermarkElement(element: HTMLElement): boolean {
+    const classList = element.classList;
+    const hasWatermarkClass = classList.contains('watermark') || 
+                             classList.contains('leftwatermark') || 
+                             classList.contains('rightwatermark') ||
+                             classList.contains('jitsi-watermark') ||
+                             classList.contains('brand-watermark') ||
+                             classList.contains('meet-watermark');
+    
+    const hasWatermarkInClass = Array.from(classList).some(cls => 
+      cls.includes('watermark') || cls.includes('logo') || cls.includes('brand')
+    );
+    
+    const hasWatermarkAria = element.getAttribute('aria-label')?.includes('Jitsi Meet Logo') || false;
+    const hasJitsiHref = element.getAttribute('href')?.includes('jitsi.org') || false;
+    const hasWatermarkSvg = element.getAttribute('style')?.includes('watermark.svg') || false;
+    
+    return hasWatermarkClass || hasWatermarkInClass || hasWatermarkAria || hasJitsiHref || hasWatermarkSvg;
+  }
+
+  /**
+   * Try to inject CSS into the Jitsi iframe
+   */
+  private tryInjectIframeCSS() {
+    try {
+      const container = this.jitsiContainer?.nativeElement;
+      if (!container) return;
+      
+      // Find the iframe
+      const iframe = container.querySelector('iframe');
+      if (!iframe) return;
+      
+      // Try to access iframe content (this will fail due to CORS, but we can try)
+      try {
+        const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+        if (iframeDoc) {
+          this.injectCSSIntoDocument(iframeDoc);
+        }
+      } catch (e) {
+        // CORS error expected - iframe is from different domain
+        console.log('LibJitsiVideoCall: Cannot access iframe content due to CORS');
+      }
+      
+      // Alternative approach: try to execute script in iframe context
+      try {
+        iframe.contentWindow?.postMessage({
+          type: 'HIDE_WATERMARKS',
+          css: this.getWatermarkHidingCSS()
+        }, '*');
+      } catch (e) {
+        console.log('LibJitsiVideoCall: Cannot post message to iframe');
+      }
+      
+    } catch (error) {
+      console.log('LibJitsiVideoCall: Error trying to inject iframe CSS:', error);
+    }
+  }
+
+  /**
+   * Inject CSS into a document
+   */
+  private injectCSSIntoDocument(doc: Document) {
+    const styleId = 'jitsi-watermark-hider-iframe';
+    
+    // Remove existing style if it exists
+    const existingStyle = doc.getElementById(styleId);
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    // Create new style element
+    const style = doc.createElement('style');
+    style.id = styleId;
+    style.textContent = this.getWatermarkHidingCSS();
+    
+    doc.head.appendChild(style);
+  }
+
+  /**
+   * Get the watermark hiding CSS
+   */
+  private getWatermarkHidingCSS(): string {
+    return `
+      /* Hide all possible Jitsi watermarks - with maximum specificity */
+      .watermark,
+      .leftwatermark,
+      .rightwatermark,
+      .poweredby,
+      .powered-by,
+      .jitsi-watermark,
+      .jitsi-logo,
+      .jitsi-brand,
+      .brand-watermark,
+      .brand-logo,
+      .meet-logo,
+      .meet-watermark,
+      [class*="watermark"],
+      [class*="logo"],
+      [class*="brand"],
+      [class*="powered"],
+      [id*="watermark"],
+      [id*="logo"],
+      [id*="brand"],
+      [id*="powered"],
+      .videocontainer .watermark,
+      .videocontainer .leftwatermark,
+      .videocontainer .rightwatermark,
+      .videocontainer .poweredby,
+      .videocontainer .jitsi-watermark,
+      .videocontainer .jitsi-logo,
+      .videocontainer .brand-watermark,
+      .videocontainer .brand-logo,
+      .videocontainer .meet-logo,
+      .videocontainer .meet-watermark,
+      /* Additional selectors for newer Jitsi versions */
+      .leftwatermark,
+      .rightwatermark,
+      .watermark,
+      .poweredby,
+      .jitsi-watermark,
+      .jitsi-logo,
+      .brand-watermark,
+      .brand-logo,
+      .meet-logo,
+      .meet-watermark,
+      /* More specific selectors */
+      div[class*="watermark"],
+      div[class*="logo"],
+      div[class*="brand"],
+      div[class*="powered"],
+      span[class*="watermark"],
+      span[class*="logo"],
+      span[class*="brand"],
+      span[class*="powered"],
+      img[class*="watermark"],
+      img[class*="logo"],
+      img[class*="brand"],
+      img[class*="powered"],
+      /* Target the specific watermark element we found */
+      a.watermark.leftwatermark,
+      a[class*="watermark"],
+      a[class*="logo"],
+      a[class*="brand"],
+      a[class*="powered"],
+      /* Target elements with inline styles */
+      [style*="visibility: visible"][class*="watermark"],
+      [style*="visibility: visible"][class*="logo"],
+      [style*="visibility: visible"][class*="brand"],
+      [style*="visibility: visible"][class*="powered"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        position: absolute !important;
+        left: -9999px !important;
+        top: -9999px !important;
+        z-index: -1 !important;
+        pointer-events: none !important;
+        transform: scale(0) !important;
+        clip-path: inset(100%) !important;
+        clip: rect(0, 0, 0, 0) !important;
+        background: none !important;
+        background-image: none !important;
+      }
+    `;
+  }
+
+  /**
+   * Try to overlay watermarks with CSS overlays
+   */
+  private tryOverlayWatermarks() {
+    try {
+      const container = this.jitsiContainer?.nativeElement;
+      if (!container) return;
+      
+      // Find the iframe
+      const iframe = container.querySelector('iframe');
+      if (!iframe) return;
+      
+      // Create a comprehensive overlay that covers the entire iframe
+      const overlayId = 'jitsi-watermark-overlay';
+      let overlay = document.getElementById(overlayId);
+      
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = overlayId;
+        overlay.style.cssText = `
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          pointer-events: none;
+          z-index: 1000;
+          background: transparent;
+        `;
+        
+        // Add overlay to the container
+        container.style.position = 'relative';
+        container.appendChild(overlay);
+      }
+      
+      // Create specific overlay elements for common watermark positions
+      this.createWatermarkOverlays(overlay);
+      
+      // Create a full-screen overlay that covers the entire iframe area
+      this.createFullScreenOverlay(overlay);
+      
+    } catch (error) {
+      console.log('LibJitsiVideoCall: Error creating watermark overlays:', error);
+    }
+  }
+
+  /**
+   * Create a full-screen overlay that covers the entire iframe
+   */
+  private createFullScreenOverlay(parent: HTMLElement) {
+    const fullScreenOverlayId = 'jitsi-fullscreen-watermark-overlay';
+    let fullScreenOverlay = document.getElementById(fullScreenOverlayId);
+    
+    if (!fullScreenOverlay) {
+      fullScreenOverlay = document.createElement('div');
+      fullScreenOverlay.id = fullScreenOverlayId;
+      fullScreenOverlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1002;
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.1) 0%,
+          transparent 10%,
+          transparent 90%,
+          rgba(0, 0, 0, 0.1) 100%
+        );
+      `;
+      parent.appendChild(fullScreenOverlay);
+    }
+  }
+
+  /**
+   * Create specific overlay elements for watermark positions
+   */
+  private createWatermarkOverlays(parent: HTMLElement) {
+    // More aggressive overlay positions to cover the watermark area completely
+    const overlayPositions = [
+      { id: 'watermark-overlay-top-left', top: '0px', left: '0px', width: '200px', height: '60px' },
+      { id: 'watermark-overlay-top-right', top: '0px', right: '0px', width: '200px', height: '60px' },
+      { id: 'watermark-overlay-bottom-left', bottom: '0px', left: '0px', width: '200px', height: '60px' },
+      { id: 'watermark-overlay-bottom-right', bottom: '0px', right: '0px', width: '200px', height: '60px' },
+      { id: 'watermark-overlay-center-bottom', bottom: '0px', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '60px' },
+      // Additional overlays for common watermark positions
+      { id: 'watermark-overlay-top-center', top: '0px', left: '50%', transform: 'translateX(-50%)', width: '300px', height: '60px' },
+      { id: 'watermark-overlay-left-center', top: '50%', left: '0px', transform: 'translateY(-50%)', width: '200px', height: '60px' },
+      { id: 'watermark-overlay-right-center', top: '50%', right: '0px', transform: 'translateY(-50%)', width: '200px', height: '60px' }
+    ];
+    
+    overlayPositions.forEach(pos => {
+      let overlay = document.getElementById(pos.id);
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = pos.id;
+        overlay.style.cssText = `
+          position: absolute;
+          background: rgba(0, 0, 0, 0.9);
+          border-radius: 0px;
+          pointer-events: none;
+          z-index: 1001;
+          ${pos.top ? `top: ${pos.top};` : ''}
+          ${pos.bottom ? `bottom: ${pos.bottom};` : ''}
+          ${pos.left ? `left: ${pos.left};` : ''}
+          ${pos.right ? `right: ${pos.right};` : ''}
+          ${pos.width ? `width: ${pos.width};` : ''}
+          ${pos.height ? `height: ${pos.height};` : ''}
+          ${pos.transform ? `transform: ${pos.transform};` : ''}
+        `;
+        parent.appendChild(overlay);
+      }
+    });
+  }
+
+  /**
+   * Try to intercept watermark creation by overriding iframe content
+   */
+  private tryInterceptWatermarkCreation() {
+    try {
+      const container = this.jitsiContainer?.nativeElement;
+      if (!container) return;
+      
+      const iframe = container.querySelector('iframe');
+      if (!iframe) return;
+      
+      // Try to override the iframe's onload to inject our CSS
+      if (iframe.contentWindow) {
+        try {
+          // Try to inject a script that will hide watermarks
+          const script = `
+            (function() {
+              // Hide watermarks immediately
+              function hideWatermarks() {
+                const selectors = [
+                  'a.watermark.leftwatermark',
+                  'a[aria-label*="Jitsi Meet Logo"]',
+                  'a[href*="jitsi.org"]',
+                  '[style*="watermark.svg"]',
+                  '.watermark',
+                  '.leftwatermark',
+                  '.rightwatermark'
+                ];
+                
+                selectors.forEach(selector => {
+                  const elements = document.querySelectorAll(selector);
+                  elements.forEach(el => {
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                    el.style.opacity = '0';
+                    el.remove();
+                  });
+                });
+              }
+              
+              // Hide watermarks immediately and on DOM changes
+              hideWatermarks();
+              setInterval(hideWatermarks, 1000);
+              
+              // Also listen for DOM changes
+              const observer = new MutationObserver(hideWatermarks);
+              observer.observe(document.body, { childList: true, subtree: true });
+            })();
+          `;
+          
+          iframe.contentWindow.eval(script);
+        } catch (e) {
+          // CORS error expected
+          console.log('LibJitsiVideoCall: Cannot inject script into iframe due to CORS');
+        }
+      }
+      
+    } catch (error) {
+      console.log('LibJitsiVideoCall: Error intercepting watermark creation:', error);
+    }
+  }
+
+  /**
+   * Try to use Jitsi API commands to hide watermarks
+   */
+  private tryJitsiWatermarkCommands() {
+    if (!this.jitsiApi) return;
+    
+    try {
+      // Try various commands that might hide watermarks
+      const commands = [
+        'toggleWatermark',
+        'hideWatermark',
+        'hideBranding',
+        'hideLogo',
+        'disableWatermark',
+        'disableBranding',
+        'disableLogo',
+        'toggleBranding',
+        'toggleLogo'
+      ];
+      
+      commands.forEach(command => {
+        try {
+          this.jitsiApi.executeCommand(command);
+          console.log(`LibJitsiVideoCall: Executed command: ${command}`);
+        } catch (e) {
+          // Command doesn't exist, that's fine
+        }
+      });
+      
+      // Try to set interface config after joining
+      setTimeout(() => {
+        try {
+          this.jitsiApi.executeCommand('setInterfaceConfig', {
+            SHOW_JITSI_WATERMARK: false,
+            SHOW_BRAND_WATERMARK: false,
+            SHOW_WATERMARK_FOR_GUESTS: false,
+            SHOW_POWERED_BY: false,
+            SHOW_POLICY_WATERMARK: false,
+            SHOW_LOGO: false,
+            SHOW_BRAND: false,
+            SHOW_JITSI_LOGO: false,
+            SHOW_BRAND_LOGO: false,
+            SHOW_MEET_LOGO: false,
+            SHOW_MEET_WATERMARK: false,
+            SHOW_LEFT_WATERMARK: false,
+            SHOW_RIGHT_WATERMARK: false,
+            SHOW_POWERED_BY_JITSI: false,
+            SHOW_POWERED_BY_LOGO: false,
+            DISABLE_BRANDING: true,
+            DISABLE_WATERMARKS: true,
+            DISABLE_LOGO: true
+          });
+          console.log('LibJitsiVideoCall: Set interface config to hide watermarks');
+        } catch (e) {
+          console.log('LibJitsiVideoCall: Could not set interface config:', e);
+        }
+      }, 2000);
+      
+    } catch (error) {
+      console.log('LibJitsiVideoCall: Error executing watermark commands:', error);
+    }
+  }
+
+  /**
+   * Clean up injected watermark hiding CSS and overlays
+   */
+  private cleanupWatermarkHidingCSS() {
+    const styleId = 'jitsi-watermark-hider';
+    const existingStyle = document.getElementById(styleId);
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+    
+    // Clean up overlays
+    const overlayIds = [
+      'jitsi-watermark-overlay',
+      'jitsi-fullscreen-watermark-overlay',
+      'watermark-overlay-top-left',
+      'watermark-overlay-top-right',
+      'watermark-overlay-bottom-left',
+      'watermark-overlay-bottom-right',
+      'watermark-overlay-center-bottom',
+      'watermark-overlay-top-center',
+      'watermark-overlay-left-center',
+      'watermark-overlay-right-center'
+    ];
+    
+    overlayIds.forEach(id => {
+      const overlay = document.getElementById(id);
+      if (overlay) {
+        overlay.remove();
+      }
+    });
   }
 }

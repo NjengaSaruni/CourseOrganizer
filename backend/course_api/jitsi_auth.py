@@ -164,8 +164,30 @@ class JitsiJWTAuth:
         # Clean room name (remove special characters)
         clean_room_name = ''.join(c for c in room_name if c.isalnum() or c in '-_')
         
-        # Generate URL with JWT token
-        url = f"https://{domain}/{clean_room_name}?jwt={token}"
+        # Append safe default config params to improve connectivity and UX
+        # - Disable P2P to force routing via JVB (helps across restrictive NATs)
+        # - Disable deep linking / prejoin for embedded UX
+        # - Start unmuted by default, frontend can still toggle
+        # - Enable layer suspension for bandwidth efficiency
+        params = {
+            'jwt': token,
+            'config.p2p.enabled': 'false',
+            'config.disableDeepLinking': 'true',
+            'config.prejoinPageEnabled': 'false',
+            'config.startWithAudioMuted': 'false',
+            'config.startWithVideoMuted': 'false',
+            'config.enableLayerSuspension': 'true',
+            'config.useStunTurn': 'true',
+            'config.disableAudioLevels': 'true',
+            'config.disableSimulcast': 'false',
+            'config.startAudioOnly': 'false',
+            'config.startSilent': 'false',
+        }
+
+        # Build query string
+        from urllib.parse import urlencode
+        query = urlencode(params)
+        url = f"https://{domain}/{clean_room_name}?{query}"
         return url
     
     def is_user_moderator(self, user: User, meeting_id: Optional[int] = None) -> bool:

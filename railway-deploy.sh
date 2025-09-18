@@ -5,6 +5,8 @@
 # Uses Dockerfile (not Dockerfile.prod) for development environment
 
 set -e
+# Non-interactive mode for Railway CLI
+export RAILWAY_CI=1
 
 echo "🚀 Railway Development/Staging Deployment Script"
 echo "=================================================="
@@ -47,8 +49,8 @@ if ! command -v railway >/dev/null 2>&1; then
 fi
 
 if ! railway whoami >/dev/null 2>&1; then
-    print_warning "Not logged in to Railway. Please log in:"
-    railway login
+    print_error "Not logged in to Railway. Please run 'railway login' once in your shell and re-run this script."
+    exit 1
 fi
 
 print_success "Prerequisites check passed"
@@ -68,9 +70,10 @@ if [ -f "nixpacks.toml" ]; then
     rm nixpacks.toml
 fi
 
+
 # Create development railway.json (remove production config)
 if [ -f "railway.json" ]; then
-    print_status "Creating development railway.json configuration..."
+    print_status "Creating development railway.json cs onfiguration..."
     mv railway.json railway.json.prod.bak
     print_warning "Backed up production railway.json as railway.json.prod.bak"
 fi
@@ -93,36 +96,24 @@ print_status "Created development railway.json configuration"
 
 print_success "Docker deployment preparation complete"
 
-# Set target project
+# Set target project and service (override with SERVICE_NAME env)
 TARGET_PROJECT="uoncourseorganizer"
+SERVICE_NAME="${SERVICE_NAME:-course-organizer-backend}"
 print_status "Target project: $TARGET_PROJECT"
+print_status "Target service: $SERVICE_NAME"
 
 # Check if we can link to the target project
 print_status "Checking Railway project status..."
-if railway link --project $TARGET_PROJECT >/dev/null 2>&1; then
+if railway link --project "$TARGET_PROJECT" >/dev/null 2>&1; then
     print_status "Successfully linked to existing project: $TARGET_PROJECT"
-    
-    # Check if we're linked to a service
-    if ! railway service >/dev/null 2>&1; then
-        print_status "No service linked. Listing available services..."
+    # Always set the intended service context to avoid deploying to DB service
+    if railway service "$SERVICE_NAME" >/dev/null 2>&1; then
+        print_success "Linked to service: $SERVICE_NAME"
+    else
+        print_error "Service not found: $SERVICE_NAME"
+        print_status "Available services:"
         railway service list
-        
-        print_status "Linking to development backend service..."
-        if railway service course-organizer-backend >/dev/null 2>&1; then
-            print_success "Linked to course-organizer-backend service"
-        else
-            print_warning "Service course-organizer-backend not found. Available services:"
-            railway service list
-            echo ""
-            print_warning "Please enter the correct service name from the list above:"
-            read -p "Service name: " SERVICE_NAME
-            if railway service "$SERVICE_NAME" >/dev/null 2>&1; then
-                print_success "Linked to $SERVICE_NAME service"
-            else
-                print_error "Failed to link to service: $SERVICE_NAME"
-                exit 1
-            fi
-        fi
+        exit 1
     fi
 else
     print_status "Creating new development project: $TARGET_PROJECT"
@@ -130,32 +121,37 @@ else
     print_status "Adding PostgreSQL database..."
     railway add --database postgres
     print_status "Adding main application service..."
-    railway add --service course-organizer-backend
+    railway add --service "$SERVICE_NAME"
     print_status "Linking to main service..."
-    railway service course-organizer-backend
+    railway service "$SERVICE_NAME"
     print_success "Development project setup complete"
 fi
 
-# Verify we're linked to the correct project and service
+# Verify we're linked to the correct project and service (fast, non-interactive)
 print_status "Verifying project and service connection..."
-if ! railway service >/dev/null 2>&1; then
-    print_error "No service linked. Cannot continue with deployment."
+if railway service "$SERVICE_NAME" >/dev/null 2>&1; then
+    print_success "Verified service context: $SERVICE_NAME"
+else
+    print_error "Failed to verify service: $SERVICE_NAME"
+    print_status "Available services:"
+    railway service list || true
     exit 1
 fi
 
-# Show current project info
-print_status "Current project info:"
-railway status
+# Show current project info (targeted; non-blocking)
+print_status "Current project info (targeted):"
+railway status --service "$SERVICE_NAME" || true
 
 # Generate secret key
 SECRET_KEY=$(python3 -c "import secrets; print(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)))")
 
 # Set environment variables
 print_status "Setting up environment variables..."
-railway variables --set "SECRET_KEY=$SECRET_KEY"
-railway variables --set "DEBUG=true"
-railway variables --set "ALLOWED_HOSTS=*.railway.app,healthcheck.railway.app,localhost,127.0.0.1"
-railway variables --set "CORS_ALLOWED_ORIGINS=https://*.railway.app"
+railway variables --service "$SERVICE_NAME" --set "SECRET_KEY=$SECRET_KEY"
+railway variables --service "$SERVICE_NAME" --set "DEBUG=false"
+railway variables --service "$SERVICE_NAME" --set "ALLOWED_HOSTS=*.railway.app,healthcheck.railway.app,localhost,127.0.0.1,co.riverlearn.co.ke,jitsi.riverlearn.co.ke"
+railway variables --service "$SERVICE_NAME" --set "CORS_ALLOWED_ORIGINS=https://*.railway.app,https://co.riverlearn.co.ke,https://jitsi.riverlearn.co.ke"
+railway variables --service "$SERVICE_NAME" --set "CSRF_TRUSTED_ORIGINS=https://*.railway.app,https://co.riverlearn.co.ke,https://jitsi.riverlearn.co.ke"
 
 # Ask for admin password
 print_status "Setting up admin account..."
@@ -194,13 +190,14 @@ fi
 
 print_success "Environment variables configured"
 
-# Deploy using Dockerfile
+# Deploy using Dockerfile (ensure correct service context)
 print_status "Deploying with Dockerfile..."
-print_warning "This will deploy your application to Railway using Docker. Press Enter to continue or Ctrl+C to cancel."
-read -r
-
 print_status "Starting Railway Docker deployment..."
-railway up
+if ! railway service | grep -q "$SERVICE_NAME"; then
+    print_error "Not currently linked to $SERVICE_NAME. Aborting."
+    exit 1
+fi
+railway up --service "$SERVICE_NAME"
 
 print_success "Docker deployment initiated!"
 
