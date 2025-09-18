@@ -4,7 +4,7 @@ import os
 from django.conf import settings
 
 def serve_angular_app(request):
-    """Serve the Angular application"""
+    """Serve the Angular application for all non-API routes"""
     try:
         # Try to serve the index.html file
         index_path = os.path.join(settings.STATIC_ROOT, 'index.html')

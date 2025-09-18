@@ -18,19 +18,25 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import TemplateView
 from django.views.static import serve
 from django.http import HttpResponse
 from . import views
 import os
 
-def serve_static_file(request, path):
-    """Serve static files for Angular app"""
-    file_path = os.path.join(settings.STATIC_ROOT, path)
-    if os.path.exists(file_path):
-        return serve(request, path, document_root=settings.STATIC_ROOT)
+def serve_static_assets(request, path):
+    """Serve static assets (CSS, JS, images) for Angular app"""
+    # Check if this is a static asset request by file extension
+    static_extensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.woff', '.woff2', '.ttf', '.eot', '.json', '.txt']
+    
+    if any(path.endswith(ext) for ext in static_extensions):
+        file_path = os.path.join(settings.STATIC_ROOT, path)
+        if os.path.exists(file_path):
+            return serve(request, path, document_root=settings.STATIC_ROOT)
+        else:
+            return HttpResponse("File not found", status=404)
     else:
-        return HttpResponse("File not found", status=404)
+        # If it's not a static asset, serve the Angular app for client-side routing
+        return views.serve_angular_app(request)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -38,9 +44,9 @@ urlpatterns = [
     path('api/', include('course_api.urls')),
     path('api/communication/', include('communication.urls')),
     path('api/school/', include('school.urls')),
-    # Serve static files for Angular app
-    path('<path:path>', serve_static_file),
-    # Serve Angular app at root (catch-all)
+    # Serve static assets for Angular app
+    path('<path:path>', serve_static_assets),
+    # Serve Angular app at root (catch-all for SPA routing)
     path('', views.serve_angular_app),
 ]
 
