@@ -6,13 +6,13 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from .models import (
     ClassRepRole, Message, Announcement, MessageReaction, 
-    MessageReadStatus, Poll, PollVote
+    MessageReadStatus, AnnouncementReadStatus, Poll, PollVote
 )
 from .serializers import (
     AnnouncementSerializer, AnnouncementCreateSerializer,
     PollSerializer, PollCreateSerializer, PollVoteSerializer,
     MessageReactionSerializer, MessageReadStatusSerializer,
-    ClassRepPermissionSerializer
+    AnnouncementReadStatusSerializer, ClassRepPermissionSerializer
 )
 
 User = get_user_model()
@@ -44,7 +44,40 @@ class AnnouncementListCreateView(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         """Create a new announcement"""
-        serializer.save(sender=self.request.user)
+        announcement = serializer.save(sender=self.request.user)
+        
+        # Send email notifications to all students in the class
+        self._send_announcement_notifications(announcement)
+    
+    def _send_announcement_notifications(self, announcement):
+        """Send email notifications for new announcement"""
+        try:
+            from course_api.email_service import send_announcement_notification_email
+            from django.contrib.auth import get_user_model
+            
+            User = get_user_model()
+            
+            # Get all students in the class
+            students = User.objects.filter(
+                user_type='student',
+                student_class=announcement.student_class,
+                is_active=True
+            ).exclude(id=announcement.sender.id)  # Don't send to the sender
+            
+            # Send emails in background (you might want to use Celery for this)
+            for student in students:
+                try:
+                    send_announcement_notification_email(student, announcement)
+                except Exception as e:
+                    # Log error but continue with other students
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Failed to send announcement email to {student.email}: {str(e)}")
+                    
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to send announcement notifications: {str(e)}")
 
 
 class AnnouncementDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -219,6 +252,67 @@ def mark_message_as_read(request, message_id):
     
     serializer = MessageReadStatusSerializer(read_status)
     return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def mark_announcement_as_read(request, announcement_id):
+    """Mark an announcement as read by the current user"""
+    announcement = get_object_or_404(Announcement, id=announcement_id)
+    
+    # Check if user has access to this announcement
+    user = request.user
+    if not user.is_admin:
+        if user.is_student:
+            if announcement.student_class != user.student_class:
+                return Response(
+                    {'error': 'You do not have access to this announcement'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        else:
+            return Response(
+                {'error': 'You do not have access to this announcement'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+    
+    # Create or update read status
+    read_status, created = AnnouncementReadStatus.objects.get_or_create(
+        announcement=announcement,
+        user=user
+    )
+    
+    serializer = AnnouncementReadStatusSerializer(read_status)
+    return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def get_unread_announcements_count(request):
+    """Get count of unread announcements for the current user"""
+    user = request.user
+    
+    if user.is_admin:
+        # Admins can see all announcements
+        total_announcements = Announcement.objects.count()
+        read_announcements = AnnouncementReadStatus.objects.filter(user=user).count()
+    elif user.is_student and user.student_class:
+        # Students can only see announcements for their class
+        total_announcements = Announcement.objects.filter(student_class=user.student_class).count()
+        read_announcements = AnnouncementReadStatus.objects.filter(
+            user=user,
+            announcement__student_class=user.student_class
+        ).count()
+    else:
+        total_announcements = 0
+        read_announcements = 0
+    
+    unread_count = total_announcements - read_announcements
+    
+    return Response({
+        'unread_count': unread_count,
+        'total_count': total_announcements,
+        'read_count': read_announcements
+    })
 
 
 @api_view(['GET'])

@@ -44,6 +44,9 @@ export interface Announcement {
     full_name: string;
     registration_number: string;
   };
+  is_read?: boolean;
+  read_count?: number;
+  is_expired?: boolean;
 }
 
 export interface Class {
@@ -320,6 +323,25 @@ export class CommunicationService {
     return this.http.delete<void>(`${this.apiUrl}/communication/announcements/${id}/`).pipe(
       catchError(error => {
         console.error('Error deleting announcement:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  // Announcement Read Status
+  markAnnouncementAsRead(announcementId: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/communication/announcements/${announcementId}/mark-read/`, {}).pipe(
+      catchError(error => {
+        console.error('Error marking announcement as read:', error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  getUnreadAnnouncementsCount(): Observable<{unread_count: number, total_count: number, read_count: number}> {
+    return this.http.get<{unread_count: number, total_count: number, read_count: number}>(`${this.apiUrl}/communication/announcements/unread-count/`).pipe(
+      catchError(error => {
+        console.error('Error getting unread announcements count:', error);
         return throwError(() => error);
       })
     );

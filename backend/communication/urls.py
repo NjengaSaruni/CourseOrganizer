@@ -25,6 +25,8 @@ urlpatterns = [
     # Announcement URLs
     path('announcements/', api_views.AnnouncementListCreateView.as_view(), name='announcement-list-create'),
     path('announcements/<int:pk>/', api_views.AnnouncementDetailView.as_view(), name='announcement-detail'),
+    path('announcements/<int:announcement_id>/mark-read/', api_views.mark_announcement_as_read, name='mark-announcement-read'),
+    path('announcements/unread-count/', api_views.get_unread_announcements_count, name='unread-announcements-count'),
     
     # Poll URLs
     path('polls/', api_views.PollListCreateView.as_view(), name='poll-list-create'),

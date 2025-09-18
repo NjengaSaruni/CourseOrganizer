@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Your Email - RiverLearn</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #1d1d1f;
+            background-color: #f5f5f7;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .tagline {
+            font-size: 16px;
+            opacity: 0.9;
+            font-weight: 400;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .greeting {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #424245;
+            margin-bottom: 30px;
+            line-height: 1.7;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .info-box {
+            background-color: #f5f5f7;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-box h3 {
+            color: #1d1d1f;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .info-box p {
+            color: #424245;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        .footer {
+            background-color: #f5f5f7;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #e5e5e7;
+        }
+        
+        .footer-text {
+            color: #86868b;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .footer-links {
+            margin-top: 20px;
+        }
+        
+        .footer-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            margin: 0 15px;
+        }
+        
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: #e5e5e7;
+            margin: 30px 0;
+        }
+        
+        /* Responsive design */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 0;
+                border-radius: 0;
+            }
+            
+            .header, .content, .footer {
+                padding: 30px 20px;
+            }
+            
+            .greeting {
+                font-size: 22px;
+            }
+            
+            .message {
+                font-size: 15px;
+            }
+            
+            .cta-button {
+                display: block;
+                text-align: center;
+                margin: 20px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <div class="logo">RiverLearn</div>
+            <div class="tagline">Course Organizer</div>
+        </div>
+        
+        <div class="content">
+            
+<div class="greeting">Welcome to RiverLearn!</div>
+
+<div class="message">
+    Thank you for registering with RiverLearn Course Organizer. We're excited to have you join our learning community.
+</div>
+
+<div class="info-box">
+    <h3>📧 Email Verification Required</h3>
+    <p>To complete your registration and access all features, please verify your email address by clicking the button below.</p>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="https://co.riverlearn.co.ke/verify-email?token=sample_verification_token_12345" class="cta-button">Verify Email Address</a>
+</div>
+
+<div class="message">
+    <strong>Important:</strong> This verification link will expire in 24 hours for security reasons.
+</div>
+
+<div class="divider"></div>
+
+<div class="message">
+    <strong>What happens next?</strong><br>
+    Once you verify your email, you'll be able to:
+    <ul style="margin: 15px 0; padding-left: 20px; color: #424245;">
+        <li>Access your personalized dashboard</li>
+        <li>View your course timetable</li>
+        <li>Download course materials</li>
+        <li>Join virtual meetings and discussions</li>
+    </ul>
+</div>
+
+<div class="message">
+    If you didn't create an account with RiverLearn, please ignore this email. Your account will not be activated without verification.
+</div>
+
+<div class="message">
+    Need help? Contact our support team at <a href="mailto:support@riverlearn.co.ke" style="color: #667eea;">support@riverlearn.co.ke</a>
+</div>
+
+        </div>
+        
+        <div class="footer">
+            <div class="footer-text">
+                This email was sent from RiverLearn Course Organizer
+            </div>
+            <div class="footer-links">
+                <a href="https://co.riverlearn.co.ke">Visit Platform</a>
+                <a href="https://co.riverlearn.co.ke/privacy">Privacy Policy</a>
+                <a href="https://co.riverlearn.co.ke/support">Support</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

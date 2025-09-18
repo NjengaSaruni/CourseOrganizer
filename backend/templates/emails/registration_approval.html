@@ -1,0 +1,61 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Registration Approved - RiverLearn{% endblock %}
+
+{% block content %}
+<div class="greeting">🎉 Great News!</div>
+
+<div class="message">
+    Your registration for RiverLearn Course Organizer has been approved! You're now ready to start your learning journey with us.
+</div>
+
+<div class="info-box">
+    <h3>✅ Account Status: Active</h3>
+    <p>You can now log in to your account and access all the features of our platform.</p>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ login_url }}" class="cta-button">Access Your Dashboard</a>
+</div>
+
+{% if verification_required %}
+<div class="info-box">
+    <h3>📧 Email Verification Still Required</h3>
+    <p>If you haven't verified your email yet, please click the button below to complete the verification process.</p>
+</div>
+
+<div style="text-align: center; margin: 20px 0;">
+    <a href="{{ verification_url }}" class="cta-button">Verify Email Address</a>
+</div>
+{% endif %}
+
+<div class="divider"></div>
+
+<div class="message">
+    <strong>What you can do now:</strong><br>
+    <ul style="margin: 15px 0; padding-left: 20px; color: #424245;">
+        <li>View your personalized course timetable</li>
+        <li>Access course materials and resources</li>
+        <li>Join virtual meetings and discussions</li>
+        <li>Track your academic progress</li>
+        <li>Connect with fellow students and instructors</li>
+    </ul>
+</div>
+
+<div class="message">
+    <strong>Getting Started Tips:</strong><br>
+    • Bookmark <a href="https://co.riverlearn.co.ke" style="color: #667eea;">co.riverlearn.co.ke</a> for easy access<br>
+    • Check your timetable regularly for updates<br>
+    • Download the mobile app for notifications (coming soon)<br>
+    • Join our community discussions to connect with peers
+</div>
+
+<div class="message">
+    Welcome to RiverLearn! We're here to support your academic success. If you have any questions, don't hesitate to reach out to our support team.
+</div>
+
+<div class="message">
+    Best regards,<br>
+    <strong>The RiverLearn Team</strong>
+</div>
+{% endblock %}

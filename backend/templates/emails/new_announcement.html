@@ -1,0 +1,156 @@
+{% extends "emails/base.html" %}
+
+{% block title %}New Class Announcement{% endblock %}
+
+{% block content %}
+<div class="content">
+  <h1 class="title">📢 New Class Announcement</h1>
+  
+  <p class="greeting">Hello {{ user.first_name }},</p>
+  
+  <p class="message">
+    A new announcement has been posted for your class <strong>{{ announcement.student_class.display_name }}</strong>.
+  </p>
+  
+  <div class="announcement-card">
+    <div class="announcement-header">
+      <h2 class="announcement-title">{{ announcement.title }}</h2>
+      <div class="announcement-meta">
+        <span class="priority priority-{{ announcement.priority }}">
+          {{ announcement.priority|title }}
+        </span>
+        {% if announcement.is_pinned %}
+        <span class="pinned">📌 Pinned</span>
+        {% endif %}
+      </div>
+    </div>
+    
+    <div class="announcement-content">
+      {{ announcement.content|linebreaks }}
+    </div>
+    
+    <div class="announcement-footer">
+      <p class="sender-info">
+        <strong>From:</strong> {{ announcement.sender.get_full_name }} ({{ announcement.sender.registration_number }})
+      </p>
+      <p class="timestamp">
+        <strong>Posted:</strong> {{ announcement.created_at|date:"F j, Y \a\t g:i A" }}
+      </p>
+      {% if announcement.expires_at %}
+      <p class="expiry">
+        <strong>Expires:</strong> {{ announcement.expires_at|date:"F j, Y \a\t g:i A" }}
+      </p>
+      {% endif %}
+    </div>
+  </div>
+  
+  <div class="cta-section">
+    <a href="{{ site_url }}/announcements" class="cta-button">
+      View All Announcements
+    </a>
+  </div>
+  
+  <p class="footer-note">
+    Stay updated with the latest class information and important notices.
+  </p>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+  .announcement-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin: 24px 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .announcement-header {
+    margin-bottom: 16px;
+  }
+  
+  .announcement-title {
+    color: #111827;
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+  }
+  
+  .announcement-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .priority {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .priority-low {
+    background: #f0fdf4;
+    color: #166534;
+  }
+  
+  .priority-normal {
+    background: #eff6ff;
+    color: #1e40af;
+  }
+  
+  .priority-high {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  
+  .priority-urgent {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  
+  .pinned {
+    background: #f3e8ff;
+    color: #7c3aed;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .announcement-content {
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 20px;
+  }
+  
+  .announcement-footer {
+    border-top: 1px solid #f3f4f6;
+    padding-top: 16px;
+    font-size: 14px;
+    color: #6b7280;
+  }
+  
+  .announcement-footer p {
+    margin: 4px 0;
+  }
+  
+  .sender-info {
+    font-weight: 500;
+  }
+  
+  .timestamp, .expiry {
+    font-size: 13px;
+  }
+  
+  .expiry {
+    color: #dc2626;
+    font-weight: 500;
+  }
+</style>
+{% endblock %}

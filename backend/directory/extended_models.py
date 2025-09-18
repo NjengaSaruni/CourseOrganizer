@@ -144,6 +144,12 @@ class RegistrationRequest(models.Model):
         if self.status != 'pending':
             raise ValidationError("Only pending requests can be approved")
         
+        # Get the default class (Class of 2029)
+        from school.models import Class
+        default_class = Class.get_default_class()
+        if not default_class:
+            raise ValidationError("No default class found. Please run setup_school_structure first.")
+        
         # Create user
         user = User.objects.create(
             username=self.email,
@@ -157,6 +163,7 @@ class RegistrationRequest(models.Model):
             academic_year=self.academic_year,
             current_year=self.year_of_study,
             current_semester=self.semester,
+            student_class=default_class,  # Assign to Class of 2029
             bio=self.bio
         )
         

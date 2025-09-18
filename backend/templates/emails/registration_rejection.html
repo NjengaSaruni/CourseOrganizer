@@ -1,0 +1,45 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Registration Update - RiverLearn{% endblock %}
+
+{% block content %}
+<div class="greeting">Registration Update</div>
+
+<div class="message">
+    Thank you for your interest in RiverLearn Course Organizer. We appreciate you taking the time to register with us.
+</div>
+
+<div class="info-box" style="border-left-color: #ff6b6b; background-color: #fff5f5;">
+    <h3>❌ Registration Not Approved</h3>
+    <p>We regret to inform you that your registration could not be approved at this time.</p>
+</div>
+
+{% if reason %}
+<div class="message">
+    <strong>Reason:</strong> {{ reason }}
+</div>
+{% endif %}
+
+<div class="message">
+    <strong>What you can do:</strong><br>
+    • Review your registration information for accuracy<br>
+    • Contact our support team if you believe this is an error<br>
+    • Appeal this decision by providing additional documentation<br>
+    • Reapply with corrected information
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="mailto:support@riverlearn.co.ke" class="cta-button">Contact Support</a>
+</div>
+
+<div class="divider"></div>
+
+<div class="message">
+    We understand this may be disappointing, and we're here to help. Our support team is available to assist you with any questions or concerns you may have.
+</div>
+
+<div class="message">
+    Thank you for your understanding,<br>
+    <strong>The RiverLearn Team</strong>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from django.urls import reverse
@@ -19,6 +19,41 @@ logger.info(f"Frontend URL: {getattr(settings, 'FRONTEND_URL', 'Not set')}")
 # SendGrid configuration
 SENDGRID_API_KEY = getattr(settings, 'SENDGRID_API_KEY', None)
 SENDGRID_FROM_EMAIL = getattr(settings, 'SENDGRID_FROM_EMAIL', 'noreply@riverlearn.co.ke')
+
+def send_html_email(to_email, subject, template_name, context=None, plain_text_fallback=None):
+    """
+    Send HTML email using Django templates
+    """
+    try:
+        if context is None:
+            context = {}
+        
+        # Render HTML template
+        html_content = render_to_string(template_name, context)
+        
+        # Create email with both HTML and plain text
+        email = EmailMultiAlternatives(
+            subject=subject,
+            body=plain_text_fallback or "Please view this email in an HTML-capable email client.",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[to_email]
+        )
+        
+        # Attach HTML version
+        email.attach_alternative(html_content, "text/html")
+        
+        # Send email
+        result = email.send(fail_silently=False)
+        logger.info(f"HTML email sent successfully to {to_email}, result: {result}")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to send HTML email to {to_email}: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return False
+
 
 def send_email_via_sendgrid(to_email, subject, message):
     """
@@ -65,13 +100,20 @@ def send_verification_email(user, verification_token):
         logger.info(f"Verification URL: {verification_url}")
         
         # Email subject
-        subject = 'Verify Your Email - Course Organizer'
+        subject = 'Verify Your Email - RiverLearn'
         
-        # Email content
-        message = f"""
+        # Context for HTML template
+        context = {
+            'user': user,
+            'verification_url': verification_url,
+            'user_name': user.get_full_name(),
+        }
+        
+        # Plain text fallback
+        plain_text = f"""
 Hello {user.get_full_name()},
 
-Thank you for registering with Course Organizer!
+Thank you for registering with RiverLearn Course Organizer!
 
 To complete your registration and verify your email address, please click the link below:
 
@@ -82,23 +124,25 @@ This link will expire in 24 hours.
 If you didn't register for this account, please ignore this email.
 
 Best regards,
-Course Organizer Team
-University of Nairobi Law School
+The RiverLearn Team
         """.strip()
         
         logger.info(f"Email details - From: {settings.DEFAULT_FROM_EMAIL}, To: {user.email}, Subject: {subject}")
         
-        # Send email
-        result = send_mail(
+        # Send HTML email
+        result = send_html_email(
+            to_email=user.email,
             subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
+            template_name='emails/email_verification.html',
+            context=context,
+            plain_text_fallback=plain_text
         )
         
-        logger.info(f"Verification email sent successfully to {user.email}, result: {result}")
-        return True
+        if result:
+            logger.info(f"Verification email sent successfully to {user.email}")
+            return True
+        else:
+            raise Exception("HTML email sending failed")
         
     except Exception as e:
         logger.error(f"Failed to send verification email to {user.email}: {str(e)}")
@@ -108,7 +152,7 @@ University of Nairobi Law School
         
         # Try SendGrid as fallback
         logger.warning("SMTP failed, trying SendGrid as fallback...")
-        sendgrid_result = send_email_via_sendgrid(user.email, subject, message)
+        sendgrid_result = send_email_via_sendgrid(user.email, subject, plain_text)
         
         if sendgrid_result:
             logger.info(f"Email sent successfully via SendGrid to {user.email}")
@@ -119,9 +163,9 @@ University of Nairobi Law School
         logger.error("MANUAL EMAIL SENDING REQUIRED")
         logger.error("=" * 80)
         logger.error(f"To: {user.email}")
-        logger.error(f"Subject: Verify Your Email - Course Organizer")
+        logger.error(f"Subject: {subject}")
         logger.error(f"Message:")
-        logger.error(message)
+        logger.error(plain_text)
         logger.error("=" * 80)
         
         return False
@@ -134,45 +178,68 @@ def send_registration_approval_email(user):
     try:
         logger.info(f"Attempting to send approval email to {user.email}")
         
-        subject = 'Registration Approved - Course Organizer'
+        subject = 'Registration Approved - RiverLearn'
+        
+        # Build URLs
+        login_url = f"{settings.FRONTEND_URL}/login"
+        dashboard_url = f"{settings.FRONTEND_URL}/dashboard"
         
         # Include verification link if email not verified yet
-        verification_section = ""
+        verification_required = False
+        verification_url = None
         if not user.email_verified and user.email_verification_token:
             verification_url = f"{settings.FRONTEND_URL}/verify-email?token={user.email_verification_token}"
+            verification_required = True
+            logger.info(f"User email not verified, including verification link: {verification_url}")
+        
+        # Context for HTML template
+        context = {
+            'user': user,
+            'user_name': user.get_full_name(),
+            'login_url': login_url,
+            'dashboard_url': dashboard_url,
+            'verification_required': verification_required,
+            'verification_url': verification_url,
+        }
+        
+        # Plain text fallback
+        verification_section = ""
+        if verification_required:
             verification_section = f"""
 
 If you haven't verified your email yet, please click the link below to verify:
 {verification_url}
 """
-            logger.info(f"User email not verified, including verification link: {verification_url}")
         
-        message = f"""
+        plain_text = f"""
 Hello {user.get_full_name()},
 
-Great news! Your registration for Course Organizer has been approved.
+Great news! Your registration for RiverLearn Course Organizer has been approved.
 
 You can now log in to your account and access all the features.{verification_section}
 
-Welcome to Course Organizer!
+Welcome to RiverLearn!
 
 Best regards,
-Course Organizer Team
-University of Nairobi Law School
+The RiverLearn Team
         """.strip()
         
         logger.info(f"Email details - From: {settings.DEFAULT_FROM_EMAIL}, To: {user.email}, Subject: {subject}")
         
-        result = send_mail(
+        # Send HTML email
+        result = send_html_email(
+            to_email=user.email,
             subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
+            template_name='emails/registration_approval.html',
+            context=context,
+            plain_text_fallback=plain_text
         )
         
-        logger.info(f"Registration approval email sent successfully to {user.email}, result: {result}")
-        return True
+        if result:
+            logger.info(f"Registration approval email sent successfully to {user.email}")
+            return True
+        else:
+            raise Exception("HTML email sending failed")
         
     except Exception as e:
         logger.error(f"Failed to send approval email to {user.email}: {str(e)}")
@@ -182,7 +249,7 @@ University of Nairobi Law School
         
         # Try SendGrid as fallback
         logger.warning("SMTP failed, trying SendGrid as fallback...")
-        sendgrid_result = send_email_via_sendgrid(user.email, subject, message)
+        sendgrid_result = send_email_via_sendgrid(user.email, subject, plain_text)
         
         if sendgrid_result:
             logger.info(f"Email sent successfully via SendGrid to {user.email}")
@@ -193,9 +260,9 @@ University of Nairobi Law School
         logger.error("MANUAL EMAIL SENDING REQUIRED")
         logger.error("=" * 80)
         logger.error(f"To: {user.email}")
-        logger.error(f"Subject: Registration Approved - Course Organizer")
+        logger.error(f"Subject: {subject}")
         logger.error(f"Message:")
-        logger.error(message)
+        logger.error(plain_text)
         logger.error("=" * 80)
         
         return False
@@ -260,12 +327,20 @@ def send_password_reset_email(user, reset_token):
     try:
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
         
-        subject = 'Password Reset - Course Organizer'
+        subject = 'Password Reset - RiverLearn'
         
-        message = f"""
+        # Context for HTML template
+        context = {
+            'user': user,
+            'user_name': user.get_full_name(),
+            'reset_url': reset_url,
+        }
+        
+        # Plain text fallback
+        plain_text = f"""
 Hello {user.get_full_name()},
 
-You requested a password reset for your Course Organizer account.
+You requested a password reset for your RiverLearn Course Organizer account.
 
 To reset your password, please click the link below:
 
@@ -276,23 +351,38 @@ This link will expire in 1 hour.
 If you didn't request this password reset, please ignore this email.
 
 Best regards,
-Course Organizer Team
-University of Nairobi Law School
+The RiverLearn Team
         """.strip()
         
-        send_mail(
+        # Send HTML email
+        result = send_html_email(
+            to_email=user.email,
             subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
+            template_name='emails/password_reset.html',
+            context=context,
+            plain_text_fallback=plain_text
         )
         
-        logger.info(f"Password reset email sent to {user.email}")
-        return True
+        if result:
+            logger.info(f"Password reset email sent successfully to {user.email}")
+            return True
+        else:
+            raise Exception("HTML email sending failed")
         
     except Exception as e:
         logger.error(f"Failed to send password reset email to {user.email}: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        
+        # Try SendGrid as fallback
+        logger.warning("SMTP failed, trying SendGrid as fallback...")
+        sendgrid_result = send_email_via_sendgrid(user.email, subject, plain_text)
+        
+        if sendgrid_result:
+            logger.info(f"Email sent successfully via SendGrid to {user.email}")
+            return True
+        
         return False
 
 
@@ -331,4 +421,52 @@ Course Organizer Team
         logger.error(f"Exception type: {type(e).__name__}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
+        return False
+
+
+def send_announcement_notification_email(user, announcement):
+    """
+    Send email notification for new announcement
+    """
+    try:
+        context = {
+            'user': user,
+            'announcement': announcement,
+            'site_url': settings.FRONTEND_URL,
+            'site_name': 'RiverLearn'
+        }
+        
+        # Determine subject based on priority
+        priority_emoji = {
+            'low': '📢',
+            'normal': '📢',
+            'high': '⚠️',
+            'urgent': '🚨'
+        }
+        
+        emoji = priority_emoji.get(announcement.priority, '📢')
+        subject = f"{emoji} New Announcement: {announcement.title}"
+        
+        plain_text_fallback = f"""
+New Announcement: {announcement.title}
+
+{announcement.content}
+
+From: {announcement.sender.get_full_name()}
+Class: {announcement.student_class.display_name}
+Posted: {announcement.created_at.strftime('%B %d, %Y at %I:%M %p')}
+
+View all announcements: {settings.FRONTEND_URL}/announcements
+        """.strip()
+        
+        return send_html_email(
+            to_email=user.email,
+            subject=subject,
+            template_name="emails/new_announcement.html",
+            context=context,
+            plain_text_fallback=plain_text_fallback
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to send announcement notification to {user.email}: {str(e)}")
         return False

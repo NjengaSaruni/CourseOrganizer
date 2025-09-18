@@ -25,6 +25,20 @@ import { AuthService, User } from '../../core/auth.service';
               </div>
               
               <div class="flex items-center space-x-4">
+                <!-- Notifications -->
+                <div class="relative">
+                  <button class="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors relative">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4.5 19.5L9 15H4l5 4.5z" />
+                    </svg>
+                    <!-- Notification badge -->
+                    <span *ngIf="unreadCount > 0" 
+                          class="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                      {{ unreadCount > 99 ? '99+' : unreadCount }}
+                    </span>
+                  </button>
+                </div>
+                
                 <!-- User Profile Dropdown -->
                 <div class="relative" #profileDropdown>
                   <button (click)="toggleProfileDropdown()" 
@@ -120,6 +134,7 @@ export class PageLayoutComponent implements OnInit {
   @Input() pageTitle = '';
   @Input() pageSubtitle = '';
   @Input() isSidebarOpen = false;
+  @Input() unreadCount = 0;
   @Output() sidebarToggle = new EventEmitter<boolean>();
 
   currentUser: User | null = null;

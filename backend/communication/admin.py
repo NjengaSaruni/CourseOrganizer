@@ -4,7 +4,7 @@ from django.urls import reverse
 from django.utils import timezone
 from .models import (
     ClassRepRole, Message, Announcement, MessageReaction, 
-    MessageReadStatus, Poll, PollVote
+    MessageReadStatus, AnnouncementReadStatus, Poll, PollVote
 )
 
 
@@ -164,6 +164,22 @@ class MessageReadStatusAdmin(admin.ModelAdmin):
             content = content[:30] + "..."
         return content
     message_preview.short_description = 'Message'
+
+
+@admin.register(AnnouncementReadStatus)
+class AnnouncementReadStatusAdmin(admin.ModelAdmin):
+    list_display = ['user', 'announcement_preview', 'read_at']
+    list_filter = ['read_at', 'announcement__priority', 'announcement__student_class']
+    search_fields = ['user__first_name', 'user__last_name', 'announcement__title']
+    readonly_fields = ['read_at']
+    
+    def announcement_preview(self, obj):
+        """Show a preview of the read announcement"""
+        title = obj.announcement.title
+        if len(title) > 30:
+            title = title[:30] + "..."
+        return title
+    announcement_preview.short_description = 'Announcement'
 
 
 class PollVoteInline(admin.TabularInline):

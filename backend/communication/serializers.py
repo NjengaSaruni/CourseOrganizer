@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
     ClassRepRole, Message, Announcement, MessageReaction, 
-    MessageReadStatus, Poll, PollVote
+    MessageReadStatus, AnnouncementReadStatus, Poll, PollVote
 )
 from school.models import Class
 
@@ -134,6 +134,8 @@ class AnnouncementSerializer(serializers.ModelSerializer):
     sender_registration_number = serializers.CharField(source='sender.registration_number', read_only=True)
     student_class_name = serializers.CharField(source='student_class.display_name', read_only=True)
     is_expired = serializers.BooleanField(read_only=True)
+    is_read = serializers.SerializerMethodField()
+    read_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Announcement
@@ -141,9 +143,20 @@ class AnnouncementSerializer(serializers.ModelSerializer):
             'id', 'sender', 'sender_name', 'sender_registration_number',
             'student_class', 'student_class_name', 'title', 'content',
             'priority', 'is_pinned', 'expires_at', 'attachment',
-            'is_expired', 'created_at', 'updated_at'
+            'is_expired', 'is_read', 'read_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']
+    
+    def get_is_read(self, obj):
+        """Check if the current user has read this announcement"""
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            return obj.is_read_by(request.user)
+        return False
+    
+    def get_read_count(self, obj):
+        """Get the number of users who have read this announcement"""
+        return obj.read_status.count()
     
     def validate(self, data):
         """Validate announcement data"""
@@ -215,6 +228,17 @@ class MessageReadStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = MessageReadStatus
         fields = ['id', 'message', 'user', 'user_name', 'read_at']
+        read_only_fields = ['read_at']
+
+
+class AnnouncementReadStatusSerializer(serializers.ModelSerializer):
+    """Serializer for AnnouncementReadStatus model"""
+    
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    
+    class Meta:
+        model = AnnouncementReadStatus
+        fields = ['id', 'announcement', 'user', 'user_name', 'read_at']
         read_only_fields = ['read_at']
 
 

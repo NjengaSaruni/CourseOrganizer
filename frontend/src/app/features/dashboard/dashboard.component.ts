@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CourseService, Course, CourseMaterial, Meeting, Recording, TimetableEntry } from '../../core/course.service';
+import { CommunicationService, Announcement } from '../../core/communication.service';
 import { AuthService } from '../../core/auth.service';
 import { LoaderComponent } from '../../shared/loader/loader.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
@@ -17,6 +18,7 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
       pageTitle="University of Nairobi - Dashboard" 
       pageSubtitle="Welcome to your course management system"
       [isSidebarOpen]="isSidebarOpen"
+      [unreadCount]="unreadAnnouncementsCount"
       (sidebarToggle)="onSidebarToggle($event)">
           
           <!-- Loading State -->
@@ -99,6 +101,88 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
             </div>
           </div>
           
+          <!-- Recent Announcements -->
+          <div class="bg-white border border-gray-200 rounded-2xl mb-8">
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold text-gray-900">Recent Announcements</h3>
+                <div class="flex items-center space-x-2">
+                  <span *ngIf="unreadAnnouncementsCount > 0" 
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    {{ unreadAnnouncementsCount }} unread
+                  </span>
+                  <a routerLink="/announcements" 
+                     class="text-gray-900 hover:text-gray-700 text-sm font-medium">
+                    View all →
+                  </a>
+                </div>
+              </div>
+              <div class="space-y-4">
+                <div *ngFor="let announcement of announcements.slice(0, 3)" 
+                     class="flex items-start justify-between p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+                     [class.bg-blue-50]="!announcement.is_read"
+                     [class.border-blue-200]="!announcement.is_read">
+                  <div class="flex items-start flex-1">
+                    <div class="flex-shrink-0">
+                      <div class="w-10 h-10 rounded-xl flex items-center justify-center"
+                           [ngClass]="{
+                             'bg-blue-100': !announcement.is_read,
+                             'bg-gray-100': announcement.is_read
+                           }">
+                        <svg class="h-5 w-5" 
+                             [ngClass]="{
+                               'text-blue-600': !announcement.is_read,
+                               'text-gray-600': announcement.is_read
+                             }" 
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-9 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2M9 9h6m-6 4h6m-6 4h4"/>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="ml-4 flex-1">
+                      <div class="flex items-center space-x-2 mb-1">
+                        <p class="text-sm font-semibold text-gray-900">{{ announcement.title }}</p>
+                        <span *ngIf="!announcement.is_read" 
+                              class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          New
+                        </span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                              [ngClass]="{
+                                'bg-green-100 text-green-800': announcement.priority === 'low',
+                                'bg-blue-100 text-blue-800': announcement.priority === 'normal',
+                                'bg-yellow-100 text-yellow-800': announcement.priority === 'high',
+                                'bg-red-100 text-red-800': announcement.priority === 'urgent'
+                              }">
+                          {{ announcement.priority | titlecase }}
+                        </span>
+                      </div>
+                      <p class="text-sm text-gray-600 mb-2">{{ announcement.content | slice:0:100 }}{{ announcement.content.length > 100 ? '...' : '' }}</p>
+                      <div class="flex items-center text-xs text-gray-500">
+                        <span>From: {{ announcement.sender?.full_name || 'Unknown' }}</span>
+                        <span class="mx-2">•</span>
+                        <span>{{ formatDate(announcement.created_at) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button (click)="markAnnouncementAsRead(announcement)" 
+                          *ngIf="!announcement.is_read"
+                          class="ml-4 text-blue-600 hover:text-blue-800 p-1 rounded-lg hover:bg-blue-100 transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </button>
+                </div>
+                <div *ngIf="announcements.length === 0" class="text-center py-8">
+                  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-9 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2M9 9h6m-6 4h6m-6 4h4"/>
+                  </svg>
+                  <h3 class="mt-2 text-sm font-medium text-gray-900">No announcements yet</h3>
+                  <p class="mt-1 text-sm text-gray-500">Check back later for class updates.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Recent Materials -->
           <div class="bg-white border border-gray-200 rounded-2xl mb-8">
             <div class="p-6">
@@ -215,12 +299,15 @@ export class DashboardComponent implements OnInit {
   timetable: TimetableEntry[] = [];
   courses: Course[] = [];
   coursesByYear: { [year: number]: Course[] } = {};
+  announcements: Announcement[] = [];
+  unreadAnnouncementsCount = 0;
   isLoading = true;
   isSidebarOpen = false;
   currentUser: any = null;
 
   constructor(
     private courseService: CourseService,
+    private communicationService: CommunicationService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef
   ) {}
@@ -245,6 +332,33 @@ export class DashboardComponent implements OnInit {
 
   getYears(): number[] {
     return Object.keys(this.coursesByYear).map(year => parseInt(year)).sort();
+  }
+
+  markAnnouncementAsRead(announcement: Announcement): void {
+    if (announcement.id && !announcement.is_read) {
+      this.communicationService.markAnnouncementAsRead(announcement.id).subscribe({
+        next: () => {
+          // Update local state
+          announcement.is_read = true;
+          this.unreadAnnouncementsCount = Math.max(0, this.unreadAnnouncementsCount - 1);
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          console.error('Error marking announcement as read:', error);
+        }
+      });
+    }
+  }
+
+  formatDate(dateString: string | undefined): string {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   private loadDashboardData(): void {
@@ -281,6 +395,18 @@ export class DashboardComponent implements OnInit {
           console.error('Error loading courses:', error);
           return of([]);
         })
+      ),
+      announcements: this.communicationService.getAnnouncements().pipe(
+        catchError(error => {
+          console.error('Error loading announcements:', error);
+          return of([]);
+        })
+      ),
+      unreadCount: this.communicationService.getUnreadAnnouncementsCount().pipe(
+        catchError(error => {
+          console.error('Error loading unread count:', error);
+          return of({ unread_count: 0, total_count: 0, read_count: 0 });
+        })
       )
     }).subscribe({
       next: (data) => {
@@ -289,6 +415,8 @@ export class DashboardComponent implements OnInit {
         this.recordings = data.recordings;
         this.timetable = data.timetable;
         this.courses = data.courses;
+        this.announcements = data.announcements;
+        this.unreadAnnouncementsCount = data.unreadCount.unread_count;
         
         // Group courses by year
         this.coursesByYear = {};

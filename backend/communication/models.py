@@ -168,6 +168,17 @@ class Announcement(models.Model):
         if not self.expires_at:
             return False
         return timezone.now() > self.expires_at
+    
+    def is_read_by(self, user):
+        """Check if the announcement has been read by a specific user"""
+        return self.read_status.filter(user=user).exists()
+    
+    def mark_as_read_by(self, user):
+        """Mark the announcement as read by a specific user"""
+        AnnouncementReadStatus.objects.get_or_create(
+            announcement=self,
+            user=user
+        )
 
 
 class MessageReaction(models.Model):
@@ -206,6 +217,20 @@ class MessageReadStatus(models.Model):
     
     def __str__(self):
         return f"{self.user.get_full_name()} read message at {self.read_at}"
+
+
+class AnnouncementReadStatus(models.Model):
+    """Model to track read status of announcements"""
+    
+    announcement = models.ForeignKey(Announcement, on_delete=models.CASCADE, related_name='read_status')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='announcement_read_status')
+    read_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ['announcement', 'user']
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} read announcement at {self.read_at}"
 
 
 class Poll(models.Model):

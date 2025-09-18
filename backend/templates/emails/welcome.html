@@ -1,0 +1,70 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Welcome to RiverLearn!{% endblock %}
+
+{% block content %}
+<div class="greeting">🎓 Welcome to RiverLearn!</div>
+
+<div class="message">
+    Congratulations! You've successfully joined RiverLearn Course Organizer. We're thrilled to have you as part of our learning community.
+</div>
+
+<div class="info-box">
+    <h3>🚀 Your Account is Ready</h3>
+    <p>You can now access all features of our platform and start your learning journey.</p>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ dashboard_url }}" class="cta-button">Go to Dashboard</a>
+</div>
+
+<div class="divider"></div>
+
+<div class="message">
+    <strong>Here's what you can do on RiverLearn:</strong>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; margin: 20px 0;">
+    <div style="flex: 1; min-width: 250px; background: #f8f9ff; padding: 20px; border-radius: 12px; border-left: 4px solid #667eea;">
+        <h4 style="color: #1d1d1f; margin-bottom: 10px; font-size: 16px;">📅 Timetable</h4>
+        <p style="color: #424245; font-size: 14px; margin: 0;">View your personalized course schedule and never miss a class.</p>
+    </div>
+    
+    <div style="flex: 1; min-width: 250px; background: #f8f9ff; padding: 20px; border-radius: 12px; border-left: 4px solid #667eea;">
+        <h4 style="color: #1d1d1f; margin-bottom: 10px; font-size: 16px;">📚 Materials</h4>
+        <p style="color: #424245; font-size: 14px; margin: 0;">Access course materials, readings, and resources anytime.</p>
+    </div>
+    
+    <div style="flex: 1; min-width: 250px; background: #f8f9ff; padding: 20px; border-radius: 12px; border-left: 4px solid #667eea;">
+        <h4 style="color: #1d1d1f; margin-bottom: 10px; font-size: 16px;">💬 Meetings</h4>
+        <p style="color: #424245; font-size: 14px; margin: 0;">Join virtual classes and discussions with your peers.</p>
+    </div>
+    
+    <div style="flex: 1; min-width: 250px; background: #f8f9ff; padding: 20px; border-radius: 12px; border-left: 4px solid #667eea;">
+        <h4 style="color: #1d1d1f; margin-bottom: 10px; font-size: 16px;">📊 Progress</h4>
+        <p style="color: #424245; font-size: 14px; margin: 0;">Track your academic progress and achievements.</p>
+    </div>
+</div>
+
+<div class="message">
+    <strong>Quick Start Guide:</strong><br>
+    1. <strong>Complete your profile</strong> - Add a photo and update your information<br>
+    2. <strong>Check your timetable</strong> - See your upcoming classes and assignments<br>
+    3. <strong>Explore materials</strong> - Download course resources and readings<br>
+    4. <strong>Join discussions</strong> - Connect with instructors and fellow students
+</div>
+
+<div class="message">
+    <strong>Need Help?</strong><br>
+    Our support team is here to help you get started. Contact us at <a href="mailto:support@riverlearn.co.ke" style="color: #667eea;">support@riverlearn.co.ke</a> or visit our help center.
+</div>
+
+<div class="message">
+    We're excited to be part of your learning journey. Welcome to RiverLearn!
+</div>
+
+<div class="message">
+    Best regards,<br>
+    <strong>The RiverLearn Team</strong>
+</div>
+{% endblock %}

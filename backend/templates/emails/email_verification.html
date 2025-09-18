@@ -1,0 +1,45 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Verify Your Email - RiverLearn{% endblock %}
+
+{% block content %}
+<div class="greeting">Welcome to RiverLearn!</div>
+
+<div class="message">
+    Thank you for registering with RiverLearn Course Organizer. We're excited to have you join our learning community.
+</div>
+
+<div class="info-box">
+    <h3>📧 Email Verification Required</h3>
+    <p>To complete your registration and access all features, please verify your email address by clicking the button below.</p>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ verification_url }}" class="cta-button">Verify Email Address</a>
+</div>
+
+<div class="message">
+    <strong>Important:</strong> This verification link will expire in 24 hours for security reasons.
+</div>
+
+<div class="divider"></div>
+
+<div class="message">
+    <strong>What happens next?</strong><br>
+    Once you verify your email, you'll be able to:
+    <ul style="margin: 15px 0; padding-left: 20px; color: #424245;">
+        <li>Access your personalized dashboard</li>
+        <li>View your course timetable</li>
+        <li>Download course materials</li>
+        <li>Join virtual meetings and discussions</li>
+    </ul>
+</div>
+
+<div class="message">
+    If you didn't create an account with RiverLearn, please ignore this email. Your account will not be activated without verification.
+</div>
+
+<div class="message">
+    Need help? Contact our support team at <a href="mailto:support@riverlearn.co.ke" style="color: #667eea;">support@riverlearn.co.ke</a>
+</div>
+{% endblock %}

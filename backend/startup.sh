@@ -27,25 +27,19 @@ fi
 echo "⏳ Applying migrations..."
 python manage.py migrate
 
-# Create admin user if missing
+# Setup school structure (creates default class for new students)
+echo "🏫 Setting up school structure..."
+python manage.py setup_school_structure || echo "School structure setup failed"
+
+# Create admin user if missing (with secure password generation)
 echo "👤 Setting up admin user..."
-python manage.py shell -c "
-from directory.models import User
-import os
-if not User.objects.filter(email='admin@uon.ac.ke').exists():
-    User.objects.create_superuser(
-        email='admin@uon.ac.ke',
-        password=os.environ.get('ADMIN_PASSWORD','admin123'),
-        first_name='Admin',
-        last_name='User',
-        registration_number='GPR3/000001/2025',
-        phone_number='+254700000000',
-        user_type='admin'
-    )
-    print('Admin user created')
-else:
-    print('Admin user already exists')
-"
+if [ -z "${ADMIN_PASSWORD:-}" ]; then
+  echo "⚠️  No ADMIN_PASSWORD set. Creating admin with secure random password..."
+  python manage.py manage_admin create --email admin@uon.ac.ke --force
+else
+  echo "Using provided ADMIN_PASSWORD..."
+  python manage.py manage_admin create --email admin@uon.ac.ke --password "${ADMIN_PASSWORD}" --force
+fi
 
 # Seed demo data
 echo "📚 Creating demo data..."

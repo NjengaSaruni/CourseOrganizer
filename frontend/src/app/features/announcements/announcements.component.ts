@@ -13,8 +13,8 @@ import { throwError } from 'rxjs';
   imports: [CommonModule, FormsModule, PageLayoutComponent],
   template: `
     <app-page-layout 
-      pageTitle="Class Announcements" 
-      pageSubtitle="Manage announcements for your class">
+      [pageTitle]="classRepRole && classRepRole.permissions.includes('send_announcements') ? 'Class Announcements' : 'Class Announcements'"
+      [pageSubtitle]="classRepRole && classRepRole.permissions.includes('send_announcements') ? 'Manage announcements for your class' : 'View announcements for your class'">
       
       <!-- Main Content -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -38,6 +38,7 @@ import { throwError } from 'rxjs';
             </div>
             <div class="flex items-center space-x-4">
               <button 
+                *ngIf="classRepRole && classRepRole.permissions.includes('send_announcements')"
                 (click)="openCreateModal()" 
                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors inline-flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -45,11 +46,15 @@ import { throwError } from 'rxjs';
                 </svg>
                 Create Announcement
               </button>
-              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+                    [ngClass]="{
+                      'bg-green-100 text-green-800': classRepRole && classRepRole.permissions.includes('send_announcements'),
+                      'bg-gray-100 text-gray-600': !classRepRole || !classRepRole.permissions.includes('send_announcements')
+                    }">
                 <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                 </svg>
-                {{ classRepRole ? 'Active' : 'Testing' }}
+                {{ classRepRole && classRepRole.permissions.includes('send_announcements') ? 'Class Rep' : 'Student' }}
               </span>
             </div>
           </div>
@@ -59,7 +64,9 @@ import { throwError } from 'rxjs';
         <div class="bg-white rounded-lg shadow-sm border border-gray-200">
           <div class="px-6 py-4 border-b border-gray-200">
             <h2 class="text-xl font-semibold text-gray-900">Recent Announcements</h2>
-            <p class="text-sm text-gray-600 mt-1">Manage your class announcements</p>
+            <p class="text-sm text-gray-600 mt-1">
+              {{ classRepRole && classRepRole.permissions.includes('send_announcements') ? 'Manage your class announcements' : 'View your class announcements' }}
+            </p>
           </div>
 
           <div class="p-6">
@@ -73,8 +80,10 @@ import { throwError } from 'rxjs';
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-9 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2M9 9h6m-6 4h6m-6 4h4"/>
               </svg>
               <h3 class="mt-2 text-sm font-medium text-gray-900">No announcements yet</h3>
-              <p class="mt-1 text-sm text-gray-500">Get started by creating your first announcement.</p>
-              <div class="mt-6">
+              <p class="mt-1 text-sm text-gray-500">
+                {{ classRepRole && classRepRole.permissions.includes('send_announcements') ? 'Get started by creating your first announcement.' : 'Check back later for class announcements.' }}
+              </p>
+              <div class="mt-6" *ngIf="classRepRole && classRepRole.permissions.includes('send_announcements')">
                 <button 
                   (click)="openCreateModal()" 
                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
@@ -117,7 +126,7 @@ import { throwError } from 'rxjs';
                       </span>
                     </div>
                   </div>
-                  <div class="flex items-center space-x-2 ml-4">
+                  <div class="flex items-center space-x-2 ml-4" *ngIf="classRepRole && classRepRole.permissions.includes('send_announcements')">
                     <button 
                       (click)="editAnnouncement(announcement)" 
                       class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition-colors">
@@ -141,7 +150,7 @@ import { throwError } from 'rxjs';
       </div>
 
       <!-- Create/Edit Announcement Modal -->
-      <div *ngIf="showModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div *ngIf="showModal && classRepRole && classRepRole.permissions.includes('send_announcements')" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
           <div class="mt-3">
             <!-- Modal Header -->
@@ -376,6 +385,12 @@ export class AnnouncementsComponent implements OnInit {
   }
 
   openCreateModal(): void {
+    // Security check: Only allow Class Reps with send_announcements permission
+    if (!this.classRepRole || !this.classRepRole.permissions.includes('send_announcements')) {
+      console.warn('Unauthorized attempt to create announcement');
+      return;
+    }
+
     this.editingAnnouncement = null;
     this.newAnnouncement = {
       title: '',
@@ -391,6 +406,12 @@ export class AnnouncementsComponent implements OnInit {
   }
 
   editAnnouncement(announcement: Announcement): void {
+    // Security check: Only allow Class Reps with send_announcements permission
+    if (!this.classRepRole || !this.classRepRole.permissions.includes('send_announcements')) {
+      console.warn('Unauthorized attempt to edit announcement');
+      return;
+    }
+
     this.editingAnnouncement = announcement;
     this.newAnnouncement = { ...announcement };
     this.expiryDateString = announcement.expires_at ? this.formatDateForInput(announcement.expires_at) : '';
@@ -425,6 +446,12 @@ export class AnnouncementsComponent implements OnInit {
     if (event) {
       event.preventDefault();
       event.stopPropagation();
+    }
+    
+    // Security check: Only allow Class Reps with send_announcements permission
+    if (!this.classRepRole || !this.classRepRole.permissions.includes('send_announcements')) {
+      console.warn('Unauthorized attempt to save announcement');
+      return;
     }
     
     if (!this.newAnnouncement.title || !this.newAnnouncement.content) {
@@ -490,6 +517,12 @@ export class AnnouncementsComponent implements OnInit {
   }
 
   deleteAnnouncement(announcement: Announcement): void {
+    // Security check: Only allow Class Reps with send_announcements permission
+    if (!this.classRepRole || !this.classRepRole.permissions.includes('send_announcements')) {
+      console.warn('Unauthorized attempt to delete announcement');
+      return;
+    }
+
     if (confirm('Are you sure you want to delete this announcement?')) {
       this.communicationService.deleteAnnouncement(announcement.id!).subscribe({
         next: () => {

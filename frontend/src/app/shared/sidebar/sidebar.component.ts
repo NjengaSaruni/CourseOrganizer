@@ -105,8 +105,8 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
 
-              <!-- Class Rep Announcements -->
-              <a *ngIf="isClassRep()" routerLink="/announcements" 
+              <!-- Announcements (for all students) -->
+              <a routerLink="/announcements" 
                  routerLinkActive="bg-orange-50 text-orange-700 border-r-2 border-orange-500" 
                  class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
                 <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
@@ -116,7 +116,7 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
                 <div>
                   <div class="font-medium">Announcements</div>
-                  <div class="text-xs text-gray-500">Send class announcements</div>
+                  <div class="text-xs text-gray-500">{{ isClassRep() ? 'Send class announcements' : 'View class announcements' }}</div>
                 </div>
               </a>
             </div>
@@ -303,8 +303,8 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
 
-              <!-- Class Rep Announcements -->
-              <a *ngIf="isClassRep()" routerLink="/announcements" 
+              <!-- Announcements (for all students) -->
+              <a routerLink="/announcements" 
                  routerLinkActive="bg-orange-50 text-orange-700" 
                  (click)="toggleSidebar()"
                  class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
@@ -315,7 +315,7 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
                 <div>
                   <div class="font-medium">Announcements</div>
-                  <div class="text-xs text-gray-500">Send class announcements</div>
+                  <div class="text-xs text-gray-500">{{ isClassRep() ? 'Send class announcements' : 'View class announcements' }}</div>
                 </div>
               </a>
             </div>
