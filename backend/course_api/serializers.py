@@ -39,7 +39,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         validated_data.pop('confirm_password')
+        logger.info(f"Creating user with email: {validated_data['email']}")
+        
         user = User.objects.create_user(
             username=validated_data['email'],
             email=validated_data['email'],
@@ -48,8 +53,30 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             registration_number=validated_data['registration_number'],
             phone_number=validated_data['phone_number'],
             password=validated_data['password'],
-            is_active=False  # User needs approval
+            is_active=False,  # User needs approval
+            email_verified=False  # User needs email verification
         )
+        
+        logger.info(f"User created with ID: {user.id}")
+        
+        # Generate and send email verification token
+        try:
+            verification_token = user.generate_email_verification_token()
+            user.save()
+            logger.info(f"Generated verification token: {verification_token[:20]}...")
+            
+            # Send verification email
+            from .email_service import send_verification_email
+            logger.info(f"Attempting to send verification email to {user.email}")
+            email_sent = send_verification_email(user, verification_token)
+            logger.info(f"Verification email send result: {email_sent}")
+            
+        except Exception as e:
+            logger.error(f"Error during email verification setup: {str(e)}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+        
         return user
 
 
@@ -107,13 +134,18 @@ class LoginSerializer(serializers.Serializer):
             user = authenticate(username=email, password=password)
             if not user:
                 raise serializers.ValidationError('Invalid email or password')
-            if not user.is_active:
-                if user.status == 'pending':
-                    raise serializers.ValidationError('Your registration is pending approval')
+            
+            # Check if user can login (email verified and approved)
+            if not user.can_login():
+                if not user.email_verified:
+                    raise serializers.ValidationError('Please verify your email address before logging in. Check your email for the verification link.')
+                elif user.status == 'pending':
+                    raise serializers.ValidationError('Your registration is pending approval. Please wait for administrator approval.')
                 elif user.status == 'rejected':
-                    raise serializers.ValidationError('Your registration has been rejected')
-                else:
-                    raise serializers.ValidationError('Your account is not active')
+                    raise serializers.ValidationError('Your registration has been rejected. Please contact support.')
+                elif not user.is_active:
+                    raise serializers.ValidationError('Your account is not active. Please contact support.')
+            
             attrs['user'] = user
         else:
             raise serializers.ValidationError('Must include email and password')

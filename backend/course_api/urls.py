@@ -1,5 +1,8 @@
 from django.urls import path
 from . import views
+import logging
+
+logger = logging.getLogger(__name__)
 
 urlpatterns = [
     # Health check endpoint
@@ -10,12 +13,15 @@ urlpatterns = [
     path('auth/login/', views.login_view, name='login'),
     path('auth/logout/', views.logout_view, name='logout'),
     path('auth/profile/', views.user_profile, name='user_profile'),
+    path('auth/verify-email/', views.verify_email, name='verify_email'),
+    path('auth/resend-verification/', views.resend_verification_email, name='resend_verification_email'),
     
     # Admin endpoints
     path('admin/pending-registrations/', views.pending_registrations, name='pending_registrations'),
     path('admin/confirmed-registrations/', views.confirmed_registrations, name='confirmed_registrations'),
     path('admin/approve-user/<int:user_id>/', views.approve_user, name='approve_user'),
     path('admin/reject-user/<int:user_id>/', views.reject_user, name='reject_user'),
+    path('admin/debug-user/<int:user_id>/', views.debug_user, name='debug_user'),
     # TODO: Passcode endpoints disabled until SMS service is properly configured
     # path('admin/generate-passcode/<int:user_id>/', views.generate_passcode, name='generate_passcode'),
     # path('admin/send-passcode-sms/<int:user_id>/', views.send_passcode_sms, name='send_passcode_sms'),

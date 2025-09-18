@@ -31,11 +31,11 @@ The Course Organizer now includes SMS functionality for sending passcodes and ap
    export TWILIO_FROM_NUMBER="+1234567890"  # Your Twilio number
    ```
 
-   For Railway deployment:
-   ```bash
-   railway variables --set "TWILIO_ACCOUNT_SID=your_account_sid_here"
-   railway variables --set "TWILIO_AUTH_TOKEN=your_auth_token_here"
-   railway variables --set "TWILIO_FROM_NUMBER=+1234567890"
+   For GCE Docker Compose deployment, set these in `docker-compose.gce.env`:
+   ```env
+   TWILIO_ACCOUNT_SID=your_account_sid_here
+   TWILIO_AUTH_TOKEN=your_auth_token_here
+   TWILIO_FROM_NUMBER=+1234567890
    ```
 
 ### Option 2: Fallback Mode (Development/Testing)

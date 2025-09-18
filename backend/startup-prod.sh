@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Railway Production Startup Script
+# Production Startup Script (GCE)
 # This script runs in the production container with nginx and gunicorn
 
 set -e

@@ -2,8 +2,11 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
-from datetime import date
+from django.utils import timezone
+from datetime import date, timedelta
 import re
+import secrets
+import string
 
 
 class AcademicYear(models.Model):
@@ -148,6 +151,12 @@ class User(AbstractUser):
     class_of = models.IntegerField(null=True, blank=True, help_text="Graduation year (Class of) - auto-calculated from student_class")
     profile_picture = models.ImageField(upload_to='profiles/', null=True, blank=True)
     bio = models.TextField(blank=True, help_text="Brief biography or description")
+    
+    # Email verification fields
+    email_verified = models.BooleanField(default=False, help_text="Whether the email address has been verified")
+    email_verification_token = models.CharField(max_length=100, blank=True, null=True, help_text="Token for email verification")
+    email_verification_sent_at = models.DateTimeField(blank=True, null=True, help_text="When the verification email was sent")
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -307,6 +316,40 @@ class User(AbstractUser):
             pass
         return False
     
+    def generate_email_verification_token(self):
+        """Generate a secure email verification token"""
+        # Generate a 32-character random token
+        token = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
+        self.email_verification_token = token
+        self.email_verification_sent_at = timezone.now()
+        self.email_verified = False
+        return token
+    
+    def verify_email_token(self, token):
+        """Verify the email verification token"""
+        if not self.email_verification_token:
+            return False, "No verification token found"
+        
+        if self.email_verification_token != token:
+            return False, "Invalid verification token"
+        
+        # Check if token is expired (24 hours)
+        if self.email_verification_sent_at:
+            token_age = timezone.now() - self.email_verification_sent_at
+            if token_age > timedelta(hours=24):
+                return False, "Verification token has expired. Please request a new one."
+        
+        # Token is valid
+        self.email_verified = True
+        self.email_verification_token = None  # Clear the token after successful verification
+        self.email_verification_sent_at = None
+        self.save()
+        return True, "Email verified successfully"
+    
+    def can_login(self):
+        """Check if user can log in (email verified and approved)"""
+        return self.email_verified and self.status == 'approved' and self.is_active
+
     def save(self, *args, **kwargs):
         # Set username to email if not provided
         if not self.username:

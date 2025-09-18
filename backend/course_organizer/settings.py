@@ -29,12 +29,10 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,co.riverlearn.co.ke', cast=lambda v: [s.strip() for s in v.split(',')])
 
-# Add Railway internal hostnames for health checks
+# Production host settings
 if not DEBUG:
-    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1'])
-
-    # Allow all hosts for Railway health checks
-    ALLOWED_HOSTS.append('*')
+    # Use explicit ALLOWED_HOSTS from environment; avoid wildcards
+    pass
 
 
 # Application definition
@@ -196,26 +194,22 @@ CORS_ALLOWED_ORIGINS = config(
     cast=lambda v: [s.strip() for s in v.split(',')]
 )
 
-# Debug CORS settings
-print(f"CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
-print(f"DEBUG mode: {DEBUG}")
+# Debug CORS settings (only print in DEBUG)
+if DEBUG:
+    print(f"CORS_ALLOWED_ORIGINS: {CORS_ALLOWED_ORIGINS}")
+    print(f"DEBUG mode: {DEBUG}")
 
 CORS_ALLOW_CREDENTIALS = True
 
-# Allow all origins in development, specific origins in production
+# Allow all origins in development; restrict in production
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
-    # In production, allow Railway domains and custom domain
-    CORS_ALLOWED_ORIGINS.extend(['https://*.railway.app', 'http://*.railway.app', 'https://co.riverlearn.co.ke', 'https://jitsi.riverlearn.co.ke'])
-    
-    # Ensure required domains are always included
+    # Ensure required domains are included explicitly
     for domain in ['https://co.riverlearn.co.ke', 'https://jitsi.riverlearn.co.ke']:
         if domain not in CORS_ALLOWED_ORIGINS:
             CORS_ALLOWED_ORIGINS.append(domain)
-    
-    # Also try allowing all origins temporarily to debug
-    CORS_ALLOW_ALL_ORIGINS = True  # Temporarily allow all origins for debugging
+    CORS_ALLOW_ALL_ORIGINS = False
 
 # Additional CORS settings for better compatibility
 CORS_ALLOW_HEADERS = [
@@ -250,8 +244,31 @@ CSRF_TRUSTED_ORIGINS = config(
 if DEBUG:
     CSRF_TRUSTED_ORIGINS.extend(['http://localhost:4200', 'http://127.0.0.1:4200'])
 
-# Email settings (for production)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email settings
+if DEBUG:
+    # Use console backend for development
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    # Use SMTP backend for production; allow overriding via environment
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = config('EMAIL_HOST', default='smtp.googlemail.com')
+    EMAIL_PORT = config('EMAIL_PORT', default=465, cast=int)
+    EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+    EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=True, cast=bool)
+    EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='noreply@riverlearn.co.ke')
+    EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+    EMAIL_TIMEOUT = 30
+
+# Email configuration
+DEFAULT_FROM_EMAIL = 'Course Organizer <noreply@riverlearn.co.ke>'
+SERVER_EMAIL = 'noreply@riverlearn.co.ke'
+
+# SendGrid configuration (fallback email service)
+SENDGRID_API_KEY = config('SENDGRID_API_KEY', default='')
+SENDGRID_FROM_EMAIL = config('SENDGRID_FROM_EMAIL', default='noreply@riverlearn.co.ke')
+
+# Frontend URL for email links
+FRONTEND_URL = config('FRONTEND_URL', default='https://co.riverlearn.co.ke')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

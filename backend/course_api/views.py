@@ -20,7 +20,7 @@ from .jitsi_auth import jitsi_auth
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_check(request):
-    """Health check endpoint for Railway deployment"""
+    """Health check endpoint"""
     return JsonResponse({
         'status': 'healthy',
         'message': 'Course Organizer API is running',
@@ -33,13 +33,33 @@ def health_check(request):
 @permission_classes([AllowAny])
 def register(request):
     """User registration endpoint"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Registration attempt for email: {request.data.get('email', 'No email provided')}")
+    
     serializer = UserRegistrationSerializer(data=request.data)
     if serializer.is_valid():
-        user = serializer.save()
-        return Response({
-            'message': 'Registration successful. Your account is pending approval.',
-            'user_id': user.id
-        }, status=status.HTTP_201_CREATED)
+        try:
+            user = serializer.save()
+            logger.info(f"User created successfully: {user.id}, email: {user.email}")
+            logger.info(f"User email verified: {user.email_verified}, verification token: {user.email_verification_token}")
+            
+            return Response({
+                'message': 'Registration successful! Please check your email to verify your account. After email verification, your account will be reviewed for administrative approval.',
+                'user_id': user.id,
+                'email_sent': True
+            }, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"Error during user registration: {str(e)}")
+            logger.error(f"Exception type: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return Response({
+                'message': 'Registration failed due to an internal error. Please try again.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    else:
+        logger.error(f"Registration validation failed: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -92,6 +112,65 @@ def logout_view(request):
     return Response({'message': 'Logged out successfully'}, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_email(request):
+    """Email verification endpoint"""
+    token = request.data.get('token')
+    if not token:
+        return Response({'error': 'Verification token is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Find user with this verification token
+        user = User.objects.get(email_verification_token=token)
+        success, message = user.verify_email_token(token)
+        
+        if success:
+            return Response({
+                'message': message,
+                'email_verified': True
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': message}, status=status.HTTP_400_BAD_REQUEST)
+            
+    except User.DoesNotExist:
+        return Response({'error': 'Invalid or expired verification token'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def resend_verification_email(request):
+    """Resend email verification endpoint"""
+    email = request.data.get('email')
+    if not email:
+        return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        user = User.objects.get(email=email)
+        
+        if user.email_verified:
+            return Response({'error': 'Email is already verified'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Generate new verification token
+        verification_token = user.generate_email_verification_token()
+        user.save()
+        
+        # Send verification email
+        from .email_service import send_verification_email
+        email_sent = send_verification_email(user, verification_token)
+        
+        if email_sent:
+            return Response({
+                'message': 'Verification email sent successfully',
+                'email_sent': True
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Failed to send verification email'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+    except User.DoesNotExist:
+        return Response({'error': 'User with this email does not exist'}, status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_profile(request):
@@ -139,14 +218,39 @@ def confirmed_registrations(request):
 @permission_classes([IsAuthenticated])
 def approve_user(request, user_id):
     """Approve a user registration (admin only)"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Admin approval request for user ID: {user_id} by admin: {request.user.email}")
+    
     if not request.user.is_admin:
+        logger.warning(f"Non-admin user {request.user.email} attempted to approve user {user_id}")
         return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
     
     try:
-        user = User.objects.get(id=user_id, status='pending')
+        # First check if user exists at all
+        try:
+            user = User.objects.get(id=user_id)
+            logger.info(f"User found: {user.email}, status: {user.status}, is_active: {user.is_active}")
+        except User.DoesNotExist:
+            logger.error(f"User with ID {user_id} does not exist")
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if user is pending
+        if user.status != 'pending':
+            logger.warning(f"User {user.email} has status '{user.status}', expected 'pending'")
+            return Response({'error': f'User is not pending approval (current status: {user.status})'}, status=status.HTTP_400_BAD_REQUEST)
+        
         user.status = 'approved'
         user.is_active = True
         user.save()
+        logger.info(f"User {user.email} approved successfully")
+        
+        # Send approval notification via email
+        from .email_service import send_registration_approval_email
+        logger.info(f"Attempting to send approval email to {user.email}")
+        email_sent = send_registration_approval_email(user)
+        logger.info(f"Approval email send result: {email_sent}")
         
         # TODO: SMS notification disabled until Twilio account is properly configured
         # Send approval notification via SMS
@@ -158,13 +262,55 @@ def approve_user(request, user_id):
         
         response_data = {
             'message': 'User approved successfully',
+            'email_sent': email_sent,
             'sms_sent': False,  # sms_result['success'],
             'sms_message': 'SMS notification disabled - manual verification in progress'  # sms_result['message']
         }
         
         return Response(response_data, status=status.HTTP_200_OK)
+    except Exception as e:
+        logger.error(f"Error approving user {user_id}: {str(e)}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def debug_user(request, user_id):
+    """Debug endpoint to check user status"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Debug request for user ID: {user_id} by admin: {request.user.email}")
+    
+    if not request.user.is_admin:
+        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    
+    try:
+        user = User.objects.get(id=user_id)
+        logger.info(f"User found: {user.email}, status: {user.status}, is_active: {user.is_active}")
+        
+        return Response({
+            'user_id': user.id,
+            'email': user.email,
+            'name': user.get_full_name(),
+            'status': user.status,
+            'is_active': user.is_active,
+            'email_verified': user.email_verified,
+            'registration_number': user.registration_number,
+            'phone_number': user.phone_number,
+            'date_joined': user.date_joined,
+            'last_login': user.last_login,
+            'is_admin': user.is_admin,
+        }, status=status.HTTP_200_OK)
     except User.DoesNotExist:
+        logger.error(f"User with ID {user_id} does not exist")
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error debugging user {user_id}: {str(e)}")
+        return Response({'error': 'Internal server error'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
@@ -178,7 +324,15 @@ def reject_user(request, user_id):
         user = User.objects.get(id=user_id, status='pending')
         user.status = 'rejected'
         user.save()
-        return Response({'message': 'User rejected successfully'}, status=status.HTTP_200_OK)
+        
+        # Send rejection notification via email
+        from .email_service import send_registration_rejection_email
+        email_sent = send_registration_rejection_email(user)
+        
+        return Response({
+            'message': 'User rejected successfully',
+            'email_sent': email_sent
+        }, status=status.HTTP_200_OK)
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 

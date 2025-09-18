@@ -1,57 +1,56 @@
 #!/bin/bash
+set -euo pipefail
 
-# Railway Startup Script
-# This script runs after deployment to set up the application
+echo "🚀 Starting Course Organizer on GCE..."
+echo "======================================"
 
-set -e
-
-echo "🚀 Starting Course Organizer Application..."
-echo "============================================="
-
-# Debug environment variables
-echo "🔍 Environment Debug:"
-echo "PORT: ${PORT:-'not set'}"
-
-# Wait for database to be ready
-echo "⏳ Running database migrations..."
-python manage.py migrate --noinput
-echo "✅ Database migrations complete"
-
-# Set up admin account if ADMIN_PASSWORD is provided
-if [ ! -z "$ADMIN_PASSWORD" ]; then
-    echo "🔐 Setting up admin account with provided password..."
-    python manage.py setup_admin --force --password "$ADMIN_PASSWORD"
-    echo "✅ Admin account setup complete!"
-else
-    echo "⚠️  No ADMIN_PASSWORD provided. Admin account not set up."
-    echo "   Run 'python manage.py setup_admin' manually to create admin account."
+# Ensure persistent SECRET_KEY
+if [ -z "${SECRET_KEY:-}" ]; then
+  if [ -f "/app/db/secret_key.txt" ]; then
+    export SECRET_KEY="$(cat /app/db/secret_key.txt)"
+    echo "Using existing SECRET_KEY from /app/db/secret_key.txt"
+  else
+    echo "Generating new SECRET_KEY..."
+    SECRET_KEY_GEN=$(python - <<'PY'
+import secrets
+print(''.join(secrets.choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for _ in range(50)))
+PY
+)
+    export SECRET_KEY="$SECRET_KEY_GEN"
+    echo -n "$SECRET_KEY" > /app/db/secret_key.txt
+    chmod 600 /app/db/secret_key.txt
+    echo "SECRET_KEY generated and stored at /app/db/secret_key.txt"
+  fi
 fi
 
-# Demo data creation removed for production deployment
-# Uncomment the line below if you need demo data for testing:
-# python manage.py create_demo_data
+# Apply migrations
+echo "⏳ Applying migrations..."
+python manage.py migrate
 
-echo "✅ Application startup complete!"
+# Create admin user if missing
+echo "👤 Setting up admin user..."
+python manage.py shell -c "
+from directory.models import User
+import os
+if not User.objects.filter(email='admin@uon.ac.ke').exists():
+    User.objects.create_superuser(
+        email='admin@uon.ac.ke',
+        password=os.environ.get('ADMIN_PASSWORD','admin123'),
+        first_name='Admin',
+        last_name='User',
+        registration_number='GPR3/000001/2025',
+        phone_number='+254700000000',
+        user_type='admin'
+    )
+    print('Admin user created')
+else:
+    print('Admin user already exists')
+"
 
-# Debug: Check if static files exist
-echo "🔍 Debugging static files..."
-if [ -f "static/index.html" ]; then
-    echo "✅ index.html found in static directory"
-else
-    echo "❌ index.html NOT found in static directory"
-    echo "Contents of static directory:"
-    ls -la static/ || echo "Static directory does not exist"
-fi
+# Seed demo data
+echo "📚 Creating demo data..."
+python manage.py create_uon_law_data || echo "Skipping demo data creation"
 
+# Start server
 echo "🌐 Starting Django server..."
-
-# Use Railway's PORT env var, but default to 8000 for development
-SERVER_PORT=${PORT:-8000}
-echo "Starting Django development server on port: $SERVER_PORT"
-
-# Start the Django server
-echo "🚀 Starting Django development server..."
-echo "Server will be available at: http://0.0.0.0:$SERVER_PORT"
-
-# Start the Django server
-exec python manage.py runserver 0.0.0.0:$SERVER_PORT
+exec gunicorn --bind 0.0.0.0:8080 --workers 3 --timeout 120 course_organizer.wsgi:application
