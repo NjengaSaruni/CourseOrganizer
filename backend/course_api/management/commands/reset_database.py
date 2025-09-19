@@ -2,6 +2,8 @@ from django.core.management.base import BaseCommand
 from django.core.management import call_command
 from django.conf import settings
 import os
+from django.conf import settings
+import os
 import shutil
 from pathlib import Path
 
@@ -18,7 +20,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         """Reset the database completely"""
-        
+        # Safety guard: prevent accidental execution in production without explicit override
+        allow_destructive = os.environ.get('ALLOW_DESTRUCTIVE_CMDS', 'false').lower() in ['1', 'true', 'yes']
+        if not settings.DEBUG and not allow_destructive:
+            self.stdout.write(self.style.ERROR('This command is disabled in production. Set ALLOW_DESTRUCTIVE_CMDS=true to override.'))
+            return
+
         self.stdout.write("🔄 Starting database reset process...")
         
         # Step 1: Delete the database file

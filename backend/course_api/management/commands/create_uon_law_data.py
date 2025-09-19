@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.conf import settings
+import os
 from course_api.models import Course, TimetableEntry, CourseMaterial, Recording, Meeting
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -11,6 +13,11 @@ class Command(BaseCommand):
     help = 'Create University of Nairobi School of Law Module II data - First Year First Semester only (GPR31xx courses)'
 
     def handle(self, *args, **options):
+        # Safety guard: prevent accidental execution in production without explicit override
+        allow_destructive = os.environ.get('ALLOW_DESTRUCTIVE_CMDS', 'false').lower() in ['1', 'true', 'yes']
+        if not settings.DEBUG and not allow_destructive:
+            self.stdout.write(self.style.ERROR('This command is disabled in production. Set ALLOW_DESTRUCTIVE_CMDS=true to override.'))
+            return
         self.stdout.write('Creating UoN Law Module II data...')
 
         # Create demo student (read-only privileges for Class of 2029)
@@ -157,106 +164,8 @@ class Command(BaseCommand):
                 if created:
                     self.stdout.write(f'Created timetable entry: {entry.subject}')
 
-        # Create sample course materials for first year courses
-        first_year_courses = ['GPR3101', 'GPR3103', 'GPR3105', 'GPR3107', 'GPR3109', 'GPR3115', 'GPR3117']
-        
-        for course_code in first_year_courses:
-            course = courses.get(course_code)
-            if course:
-                materials_data = [
-                    {
-                        'title': f'{course.name} - Course Outline',
-                        'description': f'Detailed course outline and learning objectives for {course.name}',
-                        'file_type': 'PDF'
-                    },
-                    {
-                        'title': f'{course.name} - Reading List',
-                        'description': f'Required and recommended readings for {course.name}',
-                        'file_type': 'PDF'
-                    },
-                    {
-                        'title': f'{course.name} - Lecture Notes 1',
-                        'description': f'Introduction and basic concepts for {course.name}',
-                        'file_type': 'PDF'
-                    }
-                ]
-                
-                for material_data in materials_data:
-                    material, created = CourseMaterial.objects.get_or_create(
-                        title=material_data['title'],
-                        defaults={
-                            'description': material_data['description'],
-                            'file_type': material_data['file_type'],
-                            'file_url': f'https://uon.ac.ke/law/materials/{course_code.lower()}_{material_data["title"].lower().replace(" ", "_").replace("-", "_")}.pdf',
-                            'course': course,
-                            'uploaded_by': admin_user
-                        }
-                    )
-                    if created:
-                        self.stdout.write(f'Created material: {material.title}')
-
-        # Create sample recordings for first year courses
-        for course_code in first_year_courses:
-            course = courses.get(course_code)
-            if course:
-                recordings_data = [
-                    {
-                        'title': f'{course.name} - Lecture 1: Introduction',
-                        'description': f'Introduction to {course.name} and course overview',
-                        'duration': timedelta(hours=1, minutes=30)
-                    },
-                    {
-                        'title': f'{course.name} - Lecture 2: Basic Concepts',
-                        'description': f'Fundamental concepts and principles in {course.name}',
-                        'duration': timedelta(hours=1, minutes=45)
-                    }
-                ]
-                
-                for recording_data in recordings_data:
-                    recording, created = Recording.objects.get_or_create(
-                        title=recording_data['title'],
-                        defaults={
-                            'description': recording_data['description'],
-                            'duration': recording_data['duration'],
-                            'video_url': f'https://uon.ac.ke/law/recordings/{course_code.lower()}_{recording_data["title"].lower().replace(" ", "_").replace("-", "_").replace(":", "")}.mp4',
-                            'course': course,
-                            'uploaded_by': admin_user
-                        }
-                    )
-                    if created:
-                        self.stdout.write(f'Created recording: {recording.title}')
-
-        # Create sample meetings for first year courses
-        for course_code in first_year_courses:
-            course = courses.get(course_code)
-            if course:
-                meetings_data = [
-                    {
-                        'title': f'{course.name} - Weekly Discussion',
-                        'description': f'Weekly discussion session for {course.name}',
-                        'scheduled_time': timezone.now() + timedelta(days=1, hours=17, minutes=30)
-                    },
-                    {
-                        'title': f'{course.name} - Assignment Review',
-                        'description': f'Review of assignments and feedback session for {course.name}',
-                        'scheduled_time': timezone.now() + timedelta(days=7, hours=17, minutes=30)
-                    }
-                ]
-                
-                for meeting_data in meetings_data:
-                    meeting, created = Meeting.objects.get_or_create(
-                        title=meeting_data['title'],
-                        defaults={
-                            'description': meeting_data['description'],
-                            'scheduled_time': meeting_data['scheduled_time'],
-                            'duration': timedelta(hours=1),
-                            'meeting_url': f'https://meet.uon.ac.ke/{course_code.lower()}-{meeting_data["title"].lower().replace(" ", "-").replace(":", "")}',
-                            'course': course,
-                            'created_by': admin_user
-                        }
-                    )
-                    if created:
-                        self.stdout.write(f'Created meeting: {meeting.title}')
+        # Note: Dummy content (materials, recordings, meetings) removed to allow for real content upload
+        self.stdout.write('Dummy content creation skipped - ready for real content upload')
 
         self.stdout.write(
             self.style.SUCCESS('Successfully created UoN Law Module II data for First Year First Semester (GPR31xx courses)!')

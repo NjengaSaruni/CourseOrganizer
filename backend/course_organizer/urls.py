@@ -42,15 +42,21 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/directory/', include('directory.urls')),
     path('api/', include('course_api.urls')),
+    path('api/course-content/', include('course_content.urls')),
     path('api/communication/', include('communication.urls')),
     path('api/school/', include('school.urls')),
+    # Serve PDF files with iframe embedding allowed
+    path('media/<path:path>', views.serve_pdf),
     # Serve static assets for Angular app
     path('<path:path>', serve_static_assets),
     # Serve Angular app at root (catch-all for SPA routing)
     path('', views.serve_angular_app),
 ]
 
-# Serve static files during development
+# Serve static and media files during development
+# IMPORTANT: These must be added BEFORE the catch-all route above
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Insert static serving at the beginning to avoid catch-all conflicts
+    # Note: We don't add media_patterns here because we have a custom PDF view
+    static_patterns = static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns = static_patterns + urlpatterns

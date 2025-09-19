@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'directory',
     'course_api',
+    'course_content',
     'communication',
     'school',
 ]
@@ -63,6 +64,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Configure X-Frame-Options to allow same-origin for PDF files
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # Add whitenoise middleware only in production
 if not DEBUG:

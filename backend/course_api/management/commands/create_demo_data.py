@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.conf import settings
+import os
 from course_api.models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, AcademicYear
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -11,6 +13,12 @@ class Command(BaseCommand):
     help = 'Create demo data for the course organizer'
 
     def handle(self, *args, **options):
+        # Safety guard: prevent accidental execution in production without explicit override
+        allow_destructive = os.environ.get('ALLOW_DESTRUCTIVE_CMDS', 'false').lower() in ['1', 'true', 'yes']
+        if not settings.DEBUG and not allow_destructive:
+            self.stdout.write(self.style.ERROR('This command is disabled in production. Set ALLOW_DESTRUCTIVE_CMDS=true to override.'))
+            return
+
         self.stdout.write('Creating demo data...')
 
         # Get or create the 2025/2026 academic year

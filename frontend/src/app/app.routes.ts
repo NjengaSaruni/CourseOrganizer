@@ -68,5 +68,35 @@ export const routes: Routes = [
     loadComponent: () => import('./features/announcements/announcements.component').then(m => m.AnnouncementsComponent),
     canActivate: [AuthGuard]
   },
+  { 
+    path: 'course-timeline', 
+    loadComponent: () => import('./features/course-timeline/course-timeline.component').then(m => m.CourseTimelineComponent),
+    canActivate: [AuthGuard]
+  },
+  { 
+    path: 'course-timeline/:id', 
+    loadComponent: () => import('./features/course-timeline/course-timeline.component').then(m => m.CourseTimelineComponent),
+    canActivate: [AuthGuard]
+  },
+  { 
+    path: 'content-manager', 
+    loadComponent: () => import('./features/course-content-manager/course-content-manager-new.component').then(m => m.CourseContentManagerNewComponent),
+    canActivate: [AuthGuard]
+  },
+  { 
+    path: 'course-materials', 
+    loadComponent: () => import('./features/course-materials/course-materials.component').then(m => m.CourseMaterialsComponent),
+    canActivate: [AuthGuard]
+  },
+  { 
+    path: 'course-materials/:id', 
+    loadComponent: () => import('./features/course-materials/course-materials.component').then(m => m.CourseMaterialsComponent),
+    canActivate: [AuthGuard]
+  },
+  { 
+    path: 'pdf', 
+    loadComponent: () => import('./features/pdf-viewer/pdf-viewer.component').then(m => m.PdfViewerComponent),
+    canActivate: [AuthGuard]
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];
