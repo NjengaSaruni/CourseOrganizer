@@ -12,19 +12,9 @@ import string
 class AcademicYear(models.Model):
     """Academic Year model to track academic years (e.g., 2025/2026)"""
     
-    SEMESTER_CHOICES = [
-        (1, 'First Semester'),
-        (2, 'Second Semester'),
-        (3, 'Holiday Semester'),
-    ]
-    
     year_start = models.IntegerField(help_text="Starting year (e.g., 2025 for 2025/2026)")
     year_end = models.IntegerField(help_text="Ending year (e.g., 2026 for 2025/2026)")
     is_active = models.BooleanField(default=False, help_text="Currently active academic year")
-    first_semester_start = models.DateField(help_text="First semester start date")
-    first_semester_end = models.DateField(help_text="First semester end date")
-    second_semester_start = models.DateField(help_text="Second semester start date")
-    second_semester_end = models.DateField(help_text="Second semester end date")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -39,31 +29,112 @@ class AcademicYear(models.Model):
         if self.year_end != self.year_start + 1:
             raise ValidationError("Academic year must span exactly one year (e.g., 2025/2026)")
     
-    @property
-    def display_name(self):
-        """Get formatted academic year name"""
-        return f"{self.year_start}/{self.year_end}"
-    
     @classmethod
     def get_current_academic_year(cls):
         """Get the currently active academic year"""
         return cls.objects.filter(is_active=True).first()
-    
+
     @classmethod
     def get_or_create_2025_2026(cls):
-        """Get or create the 2025/2026 academic year for UoN Law"""
-        academic_year, created = cls.objects.get_or_create(
+        """Compatibility helper used across commands/components.
+        Ensures the 2025/2026 academic year exists and returns it (sets active if newly created).
+        """
+        obj, created = cls.objects.get_or_create(
             year_start=2025,
             year_end=2026,
             defaults={
                 'is_active': True,
-                'first_semester_start': date(2025, 9, 1),
-                'first_semester_end': date(2025, 12, 13),
-                'second_semester_start': date(2026, 1, 15),
-                'second_semester_end': date(2026, 4, 30),
             }
         )
-        return academic_year
+        return obj
+
+
+class Semester(models.Model):
+    """Semester model to track semesters within academic years"""
+    
+    SEMESTER_TYPE_CHOICES = [
+        (1, 'First Semester'),
+        (2, 'Second Semester'),
+        (3, 'Summer Semester'),
+    ]
+    
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, related_name='semesters')
+    semester_type = models.IntegerField(choices=SEMESTER_TYPE_CHOICES, help_text="Type of semester")
+    start_date = models.DateField(help_text="Semester start date")
+    end_date = models.DateField(help_text="Semester end date")
+    is_active = models.BooleanField(default=False, help_text="Currently active semester")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['academic_year', 'semester_type']
+        ordering = ['academic_year', 'semester_type']
+    
+    def __str__(self):
+        return f"{self.academic_year} - {self.get_semester_type_display()}"
+    
+    def clean(self):
+        if self.end_date <= self.start_date:
+            raise ValidationError("Semester end date must be after start date")
+    
+    @property
+    def display_name(self):
+        """Get formatted semester name"""
+        return f"{self.academic_year} - {self.get_semester_type_display()}"
+    
+    def get_progress_percentage(self):
+        """Calculate semester progress as a percentage"""
+        from datetime import date
+        today = date.today()
+        total_days = (self.end_date - self.start_date).days
+        
+        if today < self.start_date:
+            return 0
+        elif today > self.end_date:
+            return 100
+        else:
+            days_elapsed = (today - self.start_date).days
+            return round((days_elapsed / total_days) * 100, 1)
+    
+    def get_progress_status(self):
+        """Get semester progress status"""
+        from datetime import date
+        today = date.today()
+        
+        if today < self.start_date:
+            return "Not Started"
+        elif today > self.end_date:
+            return "Completed"
+        else:
+            return "In Progress"
+    
+    def get_days_elapsed(self):
+        """Get number of days elapsed in the semester"""
+        from datetime import date
+        today = date.today()
+        
+        if today < self.start_date:
+            return 0
+        elif today > self.end_date:
+            return (self.end_date - self.start_date).days
+        else:
+            return (today - self.start_date).days
+    
+    def get_total_days(self):
+        """Get total number of days in the semester"""
+        return (self.end_date - self.start_date).days
+    
+    def get_days_remaining(self):
+        """Get number of days remaining in the semester"""
+        from datetime import date
+        today = date.today()
+        
+        if today < self.start_date:
+            return self.get_total_days()
+        elif today > self.end_date:
+            return 0
+        else:
+            return (self.end_date - today).days
 
 
 
