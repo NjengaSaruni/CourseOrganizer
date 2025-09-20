@@ -1,9 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService, User } from '../../core/auth.service';
 import { SettingsService, UserProfile, ProfileUpdateRequest } from '../../core/settings.service';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-profile-settings',
@@ -22,15 +23,26 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
           <div class="flex items-center space-x-6">
             <!-- Profile Avatar -->
             <div class="relative">
-              <div class="w-24 h-24 bg-gradient-to-br from-gray-400 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg">
-                <span class="text-white font-bold text-2xl">{{ getInitials() }}</span>
+              <div class="w-24 h-24 bg-gradient-to-br from-gray-400 to-gray-600 rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
+                <img *ngIf="currentUser?.profile_picture" 
+                     [src]="getProfilePictureUrl(currentUser?.profile_picture)" 
+                     [alt]="(currentUser?.full_name || 'User') + ' profile picture'"
+                     class="w-full h-full object-cover">
+                <span *ngIf="!currentUser?.profile_picture" class="text-white font-bold text-2xl">{{ getInitials() }}</span>
               </div>
-              <button class="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full shadow-md border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+              <button (click)="triggerFileUpload()" 
+                      class="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded-full shadow-md border-2 border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                 <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </button>
+              <!-- Hidden file input -->
+              <input #fileInput 
+                     type="file" 
+                     accept="image/*" 
+                     (change)="onFileSelected($event)"
+                     class="hidden">
             </div>
             
             <!-- Profile Info -->
@@ -222,6 +234,8 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
   styles: []
 })
 export class ProfileSettingsComponent implements OnInit {
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  
   currentUser: User | null = null;
   isSidebarOpen = false;
   isUpdating = false;
@@ -240,7 +254,8 @@ export class ProfileSettingsComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private settingsService: SettingsService
+    private settingsService: SettingsService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -257,6 +272,7 @@ export class ProfileSettingsComponent implements OnInit {
           program: ''
         };
       }
+      this.cdr.detectChanges();
     });
   }
 
@@ -270,6 +286,25 @@ export class ProfileSettingsComponent implements OnInit {
       .slice(0, 2);
   }
 
+  getProfilePictureUrl(profilePicture: string | undefined): string {
+    if (!profilePicture) return '';
+    
+    // If it's already a full URL, return as is
+    if (profilePicture.startsWith('http://') || profilePicture.startsWith('https://')) {
+      return profilePicture;
+    }
+    
+    // If it's a relative path starting with /media/, construct full URL
+    if (profilePicture.startsWith('/media/')) {
+      const backendUrl = environment.apiUrl.replace('/api', '');
+      return `${backendUrl}${profilePicture}`;
+    }
+    
+    // If it's just a filename or relative path, assume it's in media
+    const backendUrl = environment.apiUrl.replace('/api', '');
+    return `${backendUrl}/media/${profilePicture}`;
+  }
+
   onSidebarToggle(isOpen: boolean): void {
     this.isSidebarOpen = isOpen;
   }
@@ -278,6 +313,7 @@ export class ProfileSettingsComponent implements OnInit {
     this.isUpdating = true;
     this.successMessage = '';
     this.errorMessage = '';
+    this.cdr.detectChanges();
 
     const updateData: ProfileUpdateRequest = {
       first_name: this.profileForm.first_name,
@@ -296,19 +332,24 @@ export class ProfileSettingsComponent implements OnInit {
           this.currentUser.full_name = updatedUser.full_name;
           this.currentUser.phone_number = updatedUser.phone_number || '';
         }
+        this.cdr.detectChanges();
         
         // Clear success message after 3 seconds
         setTimeout(() => {
           this.successMessage = '';
+          this.cdr.detectChanges();
         }, 3000);
       },
       error: (error) => {
+        console.error('Profile update error:', error);
         this.isUpdating = false;
         this.errorMessage = error.error?.message || 'Failed to update profile. Please try again.';
+        this.cdr.detectChanges();
         
         // Clear error message after 5 seconds
         setTimeout(() => {
           this.errorMessage = '';
+          this.cdr.detectChanges();
         }, 5000);
       }
     });
@@ -328,5 +369,65 @@ export class ProfileSettingsComponent implements OnInit {
     }
     this.successMessage = '';
     this.errorMessage = '';
+  }
+
+  triggerFileUpload(): void {
+    this.fileInput.nativeElement.click();
+  }
+
+  onFileSelected(event: any): void {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.errorMessage = 'Please select an image file.';
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.errorMessage = 'Image size must be less than 5MB.';
+        return;
+      }
+
+      this.uploadProfilePicture(file);
+    }
+  }
+
+  uploadProfilePicture(file: File): void {
+    this.isUpdating = true;
+    this.errorMessage = '';
+    this.successMessage = '';
+    this.cdr.detectChanges();
+
+    this.settingsService.uploadProfilePicture(file).subscribe({
+      next: (response) => {
+        this.successMessage = 'Profile picture updated successfully!';
+        this.isUpdating = false;
+        // Clear the file input
+        this.fileInput.nativeElement.value = '';
+        this.cdr.detectChanges();
+        
+        // Refresh user data in AuthService to update the UI
+        this.authService.refreshUserData().subscribe({
+          next: (updatedUser) => {
+            console.log('User data refreshed with new profile picture:', updatedUser);
+            this.cdr.detectChanges();
+          },
+          error: (error) => {
+            console.error('Error refreshing user data:', error);
+            this.cdr.detectChanges();
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Profile picture upload error:', error);
+        this.errorMessage = error.error?.message || 'Failed to upload profile picture. Please try again.';
+        this.isUpdating = false;
+        // Clear the file input
+        this.fileInput.nativeElement.value = '';
+        this.cdr.detectChanges();
+      }
+    });
   }
 }

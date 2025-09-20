@@ -1,16 +1,24 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
-from .models import User, AcademicYear
+from .models import User, AcademicYear, Semester
 from .extended_models import Student, Teacher, RegistrationRequest
 
 
 @admin.register(AcademicYear)
 class AcademicYearAdmin(admin.ModelAdmin):
-    list_display = ['display_name', 'is_active', 'first_semester_start', 'first_semester_end']
+    list_display = ['__str__', 'is_active']
     list_filter = ['is_active', 'year_start']
     search_fields = ['year_start', 'year_end']
     ordering = ['-year_start']
+
+
+@admin.register(Semester)
+class SemesterAdmin(admin.ModelAdmin):
+    list_display = ['__str__', 'academic_year', 'semester_type', 'start_date', 'end_date', 'is_active']
+    list_filter = ['academic_year', 'semester_type', 'is_active']
+    search_fields = ['academic_year__year_start', 'academic_year__year_end']
+    ordering = ['academic_year', 'semester_type']
 
 
 @admin.register(User)

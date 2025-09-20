@@ -40,3 +40,54 @@ def serve_pdf(request, path):
         return response
     except Exception as e:
         raise Http404("Error serving file")
+
+def serve_favicon(request):
+    """Serve favicon.ico directly"""
+    favicon_path = os.path.join(settings.STATIC_ROOT, 'favicon.ico')
+    if os.path.exists(favicon_path):
+        response = FileResponse(open(favicon_path, 'rb'), content_type='image/x-icon')
+        response['Cache-Control'] = 'public, max-age=86400'  # Cache for 24 hours
+        return response
+    else:
+        raise Http404("Favicon not found")
+
+def serve_favicon_svg(request):
+    """Serve favicon.svg directly"""
+    favicon_path = os.path.join(settings.STATIC_ROOT, 'favicon.svg')
+    if os.path.exists(favicon_path):
+        response = FileResponse(open(favicon_path, 'rb'), content_type='image/svg+xml')
+        response['Cache-Control'] = 'public, max-age=86400'  # Cache for 24 hours
+        return response
+    else:
+        raise Http404("Favicon SVG not found")
+
+def serve_media(request, path):
+    """Serve media files (images, documents, etc.)"""
+    file_path = os.path.join(settings.MEDIA_ROOT, path)
+    
+    if not os.path.exists(file_path):
+        raise Http404("File not found")
+    
+    try:
+        # Determine content type based on file extension
+        content_type = 'application/octet-stream'  # default
+        if file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+            content_type = 'image/' + file_path.split('.')[-1].lower()
+            if content_type == 'image/jpg':
+                content_type = 'image/jpeg'
+        elif file_path.lower().endswith('.ico'):
+            content_type = 'image/x-icon'
+        elif file_path.lower().endswith('.svg'):
+            content_type = 'image/svg+xml'
+        elif file_path.lower().endswith('.pdf'):
+            content_type = 'application/pdf'
+        elif file_path.lower().endswith(('.doc', '.docx')):
+            content_type = 'application/msword'
+        elif file_path.lower().endswith(('.ppt', '.pptx')):
+            content_type = 'application/vnd.ms-powerpoint'
+        
+        response = FileResponse(open(file_path, 'rb'), content_type=content_type)
+        response['Content-Disposition'] = 'inline; filename="' + os.path.basename(file_path) + '"'
+        return response
+    except Exception as e:
+        raise Http404("Error serving file")

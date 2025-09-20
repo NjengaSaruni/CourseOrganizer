@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from datetime import date
-from .models import User, AcademicYear
+from .models import User, AcademicYear, Semester
 from school.models import Class
 from .extended_models import Student, Teacher, RegistrationRequest
 
@@ -9,9 +9,44 @@ from .extended_models import Student, Teacher, RegistrationRequest
 class AcademicYearSerializer(serializers.ModelSerializer):
     class Meta:
         model = AcademicYear
-        fields = ['id', 'year_start', 'year_end', 'display_name', 'is_active', 
-                 'first_semester_start', 'first_semester_end', 
-                 'second_semester_start', 'second_semester_end']
+        fields = ['id', 'year_start', 'year_end', 'is_active', 'created_at', 'updated_at']
+
+
+class SemesterSerializer(serializers.ModelSerializer):
+    """Serializer for Semester model"""
+    academic_year_display = serializers.CharField(source='academic_year.__str__', read_only=True)
+    semester_type_display = serializers.CharField(source='get_semester_type_display', read_only=True)
+    progress_percentage = serializers.SerializerMethodField()
+    progress_status = serializers.SerializerMethodField()
+    days_elapsed = serializers.SerializerMethodField()
+    total_days = serializers.SerializerMethodField()
+    days_remaining = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Semester
+        fields = [
+            'id', 'academic_year', 'academic_year_display', 
+            'semester_type', 'semester_type_display',
+            'start_date', 'end_date', 'is_active', 
+            'progress_percentage', 'progress_status',
+            'days_elapsed', 'total_days', 'days_remaining',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_progress_percentage(self, obj):
+        return obj.get_progress_percentage()
+    
+    def get_progress_status(self, obj):
+        return obj.get_progress_status()
+    
+    def get_days_elapsed(self, obj):
+        return obj.get_days_elapsed()
+    
+    def get_total_days(self, obj):
+        return obj.get_total_days()
+    
+    def get_days_remaining(self, obj):
+        return obj.get_days_remaining()
 
 
 class ClassSerializer(serializers.ModelSerializer):

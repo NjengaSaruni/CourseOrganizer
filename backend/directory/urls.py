@@ -11,6 +11,9 @@ urlpatterns = [
     # Academic Years
     path('academic-years/', views.AcademicYearListView.as_view(), name='academic_years'),
     
+    # Semesters
+    path('semesters/', views.SemesterListView.as_view(), name='semesters'),
+    
     # Classes
     path('classes/', views.ClassListView.as_view(), name='classes'),
     path('classes/<int:pk>/', views.ClassDetailView.as_view(), name='class_detail'),

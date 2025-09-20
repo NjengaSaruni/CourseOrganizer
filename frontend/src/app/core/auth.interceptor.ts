@@ -1,5 +1,7 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { catchError } from 'rxjs/operators';
+import { throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
@@ -20,10 +22,34 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const authReq = req.clone({
       headers: req.headers.set('Authorization', `Token ${token}`)
     });
-    return next(authReq);
+    return next(authReq).pipe(
+      catchError((err: any) => {
+        try {
+          const message = err?.error?.detail || err?.error?.message || '';
+          const status = err?.status;
+          if (status === 401 && typeof message === 'string' && message.toLowerCase().includes('invalid token')) {
+            authService.handleInvalidTokenLogout();
+            return throwError(() => err);
+          }
+        } catch {}
+        return throwError(() => err);
+      })
+    );
   } else {
     console.log('Auth interceptor: No token found for', req.url);
   }
   
-  return next(req);
+  return next(req).pipe(
+    catchError((err: any) => {
+      try {
+        const message = err?.error?.detail || err?.error?.message || '';
+        const status = err?.status;
+        if (status === 401 && typeof message === 'string' && message.toLowerCase().includes('invalid token')) {
+          authService.handleInvalidTokenLogout();
+          return throwError(() => err);
+        }
+      } catch {}
+      return throwError(() => err);
+    })
+  );
 };

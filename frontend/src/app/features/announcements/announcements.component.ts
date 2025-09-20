@@ -364,14 +364,9 @@ export class AnnouncementsComponent implements OnInit {
   loadAnnouncements(): void {
     this.loading = true;
     this.communicationService.getAnnouncements().subscribe({
-      next: (response) => {
-        // Handle paginated response from Django REST Framework
-        if (response && typeof response === 'object' && 'results' in response) {
-          this.announcements = response.results;
-        } else {
-          // Fallback: assume it's already an array
-          this.announcements = Array.isArray(response) ? response : [];
-        }
+      next: (announcements) => {
+        // The service now returns Announcement[] directly
+        this.announcements = Array.isArray(announcements) ? announcements : [];
         this.loading = false;
         this.cdr.detectChanges();
       },

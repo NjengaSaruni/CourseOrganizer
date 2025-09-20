@@ -29,9 +29,16 @@ def serve_static_assets(request, path):
     static_extensions = ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.svg', '.woff', '.woff2', '.ttf', '.eot', '.json', '.txt']
     
     if any(path.endswith(ext) for ext in static_extensions):
-        file_path = os.path.join(settings.STATIC_ROOT, path)
+        # Handle both direct file requests and browser/ prefixed requests
+        if path.startswith('browser/'):
+            # Remove the 'browser/' prefix for direct access to STATIC_ROOT
+            actual_path = path[8:]  # Remove 'browser/' prefix
+            file_path = os.path.join(settings.STATIC_ROOT, actual_path)
+        else:
+            file_path = os.path.join(settings.STATIC_ROOT, path)
+        
         if os.path.exists(file_path):
-            return serve(request, path, document_root=settings.STATIC_ROOT)
+            return serve(request, actual_path if path.startswith('browser/') else path, document_root=settings.STATIC_ROOT)
         else:
             return HttpResponse("File not found", status=404)
     else:
@@ -45,8 +52,11 @@ urlpatterns = [
     path('api/course-content/', include('course_content.urls')),
     path('api/communication/', include('communication.urls')),
     path('api/school/', include('school.urls')),
-    # Serve PDF files with iframe embedding allowed
-    path('media/<path:path>', views.serve_pdf),
+    # Direct favicon routes for better browser compatibility
+    path('favicon.ico', views.serve_favicon),
+    path('favicon.svg', views.serve_favicon_svg),
+    # Serve media files (images, documents, etc.)
+    path('media/<path:path>', views.serve_media),
     # Serve static assets for Angular app
     path('<path:path>', serve_static_assets),
     # Serve Angular app at root (catch-all for SPA routing)

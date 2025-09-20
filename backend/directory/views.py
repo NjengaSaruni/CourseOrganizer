@@ -7,14 +7,15 @@ from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from .models import User, AcademicYear
+from .models import User, AcademicYear, Semester
 from school.models import Class
 from .extended_models import Student, Teacher, RegistrationRequest
 from .serializers import (
     UserSerializer, StudentSerializer, StudentUserSerializer, TeacherSerializer,
     RegistrationRequestSerializer, RegistrationRequestCreateSerializer,
     StudentRegistrationSerializer,
-    LoginSerializer, UserProfileSerializer, AcademicYearSerializer, ClassSerializer
+    LoginSerializer, UserProfileSerializer, AcademicYearSerializer, ClassSerializer,
+    SemesterSerializer
 )
 
 
@@ -23,6 +24,20 @@ class AcademicYearListView(generics.ListAPIView):
     queryset = AcademicYear.objects.all()
     serializer_class = AcademicYearSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class SemesterListView(generics.ListAPIView):
+    """List all semesters, optionally filtered by academic year"""
+    queryset = Semester.objects.all()
+    serializer_class = SemesterSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        academic_year_id = self.request.query_params.get('academic_year')
+        if academic_year_id:
+            queryset = queryset.filter(academic_year_id=academic_year_id)
+        return queryset
 
 
 class ClassListView(generics.ListAPIView):

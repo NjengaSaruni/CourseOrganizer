@@ -119,6 +119,21 @@ import { AuthService, User } from '../../core/auth.service';
                   <div class="text-xs text-gray-500">{{ isClassRep() ? 'Send class announcements' : 'View class announcements' }}</div>
                 </div>
               </a>
+              
+              <!-- Course Timeline (for all users) -->
+              <a routerLink="/course-timeline" 
+                 routerLinkActive="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500" 
+                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Course Timeline</div>
+                  <div class="text-xs text-gray-500">Browse content chronologically</div>
+                </div>
+              </a>
             </div>
 
             <!-- Administration Section -->
@@ -166,6 +181,20 @@ import { AuthService, User } from '../../core/auth.service';
                 <div>
                   <div class="font-medium">Course Management</div>
                   <div class="text-xs text-gray-500">Upload recordings & materials</div>
+                </div>
+              </a>
+              
+              <a routerLink="/content-manager" 
+                 routerLinkActive="bg-emerald-50 text-emerald-700 border-r-2 border-emerald-500" 
+                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Content Manager</div>
+                  <div class="text-xs text-gray-500">Add course content & timeline</div>
                 </div>
               </a>
             </div>
@@ -318,6 +347,22 @@ import { AuthService, User } from '../../core/auth.service';
                   <div class="text-xs text-gray-500">{{ isClassRep() ? 'Send class announcements' : 'View class announcements' }}</div>
                 </div>
               </a>
+              
+              <!-- Course Timeline (for all users) -->
+              <a routerLink="/course-timeline" 
+                 routerLinkActive="bg-indigo-50 text-indigo-700" 
+                 (click)="toggleSidebar()"
+                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Course Timeline</div>
+                  <div class="text-xs text-gray-500">Browse content chronologically</div>
+                </div>
+              </a>
             </div>
 
             <!-- Administration Section -->
@@ -368,6 +413,21 @@ import { AuthService, User } from '../../core/auth.service';
                 <div>
                   <div class="font-medium">Course Management</div>
                   <div class="text-xs text-gray-500">Upload recordings & materials</div>
+                </div>
+              </a>
+              
+              <a routerLink="/content-manager" 
+                 routerLinkActive="bg-emerald-50 text-emerald-700" 
+                 (click)="toggleSidebar()"
+                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Content Manager</div>
+                  <div class="text-xs text-gray-500">Add course content & timeline</div>
                 </div>
               </a>
             </div>

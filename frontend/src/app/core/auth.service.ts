@@ -20,6 +20,7 @@ export interface User {
   last_login?: string;
   last_login_formatted: string;
   class_display_name?: string;
+  profile_picture?: string;
   passcode?: string;
   smsSent?: boolean;
   class_rep_role?: {
@@ -137,6 +138,18 @@ export class AuthService {
         return throwError(() => error);
       })
     );
+  }
+
+  // Force client-side logout without contacting the server
+  handleInvalidTokenLogout(): void {
+    try {
+      this.currentUserSubject.next(null);
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('authToken');
+    } finally {
+      // Hard redirect to clear app state/routes
+      window.location.href = '/login';
+    }
   }
 
   getCurrentUser(): User | null {

@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from directory.models import User
-from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -268,11 +268,117 @@ class TimetableEntryWithRecordingsSerializer(serializers.ModelSerializer):
         return obj.materials.exists()
 
 
+class CourseContentSerializer(serializers.ModelSerializer):
+    """Serializer for course content (unified recordings and materials)"""
+    uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
+    content_type_display = serializers.CharField(source='get_content_type_display', read_only=True)
+    recording_platform_display = serializers.CharField(source='get_recording_platform_display', read_only=True)
+    material_type_display = serializers.CharField(source='get_material_type_display', read_only=True)
+    file_extension = serializers.CharField(read_only=True)
+    is_audio_recording = serializers.BooleanField(read_only=True)
+    is_video_recording = serializers.BooleanField(read_only=True)
+    duration_display = serializers.SerializerMethodField()
+    file_size_display = serializers.SerializerMethodField()
+    lesson_date_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourseContent
+        fields = '__all__'
+        read_only_fields = ('view_count', 'download_count', 'created_at', 'updated_at')
+
+    def get_duration_display(self, obj):
+        """Format duration for display"""
+        if obj.duration:
+            total_seconds = int(obj.duration.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            seconds = total_seconds % 60
+            
+            if hours > 0:
+                return f"{hours}h {minutes}m {seconds}s"
+            elif minutes > 0:
+                return f"{minutes}m {seconds}s"
+            else:
+                return f"{seconds}s"
+        return None
+
+    def get_file_size_display(self, obj):
+        """Format file size for display"""
+        if obj.file_size:
+            size = obj.file_size
+            for unit in ['B', 'KB', 'MB', 'GB']:
+                if size < 1024.0:
+                    return f"{size:.1f} {unit}"
+                size /= 1024.0
+            return f"{size:.1f} TB"
+        return None
+
+    def get_lesson_date_display(self, obj):
+        """Format lesson date for display"""
+        if obj.lesson_date:
+            return obj.lesson_date.strftime('%B %d, %Y')
+        return None
+
+
+class CourseContentCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating course content"""
+    
+    class Meta:
+        model = CourseContent
+        fields = [
+            'title', 'description', 'content_type', 'course', 'timetable_entry',
+            'lesson_date', 'lesson_order', 'topic', 'file_url', 'file_path',
+            'recording_platform', 'duration', 'audio_only', 'material_type',
+            'is_published'
+        ]
+
+    def validate(self, attrs):
+        """Validate the content based on type"""
+        content_type = attrs.get('content_type')
+        
+        if content_type == 'recording':
+            # For recordings, require recording_platform
+            if not attrs.get('recording_platform'):
+                raise serializers.ValidationError({
+                    'recording_platform': 'Recording platform is required for recording content type.'
+                })
+        elif content_type == 'material':
+            # For materials, require material_type
+            if not attrs.get('material_type'):
+                raise serializers.ValidationError({
+                    'material_type': 'Material type is required for material content type.'
+                })
+        
+        # For content types that don't need lesson dates (like course outlines, past papers)
+        # make lesson_date optional
+        if content_type in ['material', 'past_papers'] and not attrs.get('lesson_date'):
+            # Set a default date for content without lesson dates
+            attrs['lesson_date'] = '1900-01-01'  # Use a far past date as default
+            attrs['lesson_order'] = 0
+        
+        # Validate file_url or file_path is provided
+        if not attrs.get('file_url') and not attrs.get('file_path'):
+            raise serializers.ValidationError({
+                'file_url': 'Either file_url or file_path must be provided.'
+            })
+        
+        return attrs
+
+
+class CourseTimelineSerializer(serializers.Serializer):
+    """Serializer for course timeline grouped by lesson date"""
+    lesson_date = serializers.DateField()
+    lesson_date_display = serializers.CharField()
+    content = CourseContentSerializer(many=True)
+    total_content = serializers.IntegerField()
+
+
 class CourseWithDetailsSerializer(serializers.ModelSerializer):
     """Serializer for courses with detailed information"""
     timetable_entries = TimetableEntryWithRecordingsSerializer(many=True, read_only=True)
     recent_recordings = serializers.SerializerMethodField()
     recent_materials = serializers.SerializerMethodField()
+    recent_content = serializers.SerializerMethodField()
 
     class Meta:
         model = Course
@@ -285,3 +391,7 @@ class CourseWithDetailsSerializer(serializers.ModelSerializer):
     def get_recent_materials(self, obj):
         recent = obj.materials.all()[:3]
         return CourseMaterialSerializer(recent, many=True).data
+
+    def get_recent_content(self, obj):
+        recent = obj.course_contents.filter(is_published=True).order_by('-lesson_date', '-lesson_order')[:5]
+        return CourseContentSerializer(recent, many=True).data

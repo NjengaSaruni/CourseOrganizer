@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { CourseService } from '../../core/course.service';
+import { CourseContentService } from '../../core/course-content.service';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 
 interface Course {
@@ -94,7 +96,9 @@ export class CourseManagementComponent implements OnInit {
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private courseService: CourseService,
+    private courseContentService: CourseContentService
   ) {}
 
   ngOnInit(): void {
@@ -112,8 +116,35 @@ export class CourseManagementComponent implements OnInit {
 
   private loadCourses(): void {
     this.isLoading = true;
-    // Mock data for now - in real app, this would call the API
-    this.courses = [
+    
+    // Load real courses from the API
+    this.courseService.getCourses().subscribe({
+      next: (courses: any) => {
+        this.courses = courses.map((course: any) => ({
+          id: course.id,
+          name: course.name,
+          code: course.code,
+          description: course.description,
+          year: course.year,
+          semester: course.semester,
+          academic_year: course.academic_year,
+          credits: course.credits,
+          timetable_entries: course.timetable_entries || [],
+          recent_recordings: course.recent_recordings || [],
+          recent_materials: course.recent_materials || []
+        }));
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading courses:', error);
+        this.isLoading = false;
+      }
+    });
+    
+    // Fallback to mock data if API fails
+    if (this.courses.length === 0) {
+      // Mock data for now - in real app, this would call the API
+      this.courses = [
       {
         id: 1,
         name: 'Constitutional Law I',
@@ -163,8 +194,9 @@ export class CourseManagementComponent implements OnInit {
         recent_recordings: [],
         recent_materials: []
       }
-    ];
-    this.isLoading = false;
+      ];
+      this.isLoading = false;
+    }
   }
 
   selectCourse(course: Course): void {
@@ -284,4 +316,31 @@ export class CourseManagementComponent implements OnInit {
       default: return '📄';
     }
   }
+
+  // New methods for course content management
+  loadCourseContent(courseId: number): void {
+    // This would load course outlines, past papers, etc. for the selected course
+    console.log('Loading course content for course:', courseId);
+  }
+
+  navigateToContentManager(): void {
+    this.router.navigate(['/content-manager']);
+  }
+
+  navigateToCourseMaterials(): void {
+    if (this.selectedCourse) {
+      this.router.navigate(['/course-materials', this.selectedCourse.id]);
+    } else {
+      this.router.navigate(['/course-materials']);
+    }
+  }
+
+  navigateToTimeline(courseId: number): void {
+    this.router.navigate(['/course-timeline', courseId]);
+  }
+
+  getSelectedCourseId(): number {
+    return this.selectedCourse ? this.selectedCourse.id : 1;
+  }
+
 }

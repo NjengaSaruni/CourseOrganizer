@@ -19,6 +19,7 @@ export interface UserProfile {
   last_login?: string;
   last_login_formatted: string;
   class_display_name?: string;
+  profile_picture?: string;
 }
 
 export interface PasswordChangeRequest {
@@ -154,17 +155,29 @@ export class SettingsService {
 
   /**
    * Upload profile picture
-   * Note: This endpoint may not be implemented yet
    */
   uploadProfilePicture(file: File): Observable<{ profile_picture_url: string }> {
-    // For now, return an error since the endpoint doesn't exist
-    return new Observable(observer => {
-      observer.error({
-        error: {
-          message: 'Profile picture upload functionality is not yet implemented.'
-        }
-      });
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+    
+    const headers = new HttpHeaders({
+      // Don't set Content-Type, let the browser set it with boundary for multipart/form-data
     });
+
+    return this.http.put<{ profile_picture_url: string }>(
+      `${this.apiUrl}/directory/auth/profile/update/`,
+      formData,
+      { headers }
+    ).pipe(
+      tap(response => {
+        // Update the current user profile with the new picture URL
+        if (this.currentUserSubject.value) {
+          const updatedUser = { ...this.currentUserSubject.value };
+          updatedUser.profile_picture = response.profile_picture_url;
+          this.currentUserSubject.next(updatedUser);
+        }
+      })
+    );
   }
 
   /**

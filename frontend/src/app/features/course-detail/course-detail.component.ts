@@ -185,4 +185,10 @@ export class CourseDetailComponent implements OnInit {
   getUpcomingMeetings(): Meeting[] {
     return this.meetings.filter(m => m.status === 'upcoming').slice(0, 3);
   }
+
+  navigateToCourseMaterials(): void {
+    if (this.course) {
+      this.router.navigate(['/course-materials', this.course.id]);
+    }
+  }
 }

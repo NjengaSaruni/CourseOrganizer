@@ -271,6 +271,133 @@ class Recording(models.Model):
         return self.title
 
 
+class CourseContent(models.Model):
+    """Unified model for course content including recordings and materials with timeline support"""
+    CONTENT_TYPE_CHOICES = [
+        ('recording', 'Recording'),
+        ('material', 'Material'),
+        ('assignment', 'Assignment'),
+        ('announcement', 'Announcement'),
+    ]
+    
+    RECORDING_PLATFORM_CHOICES = [
+        ('zoom', 'Zoom'),
+        ('google_meet', 'Google Meet'),
+        ('teams', 'Microsoft Teams'),
+        ('physical', 'Physical Meeting'),
+        ('other', 'Other'),
+    ]
+    
+    MATERIAL_TYPE_CHOICES = [
+        ('pdf', 'PDF Document'),
+        ('doc', 'Word Document'),
+        ('ppt', 'PowerPoint'),
+        ('video', 'Video File'),
+        ('audio', 'Audio File'),
+        ('image', 'Image'),
+        ('link', 'External Link'),
+        ('other', 'Other'),
+    ]
+    
+    # Basic fields
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    content_type = models.CharField(max_length=20, choices=CONTENT_TYPE_CHOICES)
+    
+    # Course and lesson association
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='course_contents')
+    timetable_entry = models.ForeignKey('TimetableEntry', on_delete=models.CASCADE, null=True, blank=True, related_name='course_contents')
+    
+    # Timeline and lesson information
+    lesson_date = models.DateField(help_text="Date when this lesson/content was delivered")
+    lesson_order = models.PositiveIntegerField(default=1, help_text="Order of this content within the lesson")
+    topic = models.CharField(max_length=200, blank=True, help_text="Topic or chapter name")
+    
+    # File and URL fields
+    file_url = models.URLField(blank=True, help_text="URL to the content file")
+    file_path = models.CharField(max_length=500, blank=True, help_text="Local file path if stored locally")
+    file_size = models.BigIntegerField(null=True, blank=True, help_text="File size in bytes")
+    
+    # Recording specific fields
+    recording_platform = models.CharField(max_length=20, choices=RECORDING_PLATFORM_CHOICES, blank=True)
+    duration = models.DurationField(blank=True, null=True, help_text="Duration for recordings")
+    audio_only = models.BooleanField(default=False, help_text="Whether this is an audio-only recording")
+    
+    # Material specific fields
+    material_type = models.CharField(max_length=20, choices=MATERIAL_TYPE_CHOICES, blank=True)
+    
+    # Metadata
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_published = models.BooleanField(default=True, help_text="Whether this content is visible to students")
+    download_count = models.PositiveIntegerField(default=0, help_text="Number of times this content has been downloaded")
+    view_count = models.PositiveIntegerField(default=0, help_text="Number of times this content has been viewed")
+    
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['lesson_date', 'lesson_order', 'created_at']
+        unique_together = ['course', 'lesson_date', 'lesson_order']
+        indexes = [
+            models.Index(fields=['course', 'lesson_date']),
+            models.Index(fields=['content_type', 'is_published']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} - {self.lesson_date} ({self.content_type})"
+    
+    @property
+    def file_extension(self):
+        """Get file extension from file_url or file_path"""
+        if self.file_url:
+            return self.file_url.split('.')[-1].lower() if '.' in self.file_url else ''
+        elif self.file_path:
+            return self.file_path.split('.')[-1].lower() if '.' in self.file_path else ''
+        return ''
+    
+    @property
+    def is_audio_recording(self):
+        """Check if this is an audio recording"""
+        return self.content_type == 'recording' and self.audio_only
+    
+    @property
+    def is_video_recording(self):
+        """Check if this is a video recording"""
+        return self.content_type == 'recording' and not self.audio_only
+    
+    def increment_view_count(self):
+        """Increment the view count"""
+        self.view_count += 1
+        self.save(update_fields=['view_count'])
+    
+    def increment_download_count(self):
+        """Increment the download count"""
+        self.download_count += 1
+        self.save(update_fields=['download_count'])
+    
+    @classmethod
+    def get_timeline_for_course(cls, course, start_date=None, end_date=None):
+        """Get timeline of content for a course"""
+        queryset = cls.objects.filter(course=course, is_published=True)
+        
+        if start_date:
+            queryset = queryset.filter(lesson_date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(lesson_date__lte=end_date)
+        
+        return queryset.order_by('lesson_date', 'lesson_order')
+    
+    @classmethod
+    def get_lesson_content(cls, course, lesson_date):
+        """Get all content for a specific lesson date"""
+        return cls.objects.filter(
+            course=course, 
+            lesson_date=lesson_date, 
+            is_published=True
+        ).order_by('lesson_order')
+
+
 class Meeting(models.Model):
     """Online meeting model"""
     PLATFORM_CHOICES = [

@@ -290,9 +290,19 @@ export class CommunicationService {
   }
 
   // Announcement methods
-  getAnnouncements(): Observable<any> {
+  getAnnouncements(): Observable<Announcement[]> {
     return this.http.get<any>(`${this.apiUrl}/communication/announcements/`).pipe(
-      map(response => response),
+      map(response => {
+        // Handle paginated response from Django REST Framework
+        if (response && Array.isArray(response.results)) {
+          return response.results;
+        } else if (Array.isArray(response)) {
+          return response;
+        } else {
+          console.warn('Unexpected announcements response format:', response);
+          return [];
+        }
+      }),
       catchError(error => {
         console.error('Error fetching announcements:', error);
         return throwError(() => error);

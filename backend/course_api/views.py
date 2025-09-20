@@ -7,12 +7,12 @@ from django.contrib.auth import login
 from django.db.models import Q
 from django.http import JsonResponse
 from directory.models import User
-from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, LoginSerializer,
     CourseSerializer, TimetableEntrySerializer, CourseMaterialSerializer,
     RecordingSerializer, MeetingSerializer, JitsiRecordingSerializer, TimetableEntryWithRecordingsSerializer,
-    CourseWithDetailsSerializer
+    CourseWithDetailsSerializer, CourseContentSerializer, CourseContentCreateSerializer, CourseTimelineSerializer
 )
 from .jitsi_auth import jitsi_auth
 
@@ -1236,3 +1236,362 @@ def verify_jitsi_token(request):
             'valid': False,
             'error': str(e)
         }, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Course Content Management Views
+
+class CourseContentListView(generics.ListAPIView):
+    """List course content with filtering"""
+    serializer_class = CourseContentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = CourseContent.objects.filter(is_published=True)
+        
+        # Filter by course
+        course_id = self.request.query_params.get('course_id')
+        if course_id:
+            queryset = queryset.filter(course_id=course_id)
+        
+        # Filter by content type
+        content_type = self.request.query_params.get('content_type')
+        if content_type:
+            queryset = queryset.filter(content_type=content_type)
+        
+        # Filter by date range
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            queryset = queryset.filter(lesson_date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(lesson_date__lte=end_date)
+        
+        return queryset.order_by('lesson_date', 'lesson_order')
+
+
+class CourseContentCreateView(generics.CreateAPIView):
+    """Create new course content (admin and class rep only)"""
+    serializer_class = CourseContentCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        # Check permissions
+        if not self._has_content_permission():
+            raise permissions.PermissionDenied("Only administrators and class representatives can add course content")
+        
+        serializer.save(uploaded_by=self.request.user)
+
+    def _has_content_permission(self):
+        """Check if user has permission to add content"""
+        user = self.request.user
+        
+        # Admins can always add content
+        if user.is_admin:
+            return True
+        
+        # Check if user is a class rep
+        if hasattr(user, 'class_rep_role') and user.class_rep_role.is_active:
+            return True
+        
+        return False
+
+
+class CourseContentUpdateView(generics.UpdateAPIView):
+    """Update course content (admin and class rep only)"""
+    serializer_class = CourseContentCreateSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = CourseContent.objects.all()
+
+    def perform_update(self, serializer):
+        # Check permissions
+        if not self._has_content_permission():
+            raise permissions.PermissionDenied("Only administrators and class representatives can update course content")
+        
+        serializer.save()
+
+    def _has_content_permission(self):
+        """Check if user has permission to update content"""
+        user = self.request.user
+        
+        # Admins can always update content
+        if user.is_admin:
+            return True
+        
+        # Check if user is a class rep
+        if hasattr(user, 'class_rep_role') and user.class_rep_role.is_active:
+            return True
+        
+        return False
+
+
+class CourseContentDeleteView(generics.DestroyAPIView):
+    """Delete course content (admin only)"""
+    permission_classes = [IsAuthenticated]
+    queryset = CourseContent.objects.all()
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_admin:
+            raise permissions.PermissionDenied("Only administrators can delete course content")
+        instance.delete()
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_course_timeline(request, course_id):
+    """Get course content timeline grouped by lesson date"""
+    try:
+        course = Course.objects.get(id=course_id)
+        
+        # Get date range filters
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        
+        # Get timeline data from old CourseContent model
+        timeline_data = CourseContent.get_timeline_for_course(course, start_date, end_date)
+        
+        # Get new course content types
+        from course_content.models import CourseOutline, PastPaper, Material, Assignment, Announcement
+        from course_content.serializers import CourseOutlineSerializer, PastPaperSerializer, MaterialSerializer, AssignmentSerializer, AnnouncementSerializer
+        
+        # Get all new content types for this course
+        course_outlines = CourseOutline.objects.filter(course=course, is_published=True)
+        past_papers = PastPaper.objects.filter(course=course, is_published=True)
+        materials = Material.objects.filter(course=course, is_published=True)
+        assignments = Assignment.objects.filter(course=course, is_published=True)
+        announcements = Announcement.objects.filter(course=course, is_published=True)
+        
+        # Group by lesson date
+        from collections import defaultdict
+        grouped_content = defaultdict(list)
+        
+        # Add old content
+        for content in timeline_data:
+            grouped_content[content.lesson_date].append({
+                'type': 'old_content',
+                'data': CourseContentSerializer(content).data
+            })
+        
+        # Add new content types (these don't have lesson_date, so we'll add them to a general section)
+        general_content = []
+        
+        # Add course outlines
+        for outline in course_outlines:
+            general_content.append({
+                'type': 'course_outline',
+                'data': CourseOutlineSerializer(outline).data
+            })
+        
+        # Add past papers
+        for paper in past_papers:
+            general_content.append({
+                'type': 'past_paper',
+                'data': PastPaperSerializer(paper).data
+            })
+        
+        # Add materials
+        for material in materials:
+            general_content.append({
+                'type': 'material',
+                'data': MaterialSerializer(material).data
+            })
+        
+        # Add assignments
+        for assignment in assignments:
+            general_content.append({
+                'type': 'assignment',
+                'data': AssignmentSerializer(assignment).data
+            })
+        
+        # Add announcements
+        for announcement in announcements:
+            general_content.append({
+                'type': 'announcement',
+                'data': AnnouncementSerializer(announcement).data
+            })
+        
+        # Create timeline response
+        timeline = []
+        
+        # Add lesson-based content
+        for lesson_date, content_list in sorted(grouped_content.items()):
+            timeline.append({
+                'lesson_date': lesson_date,
+                'lesson_date_display': lesson_date.strftime('%B %d, %Y'),
+                'content': content_list,
+                'total_content': len(content_list)
+            })
+        
+        # Add general content (course outlines, past papers, etc.) to a special section
+        if general_content:
+            timeline.append({
+                'lesson_date': None,
+                'lesson_date_display': 'Course Materials',
+                'content': general_content,
+                'total_content': len(general_content)
+            })
+        
+        return Response({
+            'course': CourseSerializer(course).data,
+            'timeline': timeline,
+            'total_lessons': len(timeline),
+            'total_content': timeline_data.count() + len(general_content)
+        })
+        
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_lesson_content(request, course_id, lesson_date):
+    """Get all content for a specific lesson date"""
+    try:
+        course = Course.objects.get(id=course_id)
+        
+        # Parse lesson date
+        from datetime import datetime
+        lesson_date_obj = datetime.strptime(lesson_date, '%Y-%m-%d').date()
+        
+        # Get lesson content
+        content = CourseContent.get_lesson_content(course, lesson_date_obj)
+        
+        return Response({
+            'course': CourseSerializer(course).data,
+            'lesson_date': lesson_date,
+            'lesson_date_display': lesson_date_obj.strftime('%B %d, %Y'),
+            'content': CourseContentSerializer(content, many=True).data,
+            'total_content': content.count()
+        })
+        
+    except Course.DoesNotExist:
+        return Response({'error': 'Course not found'}, status=status.HTTP_404_NOT_FOUND)
+    except ValueError:
+        return Response({'error': 'Invalid date format. Use YYYY-MM-DD'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def increment_content_view(request, content_id):
+    """Increment view count for content"""
+    try:
+        content = CourseContent.objects.get(id=content_id, is_published=True)
+        content.increment_view_count()
+        
+        return Response({
+            'message': 'View count incremented',
+            'view_count': content.view_count
+        })
+        
+    except CourseContent.DoesNotExist:
+        return Response({'error': 'Content not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def increment_content_download(request, content_id):
+    """Increment download count for content"""
+    try:
+        content = CourseContent.objects.get(id=content_id, is_published=True)
+        content.increment_download_count()
+        
+        return Response({
+            'message': 'Download count incremented',
+            'download_count': content.download_count
+        })
+        
+    except CourseContent.DoesNotExist:
+        return Response({'error': 'Content not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_course_content(request):
+    """Get course content for the current user's courses"""
+    user = request.user
+    
+    if not user.is_student:
+        return Response({'error': 'Only students can access this endpoint'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Get user's courses
+    courses = Course.get_courses_for_user(user)
+    
+    # Get recent content for each course
+    course_content = []
+    for course in courses:
+        recent_content = course.course_contents.filter(is_published=True).order_by('-lesson_date', '-lesson_order')[:5]
+        course_content.append({
+            'course': CourseSerializer(course).data,
+            'recent_content': CourseContentSerializer(recent_content, many=True).data,
+            'total_content': course.course_contents.filter(is_published=True).count()
+        })
+    
+    return Response({
+        'user_courses': course_content,
+        'total_courses': len(course_content)
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_course_content_file(request):
+    """Upload file for course content (admin and class rep only)"""
+    # Check permissions
+    user = request.user
+    has_permission = user.is_admin or (hasattr(user, 'class_rep_role') and user.class_rep_role.is_active)
+    
+    if not has_permission:
+        return Response({'error': 'Only administrators and class representatives can upload files'}, 
+                       status=status.HTTP_403_FORBIDDEN)
+    
+    # Handle file upload
+    if 'file' not in request.FILES:
+        return Response({'error': 'No file provided'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    uploaded_file = request.FILES['file']
+    
+    # Validate file type and size
+    allowed_types = ['audio/', 'video/', 'application/pdf', 'application/msword', 
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'application/vnd.ms-powerpoint',
+                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                    'image/']
+    
+    if not any(uploaded_file.content_type.startswith(t) for t in allowed_types):
+        return Response({'error': 'File type not allowed'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check file size (50MB limit)
+    max_size = 50 * 1024 * 1024  # 50MB
+    if uploaded_file.size > max_size:
+        return Response({'error': 'File size too large. Maximum size is 50MB'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Save file
+    import os
+    from django.conf import settings
+    from django.utils import timezone
+    
+    # Create upload directory if it doesn't exist
+    upload_dir = os.path.join(settings.MEDIA_ROOT, 'course_content')
+    os.makedirs(upload_dir, exist_ok=True)
+    
+    # Generate unique filename
+    timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+    file_extension = os.path.splitext(uploaded_file.name)[1]
+    filename = f"{timestamp}_{uploaded_file.name}"
+    file_path = os.path.join(upload_dir, filename)
+    
+    # Save file
+    with open(file_path, 'wb+') as destination:
+        for chunk in uploaded_file.chunks():
+            destination.write(chunk)
+    
+    # Return file information
+    file_url = f"{settings.MEDIA_URL}course_content/{filename}"
+    
+    return Response({
+        'message': 'File uploaded successfully',
+        'file_url': file_url,
+        'file_path': file_path,
+        'file_size': uploaded_file.size,
+        'content_type': uploaded_file.content_type,
+        'filename': filename
+    }, status=status.HTTP_201_CREATED)

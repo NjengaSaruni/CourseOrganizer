@@ -71,4 +71,18 @@ urlpatterns = [
     path('admin/materials/', views.add_course_material, name='add_course_material'),
     path('admin/materials/<int:material_id>/', views.update_course_material, name='update_course_material'),
     path('admin/materials/<int:material_id>/delete/', views.delete_course_material, name='delete_course_material'),
+    
+    # Course Content Management endpoints
+    path('content/', views.CourseContentListView.as_view(), name='course_content_list'),
+    path('content/create/', views.CourseContentCreateView.as_view(), name='course_content_create'),
+    path('content/<int:pk>/update/', views.CourseContentUpdateView.as_view(), name='course_content_update'),
+    path('content/<int:pk>/delete/', views.CourseContentDeleteView.as_view(), name='course_content_delete'),
+    path('content/upload-file/', views.upload_course_content_file, name='upload_course_content_file'),
+    path('content/<int:content_id>/increment-view/', views.increment_content_view, name='increment_content_view'),
+    path('content/<int:content_id>/increment-download/', views.increment_content_download, name='increment_content_download'),
+    
+    # Course Timeline endpoints
+    path('courses/<int:course_id>/timeline/', views.get_course_timeline, name='get_course_timeline'),
+    path('courses/<int:course_id>/lessons/<str:lesson_date>/', views.get_lesson_content, name='get_lesson_content'),
+    path('courses/my-content/', views.get_user_course_content, name='get_user_course_content'),
 ]
