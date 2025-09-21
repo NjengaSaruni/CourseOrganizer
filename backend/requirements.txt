@@ -22,3 +22,6 @@ factory-boy==3.3.1
 coverage==7.6.9
 freezegun==1.5.1
 responses==0.25.3
+
+# Linting dependencies
+flake8==7.1.1
