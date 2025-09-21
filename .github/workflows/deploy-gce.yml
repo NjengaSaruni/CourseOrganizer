@@ -1,8 +1,10 @@
 name: Deploy to GCE
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
     branches: [ main ]
+    types: [completed]
   workflow_dispatch:
     inputs:
       environment:
@@ -23,6 +25,7 @@ jobs:
   deploy:
     name: Deploy to GCE
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
 
     steps:
     - name: Checkout code
