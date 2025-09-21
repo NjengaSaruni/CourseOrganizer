@@ -63,8 +63,14 @@ jobs:
 
     - name: Create deployment package
       run: |
-        tar -czf deployment.tar.gz \
-          --exclude='node_modules' \
+        # Wait a moment to ensure all file operations are complete
+        sleep 2
+        
+        # Create a temporary directory for the deployment package
+        mkdir -p temp_deploy
+        
+        # Copy files to temp directory, excluding unwanted files
+        rsync -av --exclude='node_modules' \
           --exclude='.git' \
           --exclude='venv' \
           --exclude='__pycache__' \
@@ -77,7 +83,14 @@ jobs:
           --exclude='.env' \
           --exclude='debug.log' \
           --exclude='db.sqlite3' \
-          .
+          --exclude='temp_deploy' \
+          ./ temp_deploy/
+        
+        # Create tar from the temp directory
+        tar -czf deployment.tar.gz -C temp_deploy .
+        
+        # Clean up temp directory
+        rm -rf temp_deploy
 
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v2
