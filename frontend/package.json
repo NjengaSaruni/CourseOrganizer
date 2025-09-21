@@ -7,7 +7,11 @@
     "build": "ng build",
     "build:prod": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadless --code-coverage",
+    "test:coverage": "ng test --code-coverage --watch=false",
+    "lint": "ng lint",
+    "e2e": "ng e2e"
   },
   "prettier": {
     "printWidth": 100,
@@ -40,6 +44,7 @@
     "@angular/cli": "^20.2.2",
     "@angular/compiler-cli": "^20.2.0",
     "@types/jasmine": "~5.1.0",
+    "@types/node": "^20.0.0",
     "autoprefixer": "^10.4.21",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
@@ -49,6 +54,9 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.13",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0"
   }
 }
