@@ -12,15 +12,8 @@ DATABASES = {
     }
 }
 
-# Disable migrations for faster tests
-class DisableMigrations:
-    def __contains__(self, item):
-        return True
-    
-    def __getitem__(self, item):
-        return None
-
-MIGRATION_MODULES = DisableMigrations()
+# Allow migrations for tests to ensure tables are created
+# MIGRATION_MODULES = DisableMigrations()
 
 # Disable logging during tests
 LOGGING = {
@@ -49,16 +42,19 @@ CACHES = {
 # Disable password validation for faster tests
 AUTH_PASSWORD_VALIDATORS = []
 
-# Use faster password hasher for tests
-PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.MD5PasswordHasher',
-]
+# Use default password hasher for tests (MD5 can cause authentication issues)
+# PASSWORD_HASHERS = [
+#     'django.contrib.auth.hashers.MD5PasswordHasher',
+# ]
 
 # Disable CORS for tests
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Test-specific settings
 TESTING = True
+
+# Allow testserver for Django test client
+ALLOWED_HOSTS = ['testserver', 'localhost', '127.0.0.1']
 
 # Disable external services
 TWILIO_ACCOUNT_SID = 'test_sid'
