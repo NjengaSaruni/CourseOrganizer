@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
+from django.core.exceptions import ValidationError
 from .models import User, AcademicYear, Semester
 from .extended_models import Student, Teacher, RegistrationRequest
 
