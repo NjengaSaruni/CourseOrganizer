@@ -7,18 +7,24 @@ import os
 
 logger = logging.getLogger(__name__)
 
-# Add detailed logging for email configuration
-logger.info(f"Email backend: {settings.EMAIL_BACKEND}")
-logger.info(f"Email host: {getattr(settings, 'EMAIL_HOST', 'Not set')}")
-logger.info(f"Email port: {getattr(settings, 'EMAIL_PORT', 'Not set')}")
-logger.info(f"Email host user: {getattr(settings, 'EMAIL_HOST_USER', 'Not set')}")
-logger.info(f"Email host password: {'Set' if getattr(settings, 'EMAIL_HOST_PASSWORD', None) else 'Not set'}")
-logger.info(f"Default from email: {getattr(settings, 'DEFAULT_FROM_EMAIL', 'Not set')}")
-logger.info(f"Frontend URL: {getattr(settings, 'FRONTEND_URL', 'Not set')}")
+# Avoid accessing Django settings at import time to prevent ImproperlyConfigured in tests
+if settings.configured:
+    # Add detailed logging for email configuration
+    logger.info(f"Email backend: {getattr(settings, 'EMAIL_BACKEND', 'Not set')}")
+    logger.info(f"Email host: {getattr(settings, 'EMAIL_HOST', 'Not set')}")
+    logger.info(f"Email port: {getattr(settings, 'EMAIL_PORT', 'Not set')}")
+    logger.info(f"Email host user: {getattr(settings, 'EMAIL_HOST_USER', 'Not set')}")
+    logger.info(f"Email host password: {'Set' if getattr(settings, 'EMAIL_HOST_PASSWORD', None) else 'Not set'}")
+    logger.info(f"Default from email: {getattr(settings, 'DEFAULT_FROM_EMAIL', 'Not set')}")
+    logger.info(f"Frontend URL: {getattr(settings, 'FRONTEND_URL', 'Not set')}")
 
-# SendGrid configuration
-SENDGRID_API_KEY = getattr(settings, 'SENDGRID_API_KEY', None)
-SENDGRID_FROM_EMAIL = getattr(settings, 'SENDGRID_FROM_EMAIL', 'noreply@riverlearn.co.ke')
+    # SendGrid configuration
+    SENDGRID_API_KEY = getattr(settings, 'SENDGRID_API_KEY', None)
+    SENDGRID_FROM_EMAIL = getattr(settings, 'SENDGRID_FROM_EMAIL', 'noreply@riverlearn.co.ke')
+else:
+    # Safe defaults when settings are not configured (e.g., during import in tests)
+    SENDGRID_API_KEY = None
+    SENDGRID_FROM_EMAIL = 'noreply@riverlearn.co.ke'
 
 def send_html_email(to_email, subject, template_name, context=None, plain_text_fallback=None):
     """
