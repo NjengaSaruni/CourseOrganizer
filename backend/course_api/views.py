@@ -17,6 +17,9 @@ from .serializers import (
 )
 from .jitsi_auth import jitsi_auth
 
+# Module-level logger for use across views
+logger = logging.getLogger(__name__)
+
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
