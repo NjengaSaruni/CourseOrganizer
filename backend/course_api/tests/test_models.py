@@ -162,7 +162,11 @@ class TestCourseContentModel(TestCase):
         """Test course content type choices"""
         valid_choices = ['material', 'recording', 'assignment', 'announcement']
         for choice in valid_choices:
-            content = CourseContentFactory(content_type=choice)
+            content = CourseContentFactory(
+                course=self.course,
+                uploaded_by=self.uploader,
+                content_type=choice,
+            )
             self.assertEqual(content.content_type, choice)
 
     def test_course_content_title_required(self):
