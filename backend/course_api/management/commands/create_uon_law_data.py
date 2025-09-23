@@ -41,10 +41,12 @@ class Command(BaseCommand):
                 'user_type': 'student',
             }
         )
-        if created:
-            demo_student.set_password('demo123')
-            demo_student.save()
-            self.stdout.write(f'Created demo student: {demo_student.email}')
+        # Always ensure password is set/updated from env or default
+        demo_password = os.environ.get('DEMO_STUDENT_PASSWORD', 'demo123')
+        demo_student.set_password(demo_password)
+        demo_student.save()
+        action_msg = 'Created' if created else 'Updated'
+        self.stdout.write(f'{action_msg} demo student: {demo_student.email}')
         
         # Get or create admin user for content creation (but don't set password)
         admin_user, created = User.objects.get_or_create(

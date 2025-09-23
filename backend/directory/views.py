@@ -17,6 +17,7 @@ from .serializers import (
     LoginSerializer, UserProfileSerializer, AcademicYearSerializer, ClassSerializer,
     SemesterSerializer
 )
+from course_api.email_service import notify_admin_of_student_registration
 
 
 class AcademicYearListView(generics.ListAPIView):
@@ -167,6 +168,20 @@ class RegistrationRequestListView(generics.ListCreateAPIView):
                 serializer.save()
         else:
             serializer.save()
+
+        # Notify admin about new registration request
+        try:
+            data = serializer.validated_data
+            notify_admin_of_student_registration(
+                first_name=data.get('first_name', ''),
+                last_name=data.get('last_name', ''),
+                email=data.get('email', ''),
+                registration_number=data.get('registration_number', None),
+                source="registration_request"
+            )
+        except Exception:
+            # Don't block creation if email fails
+            pass
 
 
 class RegistrationRequestDetailView(generics.RetrieveUpdateAPIView):
@@ -355,6 +370,17 @@ def register_student(request):
     if serializer.is_valid():
         user = serializer.save()
         print(f"DEBUG: User created successfully: {user.id}")
+        # Notify admin that a student signed up and is pending approval
+        try:
+            notify_admin_of_student_registration(
+                first_name=user.first_name,
+                last_name=user.last_name,
+                email=user.email,
+                registration_number=user.registration_number,
+                source="student_signup"
+            )
+        except Exception:
+            pass
         return Response({
             'message': f'Registration successful! Your account is pending approval for {user.class_display_name}.',
             'user_id': user.id,

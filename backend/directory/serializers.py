@@ -179,6 +179,9 @@ class RegistrationRequestCreateSerializer(serializers.ModelSerializer):
         model = RegistrationRequest
         fields = ['first_name', 'last_name', 'email', 'phone_number', 'registration_number',
                  'program', 'year_of_study', 'semester', 'academic_year', 'bio', 'motivation']
+        extra_kwargs = {
+            'academic_year': {'required': False}
+        }
     
     def validate_registration_number(self, value):
         """Validate UoN registration number format"""

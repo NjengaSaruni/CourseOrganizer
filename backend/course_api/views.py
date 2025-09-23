@@ -16,6 +16,7 @@ from .serializers import (
     CourseWithDetailsSerializer, CourseContentSerializer, CourseContentCreateSerializer, CourseTimelineSerializer
 )
 from .jitsi_auth import jitsi_auth
+from .email_service import notify_admin_of_student_registration
 
 # Module-level logger for use across views
 logger = logging.getLogger(__name__)
@@ -48,6 +49,17 @@ def register(request):
             user = serializer.save()
             logger.info(f"User created successfully: {user.id}, email: {user.email}")
             logger.info(f"User email verified: {user.email_verified}, verification token: {user.email_verification_token}")
+            # Notify admin of new signup pending approval
+            try:
+                notify_admin_of_student_registration(
+                    first_name=user.first_name,
+                    last_name=user.last_name,
+                    email=user.email,
+                    registration_number=user.registration_number,
+                    source="student_signup"
+                )
+            except Exception:
+                pass
             
             return Response({
                 'message': 'Registration successful! Please check your email to verify your account. After email verification, your account will be reviewed for administrative approval.',

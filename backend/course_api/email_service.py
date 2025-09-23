@@ -94,6 +94,49 @@ def send_email_via_sendgrid(to_email, subject, message):
         return False
 
 
+def notify_admin_of_student_registration(first_name, last_name, email, registration_number=None, source="registration_request"):
+    """
+    Notify admin when a student requests registration or signs up.
+
+    source: "registration_request" or "student_signup"
+    """
+    try:
+        admin_email = 'admin@riverlearn.co.ke'
+        subject = 'New Student Registration Request - RiverLearn'
+        action = 'requested registration' if source == 'registration_request' else 'signed up and is pending approval'
+        # Build a simple plain text message (no HTML template needed)
+        lines = [
+            f"A student has {action}.",
+            "",
+            f"Name: {first_name} {last_name}",
+            f"Email: {email}",
+        ]
+        if registration_number:
+            lines.append(f"Registration Number: {registration_number}")
+        lines.append("")
+        lines.append("Please review and take the appropriate action in the admin panel.")
+        message = "\n".join(lines)
+
+        # Try normal SMTP first
+        result = send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[admin_email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Admin notification email sent to {admin_email}, result: {result}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to send admin notification to {admin_email if 'admin_email' in locals() else 'admin'}: {str(e)}")
+        # Fallback to SendGrid
+        fallback_subject = 'New Student Registration Request - RiverLearn'
+        fallback_message = message if 'message' in locals() else 'A student requested registration.'
+        sendgrid_result = send_email_via_sendgrid('admin@riverlearn.co.ke', fallback_subject, fallback_message)
+        return bool(sendgrid_result)
+
 def send_verification_email(user, verification_token):
     """
     Send email verification email to user

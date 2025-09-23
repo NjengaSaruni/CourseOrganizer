@@ -11,6 +11,9 @@ from factory.django import DjangoModelFactory
 from directory.models import User, AcademicYear, Semester
 from school.models import Class as StudentClass
 from directory.tests.test_models import UserFactory, AcademicYearFactory, SemesterFactory, StudentClassFactory
+import uuid
+from django.core import mail
+from rest_framework.reverse import reverse as drf_reverse
 
 User = get_user_model()
 
@@ -22,6 +25,10 @@ class TestUserRegistrationAPI(APITestCase):
     def setUp(self):
         self.client = APIClient()
         self.registration_url = reverse('register')
+        self.registration_request_url = reverse('registration_requests')
+        # Ensure a default class exists for student creation
+        if not StudentClass.objects.exists():
+            StudentClassFactory()
 
     def test_user_registration_success(self):
         """Test successful user registration"""
@@ -38,6 +45,42 @@ class TestUserRegistrationAPI(APITestCase):
         response = self.client.post(self.registration_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(email='test@students.uonbi.ac.ke').exists())
+        # Assert admin notification email sent
+        self.assertGreaterEqual(len(mail.outbox), 1)
+        admin_emails = [m for m in mail.outbox if 'admin@riverlearn.co.ke' in m.to]
+        self.assertGreaterEqual(len(admin_emails), 1)
+
+    def test_registration_request_sends_admin_notification(self):
+        """Creating a registration request should send admin notification email"""
+        # Auth as a normal user (or allow any? endpoint requires auth per view)
+        user = UserFactory()
+        token = Token.objects.create(user=user)
+        self.client.credentials(HTTP_AUTHORIZATION='Token ' + token.key)
+
+        # Ensure active academic year exists so FK requirement is satisfied if not provided
+        if not AcademicYear.objects.filter(is_active=True).exists():
+            AcademicYearFactory(is_active=True)
+
+        unique_email = f"jane+{uuid.uuid4().hex[:8]}@example.com"
+        payload = {
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'email': unique_email,
+            'phone_number': '+254700000000',
+            'registration_number': 'GPR3/654321/2025',
+            'program': 'Law',
+            'year_of_study': 1,
+            'semester': 1,
+            # academic_year optional, perform_create will set current
+            'bio': 'bio',
+            'motivation': 'motivation'
+        }
+
+        resp = self.client.post(self.registration_request_url, payload, format='json')
+        self.assertIn(resp.status_code, [status.HTTP_201_CREATED, status.HTTP_200_OK])
+        self.assertGreaterEqual(len(mail.outbox), 1)
+        admin_emails = [m for m in mail.outbox if 'admin@riverlearn.co.ke' in m.to]
+        self.assertGreaterEqual(len(admin_emails), 1)
 
     def test_user_registration_duplicate_email(self):
         """Test registration with duplicate email"""

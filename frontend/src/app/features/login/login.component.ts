@@ -74,14 +74,13 @@ import { AuthService } from '../../core/auth.service';
             </div>
           </div>
 
-          <!-- Demo Account Information -->
+          <!-- Account Information -->
           <div class="bg-gray-50 border border-gray-200 rounded-xl p-6">
             <div class="text-center">
               <h3 class="text-sm font-semibold text-gray-900 mb-3">
-                Demo Account Available
+                Sample Account
               </h3>
               <div class="space-y-2 text-sm text-gray-600">
-                <p><span class="font-medium">Demo Student (Class of 2029):</span> demo.student@uon.ac.ke / demo123</p>
                 <p><span class="font-medium">Student:</span> john.doe@student.uon.ac.ke / student123</p>
               </div>
             </div>
