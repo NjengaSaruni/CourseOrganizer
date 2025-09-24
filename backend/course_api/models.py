@@ -467,8 +467,10 @@ class Meeting(models.Model):
         if self.platform == 'daily' and not self.daily_room_name and hasattr(self, '_state') and hasattr(self._state, 'adding') and self._state.adding:
             self._create_daily_room()
         elif self.platform == 'jitsi' and not self.meeting_url:
-            # Using Jitsi Meet public instance - in production, you might want to use your own instance
-            self.meeting_url = f"https://meet.jit.si/{self.meeting_id}"
+            # Use self-hosted Jitsi domain from settings if available
+            from django.conf import settings
+            jitsi_domain = getattr(settings, 'JITSI_DOMAIN', 'meet.jit.si')
+            self.meeting_url = f"https://{jitsi_domain}/{self.meeting_id}"
         
         super().save(*args, **kwargs)
     
@@ -552,7 +554,9 @@ class Meeting(models.Model):
         if self.platform != 'jitsi':
             return self.meeting_url
         
-        base_url = f"https://meet.jit.si/{self.meeting_id}"
+        from django.conf import settings
+        jitsi_domain = getattr(settings, 'JITSI_DOMAIN', 'meet.jit.si')
+        base_url = f"https://{jitsi_domain}/{self.meeting_id}"
         params = []
         
         # Add admin host info if available
@@ -595,3 +599,105 @@ class JitsiRecording(models.Model):
 
     def __str__(self):
         return f"Recording {self.recording_id} - {self.meeting.title}"
+
+
+# -------------------------
+# Study Groups
+# -------------------------
+
+class StudyGroup(models.Model):
+    """Collaborative study group for students within a class."""
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True)
+    student_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='study_groups')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_groups_created')
+    is_private = models.BooleanField(default=False, help_text="If true, members must be invited or approved")
+    max_members = models.PositiveIntegerField(default=8, help_text="Maximum members allowed in this group")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        unique_together = ['student_class', 'name']
+
+    def __str__(self):
+        return f"{self.name} ({self.student_class})"
+
+
+class StudyGroupMembership(models.Model):
+    """Membership relation for users belonging to a study group."""
+    ROLE_CHOICES = [
+        ('member', 'Member'),
+        ('admin', 'Admin'),
+    ]
+
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='memberships')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_group_memberships')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['group', 'user']
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} in {self.group.name} ({self.role})"
+
+
+class StudyGroupJoinRequest(models.Model):
+    """Join requests for study groups."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('denied', 'Denied'),
+        ('cancelled', 'Cancelled'),
+    ]
+
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='join_requests')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_group_join_requests')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    approver = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_group_requests')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['group', 'user']
+
+    def __str__(self):
+        return f"{self.user.email} -> {self.group.name} ({self.status})"
+
+
+class GroupMeeting(models.Model):
+    """On-the-fly Jitsi meeting for a study group (does not depend on Course)."""
+    PLATFORM_CHOICES = [
+        ('jitsi', 'Jitsi Meet'),
+        ('daily', 'Daily.co'),
+    ]
+
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='group_meetings')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    meeting_id = models.CharField(max_length=100, unique=True, null=True, blank=True, help_text="Unique meeting identifier")
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default='jitsi')
+    scheduled_time = models.DateTimeField(default=timezone.now)
+    duration = models.DurationField(blank=True, null=True)
+    meeting_url = models.URLField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    room_password = models.CharField(max_length=50, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-scheduled_time']
+
+    def __str__(self):
+        return f"{self.title} - {self.scheduled_time}"
+
+    def save(self, *args, **kwargs):
+        if not self.meeting_id:
+            import uuid
+            self.meeting_id = f"sg-{uuid.uuid4().hex[:12]}"
+        if self.platform == 'jitsi' and not self.meeting_url:
+            from django.conf import settings
+            jitsi_domain = getattr(settings, 'JITSI_DOMAIN', 'meet.jit.si')
+            base_url = f"https://{jitsi_domain}/{self.meeting_id}"
+            self.meeting_url = base_url
+        super().save(*args, **kwargs)

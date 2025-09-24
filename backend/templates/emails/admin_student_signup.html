@@ -1,0 +1,28 @@
+{% extends 'emails/base.html' %}
+
+{% block title %}New Student Registration Request - RiverLearn{% endblock %}
+
+{% block content %}
+    <div class="greeting">New student {{ action }}</div>
+
+    <div class="message">
+        A student has {{ action }}. Please review the details below and take action.
+    </div>
+
+    <div class="info-box">
+        <h3>Student details</h3>
+        <p><strong>Name:</strong> {{ full_name }}</p>
+        <p><strong>Email:</strong> {{ email }}</p>
+        {% if registration_number %}
+        <p><strong>Registration Number:</strong> {{ registration_number }}</p>
+        {% endif %}
+    </div>
+
+    <a href="{{ dashboard_url }}" class="cta-button">Open Dashboard</a>
+    <div class="divider"></div>
+    <div class="message">
+        You can approve or reject this request from the admin panel.
+    </div>
+{% endblock %}
+
+

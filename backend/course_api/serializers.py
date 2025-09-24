@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from directory.models import User
-from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent, StudyGroup, StudyGroupMembership, GroupMeeting, StudyGroupJoinRequest
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -395,3 +395,66 @@ class CourseWithDetailsSerializer(serializers.ModelSerializer):
     def get_recent_content(self, obj):
         recent = obj.course_contents.filter(is_published=True).order_by('-lesson_date', '-lesson_order')[:5]
         return CourseContentSerializer(recent, many=True).data
+
+
+# -------------------------
+# Study Groups
+# -------------------------
+
+class StudyGroupSerializer(serializers.ModelSerializer):
+    members_count = serializers.IntegerField(source='memberships.count', read_only=True)
+    pending_requests = serializers.IntegerField(source='join_requests.filter(status="pending").count', read_only=True)
+
+    class Meta:
+        model = StudyGroup
+        fields = ('id', 'name', 'description', 'student_class', 'created_by', 'is_private', 'max_members', 'created_at', 'updated_at', 'members_count', 'pending_requests')
+        read_only_fields = ('id', 'created_by', 'created_at', 'updated_at', 'members_count', 'pending_requests')
+
+
+class StudyGroupCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StudyGroup
+        fields = ('name', 'description', 'is_private')
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        if not getattr(user, 'student_class', None):
+            raise serializers.ValidationError('User must belong to a class to create a study group.')
+        group = StudyGroup.objects.create(
+            student_class=user.student_class,
+            created_by=user,
+            **validated_data
+        )
+        # creator becomes admin member
+        StudyGroupMembership.objects.create(group=group, user=user, role='admin')
+        return group
+
+
+class StudyGroupMembershipSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+
+    class Meta:
+        model = StudyGroupMembership
+        fields = ('id', 'group', 'user', 'role', 'joined_at', 'user_name')
+        read_only_fields = ('id', 'joined_at', 'user_name')
+
+
+class GroupMeetingSerializer(serializers.ModelSerializer):
+    video_join_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GroupMeeting
+        fields = '__all__'
+        read_only_fields = ('meeting_id', 'meeting_url', 'created_at')
+
+    def get_video_join_url(self, obj):
+        return obj.meeting_url
+
+
+class StudyGroupJoinRequestSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+
+    class Meta:
+        model = StudyGroupJoinRequest
+        fields = ('id', 'group', 'user', 'user_name', 'status', 'approver', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'status', 'approver', 'created_at', 'updated_at', 'user', 'user_name')

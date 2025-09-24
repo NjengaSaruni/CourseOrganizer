@@ -8,12 +8,13 @@ from django.contrib.auth import login
 from django.db.models import Q
 from django.http import JsonResponse
 from directory.models import User
-from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent, StudyGroup, StudyGroupMembership, GroupMeeting, StudyGroupJoinRequest
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, LoginSerializer,
     CourseSerializer, TimetableEntrySerializer, CourseMaterialSerializer,
     RecordingSerializer, MeetingSerializer, JitsiRecordingSerializer, TimetableEntryWithRecordingsSerializer,
-    CourseWithDetailsSerializer, CourseContentSerializer, CourseContentCreateSerializer, CourseTimelineSerializer
+    CourseWithDetailsSerializer, CourseContentSerializer, CourseContentCreateSerializer, CourseTimelineSerializer,
+    StudyGroupSerializer, StudyGroupCreateSerializer, StudyGroupMembershipSerializer, GroupMeetingSerializer, StudyGroupJoinRequestSerializer
 )
 from .jitsi_auth import jitsi_auth
 from .email_service import notify_admin_of_student_registration

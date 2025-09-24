@@ -80,6 +80,8 @@ export class AuthService {
       try {
         const user = JSON.parse(savedUser);
         this.currentUserSubject.next(user);
+        // Ensure analytics user id is set if session exists
+        this.setAnalyticsUserId(user);
       } catch (error) {
         localStorage.removeItem('currentUser');
       }
@@ -95,6 +97,8 @@ export class AuthService {
         localStorage.setItem('authToken', response.token);
         localStorage.setItem('currentUser', JSON.stringify(response.user));
         this.currentUserSubject.next(response.user);
+        // Set analytics user id after successful login
+        this.setAnalyticsUserId(response.user);
         return true;
       }),
       catchError(error => {
@@ -125,6 +129,8 @@ export class AuthService {
         this.currentUserSubject.next(null);
         localStorage.removeItem('currentUser');
         localStorage.removeItem('authToken');
+        // Clear analytics user id on logout
+        this.setAnalyticsUserId(null);
         console.log('Logout successful:', response.message || 'Logged out');
         return response;
       }),
@@ -134,6 +140,8 @@ export class AuthService {
         this.currentUserSubject.next(null);
         localStorage.removeItem('currentUser');
         localStorage.removeItem('authToken');
+        // Clear analytics user id even if server logout fails
+        this.setAnalyticsUserId(null);
         // Don't throw error - we want logout to always succeed locally
         return throwError(() => error);
       })
@@ -182,6 +190,23 @@ export class AuthService {
 
   getAuthToken(): string | null {
     return localStorage.getItem('authToken');
+  }
+
+  private setAnalyticsUserId(user: User | null): void {
+    try {
+      const w = window as any;
+      if (w && typeof w.gtag === 'function') {
+        if (user && user.id != null) {
+          // Apply to all measurement IDs
+          w.gtag('set', { user_id: String(user.id) });
+        } else {
+          // Clear user_id
+          w.gtag('set', { user_id: null });
+        }
+      }
+    } catch (_) {
+      // no-op if analytics not available
+    }
   }
 
   // Admin methods

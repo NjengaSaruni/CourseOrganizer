@@ -242,3 +242,8 @@ gcloud compute scp course-organizer-app:/opt/course-organizer/file local-file --
 - All `gcloud` commands assume your instance is named `course-organizer-app` in zone `us-central1-a`
 - Adjust the zone and instance name if different
 - Use `docker-compose -f docker-compose.gce.yml` for production environment
+
+# Delete test student
+```bash
+gcloud compute ssh ubuntu@course-organizer-app --zone=us-central1-a --command 'cd /opt/course-organizer && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml exec -T backend python3 manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); print(U.objects.filter(email=\"GPR31505612025@students.uonbi.ac.ke\").delete())"'
+```

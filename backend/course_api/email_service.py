@@ -34,6 +34,10 @@ def send_html_email(to_email, subject, template_name, context=None, plain_text_f
         if context is None:
             context = {}
         
+        # Ensure a default logo URL is available in templates
+        default_logo_url = f"{getattr(settings, 'FRONTEND_URL', 'https://co.riverlearn.co.ke')}/assets/RiverLearn%20Logo.png"
+        context.setdefault('logo_url', default_logo_url)
+
         # Render HTML template
         html_content = render_to_string(template_name, context)
         
@@ -104,7 +108,20 @@ def notify_admin_of_student_registration(first_name, last_name, email, registrat
         admin_email = 'admin@riverlearn.co.ke'
         subject = 'New Student Registration Request - RiverLearn'
         action = 'requested registration' if source == 'registration_request' else 'signed up and is pending approval'
-        # Build a simple plain text message (no HTML template needed)
+
+        # Context for HTML template
+        context = {
+            'first_name': first_name,
+            'last_name': last_name,
+            'full_name': f"{first_name} {last_name}",
+            'email': email,
+            'registration_number': registration_number,
+            'action': action,
+            'admin_url': f"{settings.FRONTEND_URL}/admin",  # adjust if different
+            'dashboard_url': f"{settings.FRONTEND_URL}/dashboard",
+        }
+
+        # Plain text fallback
         lines = [
             f"A student has {action}.",
             "",
@@ -115,15 +132,15 @@ def notify_admin_of_student_registration(first_name, last_name, email, registrat
             lines.append(f"Registration Number: {registration_number}")
         lines.append("")
         lines.append("Please review and take the appropriate action in the admin panel.")
-        message = "\n".join(lines)
+        plain_text = "\n".join(lines)
 
-        # Try normal SMTP first
-        result = send_mail(
+        # Send HTML email using shared design language
+        result = send_html_email(
+            to_email=admin_email,
             subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[admin_email],
-            fail_silently=False,
+            template_name='emails/admin_student_signup.html',
+            context=context,
+            plain_text_fallback=plain_text,
         )
 
         logger.info(f"Admin notification email sent to {admin_email}, result: {result}")
@@ -133,7 +150,7 @@ def notify_admin_of_student_registration(first_name, last_name, email, registrat
         logger.error(f"Failed to send admin notification to {admin_email if 'admin_email' in locals() else 'admin'}: {str(e)}")
         # Fallback to SendGrid
         fallback_subject = 'New Student Registration Request - RiverLearn'
-        fallback_message = message if 'message' in locals() else 'A student requested registration.'
+        fallback_message = plain_text if 'plain_text' in locals() else 'A student requested registration.'
         sendgrid_result = send_email_via_sendgrid('admin@riverlearn.co.ke', fallback_subject, fallback_message)
         return bool(sendgrid_result)
 

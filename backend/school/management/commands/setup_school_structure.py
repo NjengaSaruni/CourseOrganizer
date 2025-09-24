@@ -7,7 +7,18 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = 'Set up the initial school structure with School of Law and default class'
+    help = 'Set up the initial school structure with configurable entities'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--school-code', type=str, default='LAW', help='School code (default: LAW)')
+        parser.add_argument('--school-name', type=str, default='School of Law', help='School name')
+        parser.add_argument('--faculty-code', type=str, default='LAW', help='Faculty code')
+        parser.add_argument('--faculty-name', type=str, default='Faculty of Law', help='Faculty name')
+        parser.add_argument('--department-code', type=str, default='LAW', help='Department code')
+        parser.add_argument('--department-name', type=str, default='Department of Law', help='Department name')
+        parser.add_argument('--graduation-year', type=int, default=2029, help='Default class graduation year')
+        parser.add_argument('--class-name', type=str, default='Class of 2029', help='Default class name')
+        parser.add_argument('--program', type=str, default='Bachelor of Laws (LLB)', help='Program name')
 
     def handle(self, *args, **options):
         self.stdout.write('Setting up school structure...')
@@ -16,12 +27,12 @@ class Command(BaseCommand):
         academic_year = AcademicYear.get_or_create_2025_2026()
         self.stdout.write(f'Using academic year: {academic_year}')
         
-        # Create School of Law
+        # Create School
         school, created = School.objects.get_or_create(
-            code='LAW',
+            code=options['school-code'],
             defaults={
-                'name': 'School of Law',
-                'description': 'School of Law at University of Nairobi',
+                'name': options['school-name'],
+                'description': f"{options['school-name']} - auto created",
                 'is_active': True
             }
         )
@@ -31,13 +42,13 @@ class Command(BaseCommand):
         else:
             self.stdout.write(f'School already exists: {school}')
         
-        # Create Faculty of Law
+        # Create Faculty
         faculty, created = Faculty.objects.get_or_create(
             school=school,
-            code='LAW',
+            code=options['faculty-code'],
             defaults={
-                'name': 'Faculty of Law',
-                'description': 'Faculty of Law offering Bachelor of Laws program',
+                'name': options['faculty-name'],
+                'description': f"{options['faculty-name']} offering programs",
                 'dean': 'Professor Law Dean',
                 'is_active': True
             }
@@ -48,13 +59,13 @@ class Command(BaseCommand):
         else:
             self.stdout.write(f'Faculty already exists: {faculty}')
         
-        # Create Department of Law
+        # Create Department
         department, created = Department.objects.get_or_create(
             faculty=faculty,
-            code='LAW',
+            code=options['department-code'],
             defaults={
-                'name': 'Department of Law',
-                'description': 'Department of Law offering undergraduate and postgraduate programs',
+                'name': options['department-name'],
+                'description': f"{options['department-name']} offering undergraduate and postgraduate programs",
                 'head': 'Professor Department Head',
                 'is_active': True
             }
@@ -65,13 +76,13 @@ class Command(BaseCommand):
         else:
             self.stdout.write(f'Department already exists: {department}')
         
-        # Create default class for 2025-2029 (Class of 2029)
+        # Create default class
         class_obj, created = Class.objects.get_or_create(
             department=department,
-            graduation_year=2029,
+            graduation_year=options['graduation-year'],
             defaults={
-                'name': 'Class of 2029',
-                'program': 'Bachelor of Laws (LLB)',
+                'name': options['class-name'],
+                'program': options['program'],
                 'academic_year': academic_year,
                 'is_active': True,
                 'is_default': True

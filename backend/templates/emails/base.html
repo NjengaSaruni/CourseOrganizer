@@ -174,7 +174,13 @@
 <body>
     <div class="email-container">
         <div class="header">
+            {% if logo_url %}
+            <div style="margin-bottom: 10px;">
+                <img src="{{ logo_url }}" alt="RiverLearn" style="height: 36px; width: auto; vertical-align: middle;" />
+            </div>
+            {% else %}
             <div class="logo">RiverLearn</div>
+            {% endif %}
             <div class="tagline">Course Organizer</div>
         </div>
         

@@ -12,6 +12,12 @@ User = get_user_model()
 class Command(BaseCommand):
     help = 'Create University of Nairobi School of Law Module II data - First Year First Semester only (GPR31xx courses)'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--graduation-year', type=int, default=2029, help='Graduation year (Class of YYYY). Default: 2029')
+        parser.add_argument('--current-year', type=int, default=1, help='Student current year. Default: 1')
+        parser.add_argument('--current-semester', type=int, default=1, help='Student current semester. Default: 1')
+        parser.add_argument('--program', type=str, default='Bachelor of Laws (LLB)', help='Program name for created class/users')
+
     def handle(self, *args, **options):
         # Safety guard: prevent accidental execution in production without explicit override
         allow_destructive = os.environ.get('ALLOW_DESTRUCTIVE_CMDS', 'false').lower() in ['1', 'true', 'yes']
@@ -20,7 +26,7 @@ class Command(BaseCommand):
             return
         self.stdout.write('Creating UoN Law Module II data...')
 
-        # Create demo student (read-only privileges for Class of 2029)
+        # Create demo student (read-only privileges for the provided class)
         # Get the 2025/2026 academic year
         from course_api.models import AcademicYear
         academic_year = AcademicYear.get_or_create_2025_2026()
@@ -34,9 +40,9 @@ class Command(BaseCommand):
                 'phone_number': '+254700000999',
                 'status': 'approved',
                 'is_active': True,
-                'current_year': 1,
-                'current_semester': 1,
-                'class_of': 2029,
+                'current_year': options['current_year'],
+                'current_semester': options['current_semester'],
+                'class_of': options['graduation_year'],
                 'academic_year': academic_year,
                 'user_type': 'student',
             }
@@ -78,9 +84,9 @@ class Command(BaseCommand):
                 'phone_number': '+254700000001',
                 'status': 'approved',
                 'is_active': True,
-                'current_year': 1,
-                'current_semester': 1,
-                'class_of': 2029,
+                'current_year': options['current_year'],
+                'current_semester': options['current_semester'],
+                'class_of': options['graduation_year'],
                 'academic_year': academic_year,
             }
         )
