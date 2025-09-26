@@ -558,6 +558,254 @@ def get_user_courses(request):
     })
 
 
+# -------------------------
+# Study Groups
+# -------------------------
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def list_create_study_groups(request):
+    """List study groups in user's class or create a new group."""
+    if request.method == 'GET':
+        queryset = StudyGroup.objects.all()
+        # If user belongs to a class, default scope to their class
+        if getattr(request.user, 'student_class', None):
+            queryset = queryset.filter(student_class=request.user.student_class)
+        name = request.query_params.get('q')
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+        groups = queryset.order_by('name')
+        return Response(StudyGroupSerializer(groups, many=True).data)
+
+    # POST create
+    serializer = StudyGroupCreateSerializer(data=request.data, context={'request': request})
+    if serializer.is_valid():
+        group = serializer.save()
+        return Response(StudyGroupSerializer(group).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_study_groups(request):
+    """List groups where the current user is a member."""
+    memberships = StudyGroupMembership.objects.filter(user=request.user).select_related('group')
+    groups = [m.group for m in memberships]
+    return Response(StudyGroupSerializer(groups, many=True).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def request_join_study_group(request, group_id):
+    """Request to join a study group (auto-join if not private and capacity allows)."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Already a member?
+    if StudyGroupMembership.objects.filter(group=group, user=request.user).exists():
+        return Response({'message': 'Already a member'}, status=status.HTTP_200_OK)
+
+    # Enforce single group per course per user
+    if group.course:
+        existing_membership = StudyGroupMembership.objects.filter(
+            user=request.user,
+            group__course=group.course
+        ).first()
+        if existing_membership:
+            return Response({'error': 'You already belong to a study group for this course'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Capacity check
+    if group.memberships.count() >= group.max_members:
+        return Response({'error': 'Group is full'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if group.is_private:
+        # Create a pending join request
+        join_req, created = StudyGroupJoinRequest.objects.get_or_create(group=group, user=request.user)
+        if not created and join_req.status == 'pending':
+            return Response({'message': 'Join request already pending'})
+        join_req.status = 'pending'
+        join_req.save()
+        return Response({'message': 'Join request submitted'}, status=status.HTTP_201_CREATED)
+    else:
+        # Auto-join
+        StudyGroupMembership.objects.create(group=group, user=request.user, role='member')
+        return Response({'message': 'Joined group successfully'}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def group_members(request, group_id):
+    """List members of a group."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+    members = StudyGroupMembership.objects.filter(group=group).select_related('user')
+    return Response(StudyGroupMembershipSerializer(members, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def group_meetings(request, group_id):
+    """List meetings for a group."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+    meetings = GroupMeeting.objects.filter(group=group).order_by('-scheduled_time')
+    return Response(GroupMeetingSerializer(meetings, many=True).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_group_meeting(request, group_id):
+    """Create a meeting for a group (creator becomes host)."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Only members can create meetings
+    if not StudyGroupMembership.objects.filter(group=group, user=request.user).exists():
+        return Response({'error': 'Only group members can create meetings'}, status=status.HTTP_403_FORBIDDEN)
+
+    data = request.data.copy()
+    data['group'] = group.id
+    data['created_by'] = request.user.id
+
+    # default platform jitsi; allow physical with required location
+    platform = data.get('platform') or 'jitsi'
+    data['platform'] = platform
+    if platform == 'physical' and not data.get('location'):
+        return Response({'error': 'Location is required for physical meetings'}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = GroupMeetingSerializer(data=data)
+    if serializer.is_valid():
+        meeting = serializer.save()
+        return Response(GroupMeetingSerializer(meeting).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def approve_join_request(request, group_id, request_id):
+    """Approve a pending join request (class rep or group admin)."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+        join_req = StudyGroupJoinRequest.objects.get(id=request_id, group=group)
+    except (StudyGroup.DoesNotExist, StudyGroupJoinRequest.DoesNotExist):
+        return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Permission: group admins or class reps can approve
+    is_group_admin = StudyGroupMembership.objects.filter(group=group, user=request.user, role='admin').exists()
+    is_class_rep = hasattr(request.user, 'class_rep_role') and request.user.class_rep_role.is_active
+    if not (is_group_admin or is_class_rep or request.user.is_admin):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    if join_req.status != 'pending':
+        return Response({'error': 'Request is not pending'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Enforce single group per course before approving
+    if group.course and StudyGroupMembership.objects.filter(user=join_req.user, group__course=group.course).exists():
+        return Response({'error': 'User already in a study group for this course'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Capacity check
+    if group.memberships.count() >= group.max_members:
+        return Response({'error': 'Group is full'}, status=status.HTTP_400_BAD_REQUEST)
+
+    StudyGroupMembership.objects.create(group=group, user=join_req.user, role='member')
+    join_req.status = 'approved'
+    join_req.approver = request.user
+    join_req.save()
+    return Response({'message': 'Join request approved'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def deny_join_request(request, group_id, request_id):
+    """Deny a pending join request (class rep or group admin)."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+        join_req = StudyGroupJoinRequest.objects.get(id=request_id, group=group)
+    except (StudyGroup.DoesNotExist, StudyGroupJoinRequest.DoesNotExist):
+        return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    is_group_admin = StudyGroupMembership.objects.filter(group=group, user=request.user, role='admin').exists()
+    is_class_rep = hasattr(request.user, 'class_rep_role') and request.user.class_rep_role.is_active
+    if not (is_group_admin or is_class_rep or request.user.is_admin):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    if join_req.status != 'pending':
+        return Response({'error': 'Request is not pending'}, status=status.HTTP_400_BAD_REQUEST)
+
+    join_req.status = 'denied'
+    join_req.approver = request.user
+    join_req.save()
+    return Response({'message': 'Join request denied'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def add_member_to_group(request, group_id):
+    """Add a member directly (class rep or group admin)."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    is_group_admin = StudyGroupMembership.objects.filter(group=group, user=request.user, role='admin').exists()
+    is_class_rep = hasattr(request.user, 'class_rep_role') and request.user.class_rep_role.is_active
+    if not (is_group_admin or is_class_rep or request.user.is_admin):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    user_id = request.data.get('user_id')
+    if not user_id:
+        return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        target_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if StudyGroupMembership.objects.filter(group=group, user=target_user).exists():
+        return Response({'message': 'User already a member'})
+
+    if group.course and StudyGroupMembership.objects.filter(user=target_user, group__course=group.course).exists():
+        return Response({'error': 'User already in a study group for this course'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if group.memberships.count() >= group.max_members:
+        return Response({'error': 'Group is full'}, status=status.HTTP_400_BAD_REQUEST)
+
+    StudyGroupMembership.objects.create(group=group, user=target_user, role='member')
+    return Response({'message': 'Member added'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def remove_member_from_group(request, group_id):
+    """Remove a member (class rep or group admin)."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    is_group_admin = StudyGroupMembership.objects.filter(group=group, user=request.user, role='admin').exists()
+    is_class_rep = hasattr(request.user, 'class_rep_role') and request.user.class_rep_role.is_active
+    if not (is_group_admin or is_class_rep or request.user.is_admin):
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+    user_id = request.data.get('user_id')
+    if not user_id:
+        return Response({'error': 'user_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    deleted, _ = StudyGroupMembership.objects.filter(group=group, user_id=user_id).delete()
+    if deleted:
+        return Response({'message': 'Member removed'})
+    return Response({'error': 'Membership not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_class_courses(request, class_id):

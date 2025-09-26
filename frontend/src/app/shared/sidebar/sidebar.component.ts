@@ -105,6 +105,20 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
 
+              <a routerLink="/study-groups" 
+                 routerLinkActive="bg-gray-50 text-gray-800 border-r-2 border-gray-400" 
+                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Study Groups</div>
+                  <div class="text-xs text-gray-500">Collaborate with classmates</div>
+                </div>
+              </a>
+
               <!-- Announcements (for all students) -->
               <a routerLink="/announcements" 
                  routerLinkActive="bg-orange-50 text-orange-700 border-r-2 border-orange-500" 
@@ -329,6 +343,21 @@ import { AuthService, User } from '../../core/auth.service';
                 <div>
                   <div class="font-medium">Meetings</div>
                   <div class="text-xs text-gray-500">Online sessions</div>
+                </div>
+              </a>
+
+              <a routerLink="/study-groups" 
+                 routerLinkActive="bg-gray-50 text-gray-800" 
+                 (click)="toggleSidebar()"
+                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Study Groups</div>
+                  <div class="text-xs text-gray-500">Collaborate with classmates</div>
                 </div>
               </a>
 

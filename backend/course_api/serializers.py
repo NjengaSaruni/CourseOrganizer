@@ -404,22 +404,33 @@ class CourseWithDetailsSerializer(serializers.ModelSerializer):
 class StudyGroupSerializer(serializers.ModelSerializer):
     members_count = serializers.IntegerField(source='memberships.count', read_only=True)
     pending_requests = serializers.IntegerField(source='join_requests.filter(status="pending").count', read_only=True)
+    course_name = serializers.CharField(source='course.name', read_only=True)
 
     class Meta:
         model = StudyGroup
-        fields = ('id', 'name', 'description', 'student_class', 'created_by', 'is_private', 'max_members', 'created_at', 'updated_at', 'members_count', 'pending_requests')
+        fields = ('id', 'name', 'description', 'student_class', 'course', 'course_name', 'created_by', 'is_private', 'max_members', 'created_at', 'updated_at', 'members_count', 'pending_requests')
         read_only_fields = ('id', 'created_by', 'created_at', 'updated_at', 'members_count', 'pending_requests')
 
 
 class StudyGroupCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = StudyGroup
-        fields = ('name', 'description', 'is_private')
+        fields = ('name', 'description', 'is_private', 'course')
 
     def create(self, validated_data):
         user = self.context['request'].user
         if not getattr(user, 'student_class', None):
-            raise serializers.ValidationError('User must belong to a class to create a study group.')
+            # Try to auto-assign default class for current users
+            try:
+                from school.models import Class as SchoolClass
+                default_class = SchoolClass.get_default_class()
+                if default_class:
+                    user.student_class = default_class
+                    user.save(update_fields=['student_class'])
+                else:
+                    raise serializers.ValidationError('Default class is not configured. Please run school setup.')
+            except Exception:
+                raise serializers.ValidationError('Default class is not configured. Please run school setup.')
         group = StudyGroup.objects.create(
             student_class=user.student_class,
             created_by=user,

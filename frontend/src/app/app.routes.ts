@@ -13,6 +13,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
     canActivate: [AuthGuard]
   },
+  {
+    path: 'study-groups',
+    loadComponent: () => import('./features/study-groups/study-groups.component').then(m => m.StudyGroupsComponent),
+    canActivate: [AuthGuard]
+  },
   { 
     path: 'timetable', 
     loadComponent: () => import('./features/timetable/timetable.component').then(m => m.TimetableComponent),

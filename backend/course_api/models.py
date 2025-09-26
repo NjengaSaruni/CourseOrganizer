@@ -610,6 +610,7 @@ class StudyGroup(models.Model):
     name = models.CharField(max_length=120)
     description = models.TextField(blank=True)
     student_class = models.ForeignKey(Class, on_delete=models.CASCADE, related_name='study_groups')
+    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='study_groups', help_text="Course focus for the study group")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_groups_created')
     is_private = models.BooleanField(default=False, help_text="If true, members must be invited or approved")
     max_members = models.PositiveIntegerField(default=8, help_text="Maximum members allowed in this group")
@@ -671,6 +672,7 @@ class GroupMeeting(models.Model):
     PLATFORM_CHOICES = [
         ('jitsi', 'Jitsi Meet'),
         ('daily', 'Daily.co'),
+        ('physical', 'Physical Meeting'),
     ]
 
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='group_meetings')
@@ -681,6 +683,7 @@ class GroupMeeting(models.Model):
     scheduled_time = models.DateTimeField(default=timezone.now)
     duration = models.DurationField(blank=True, null=True)
     meeting_url = models.URLField(blank=True)
+    location = models.CharField(max_length=255, blank=True, help_text="Physical location if platform is physical")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     room_password = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -700,4 +703,10 @@ class GroupMeeting(models.Model):
             jitsi_domain = getattr(settings, 'JITSI_DOMAIN', 'meet.jit.si')
             base_url = f"https://{jitsi_domain}/{self.meeting_id}"
             self.meeting_url = base_url
+        elif self.platform == 'daily' and not self.meeting_url:
+            # For now we don't auto-provision Daily rooms for group meetings; leave URL blank
+            pass
+        elif self.platform == 'physical':
+            # Ensure no meeting URL for physical meetings
+            self.meeting_url = ''
         super().save(*args, **kwargs)

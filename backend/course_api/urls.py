@@ -42,6 +42,18 @@ urlpatterns = [
     path('materials/', views.CourseMaterialListView.as_view(), name='materials_list'),
     path('recordings/', views.RecordingListView.as_view(), name='recordings_list'),
     path('meetings/', views.MeetingListView.as_view(), name='meetings_list'),
+
+    # Study group endpoints
+    path('study-groups/', views.list_create_study_groups, name='study_groups'),
+    path('study-groups/mine/', views.my_study_groups, name='my_study_groups'),
+    path('study-groups/<int:group_id>/join/', views.request_join_study_group, name='request_join_study_group'),
+    path('study-groups/<int:group_id>/members/', views.group_members, name='group_members'),
+    path('study-groups/<int:group_id>/meetings/', views.group_meetings, name='group_meetings'),
+    path('study-groups/<int:group_id>/meetings/create/', views.create_group_meeting, name='create_group_meeting'),
+    path('study-groups/<int:group_id>/join-requests/<int:request_id>/approve/', views.approve_join_request, name='approve_join_request'),
+    path('study-groups/<int:group_id>/join-requests/<int:request_id>/deny/', views.deny_join_request, name='deny_join_request'),
+    path('study-groups/<int:group_id>/members/add/', views.add_member_to_group, name='add_member_to_group'),
+    path('study-groups/<int:group_id>/members/remove/', views.remove_member_from_group, name='remove_member_from_group'),
     
     # Jitsi Meeting endpoints
     path('meetings/jitsi/create/', views.create_jitsi_meeting, name='create_jitsi_meeting'),

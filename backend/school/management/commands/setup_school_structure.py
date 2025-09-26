@@ -29,10 +29,10 @@ class Command(BaseCommand):
         
         # Create School
         school, created = School.objects.get_or_create(
-            code=options['school-code'],
+            code=options.get('school-code') or options.get('school_code') or 'LAW',
             defaults={
-                'name': options['school-name'],
-                'description': f"{options['school-name']} - auto created",
+                'name': options.get('school-name') or options.get('school_name') or 'School of Law',
+                'description': f"{(options.get('school-name') or options.get('school_name') or 'School of Law')} - auto created",
                 'is_active': True
             }
         )
@@ -45,10 +45,10 @@ class Command(BaseCommand):
         # Create Faculty
         faculty, created = Faculty.objects.get_or_create(
             school=school,
-            code=options['faculty-code'],
+            code=options.get('faculty-code') or options.get('faculty_code') or 'LAW',
             defaults={
-                'name': options['faculty-name'],
-                'description': f"{options['faculty-name']} offering programs",
+                'name': options.get('faculty-name') or options.get('faculty_name') or 'Faculty of Law',
+                'description': f"{(options.get('faculty-name') or options.get('faculty_name') or 'Faculty of Law')} offering programs",
                 'dean': 'Professor Law Dean',
                 'is_active': True
             }
@@ -62,10 +62,10 @@ class Command(BaseCommand):
         # Create Department
         department, created = Department.objects.get_or_create(
             faculty=faculty,
-            code=options['department-code'],
+            code=options.get('department-code') or options.get('department_code') or 'LAW',
             defaults={
-                'name': options['department-name'],
-                'description': f"{options['department-name']} offering undergraduate and postgraduate programs",
+                'name': options.get('department-name') or options.get('department_name') or 'Department of Law',
+                'description': f"{(options.get('department-name') or options.get('department_name') or 'Department of Law')} offering undergraduate and postgraduate programs",
                 'head': 'Professor Department Head',
                 'is_active': True
             }
@@ -79,10 +79,10 @@ class Command(BaseCommand):
         # Create default class
         class_obj, created = Class.objects.get_or_create(
             department=department,
-            graduation_year=options['graduation-year'],
+            graduation_year=options.get('graduation-year') or options.get('graduation_year') or 2029,
             defaults={
-                'name': options['class-name'],
-                'program': options['program'],
+                'name': options.get('class-name') or options.get('class_name') or 'Class of 2029',
+                'program': options.get('program') or 'Bachelor of Laws (LLB)',
                 'academic_year': academic_year,
                 'is_active': True,
                 'is_default': True

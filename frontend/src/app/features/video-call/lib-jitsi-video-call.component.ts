@@ -363,14 +363,17 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
           startAudioOnly: false
         },
         interfaceConfigOverwrite: {
-          // Custom interface configuration
+          // RiverLearn Course Organizer Interface Configuration
           APP_NAME: 'RiverLearn',
+          PROVIDER_NAME: 'RiverLearn Course Organizer',
+          NATIVE_APP_NAME: 'RiverLearn Course Organizer',
+          
+          // Complete watermark and branding removal
           SHOW_JITSI_WATERMARK: false,
           SHOW_BRAND_WATERMARK: false,
           SHOW_WATERMARK_FOR_GUESTS: false,
           SHOW_POWERED_BY: false,
           SHOW_POLICY_WATERMARK: false,
-          // Additional watermark hiding options
           SHOW_LOGO: false,
           SHOW_BRAND: false,
           SHOW_JITSI_LOGO: false,
@@ -381,12 +384,32 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
           SHOW_RIGHT_WATERMARK: false,
           SHOW_POWERED_BY_JITSI: false,
           SHOW_POWERED_BY_LOGO: false,
+          
           // Disable all branding
           DISABLE_BRANDING: true,
           DISABLE_WATERMARKS: true,
           DISABLE_LOGO: true,
+          
+          // RiverLearn theme colors
+          AUDIO_LEVEL_PRIMARY_COLOR: '#2A68AF', // RiverLearn primary blue
+          AUDIO_LEVEL_SECONDARY_COLOR: '#122B40', // RiverLearn navy
+          DEFAULT_BACKGROUND: '#ffffff',
+          
+          // RiverLearn branding
+          DEFAULT_LOGO_URL: 'https://co.riverlearn.co.ke/courseorganizerlogo.png',
+          DEFAULT_WELCOME_PAGE_LOGO_URL: 'https://co.riverlearn.co.ke/courseorganizerlogo.png',
+          DEFAULT_LOGO_URL_HREF: 'https://co.riverlearn.co.ke',
+          DEFAULT_WELCOME_PAGE_LOGO_URL_HREF: 'https://co.riverlearn.co.ke',
+          
+          // UI behavior
           SHOW_LOBBY_BUTTON: true,
           SHOW_MEETING_TIMER: true,
+          TOOLBAR_TIMEOUT: 4000,
+          TOOLBAR_ALWAYS_VISIBLE: false,
+          TOOLBAR_BUTTONS_WIDTH: 77,
+          TOOLBAR_BUTTONS_HEIGHT: 60,
+          
+          // Disable unnecessary pages
           SHOW_DEEP_LINKING_PAGE: false,
           SHOW_AUTHENTICATION_PAGE: false,
           SHOW_LIVE_STREAMING_PAGE: false,
@@ -411,16 +434,8 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
           SHOW_MORE_SETTINGS_PAGE: false,
           SHOW_DEVICE_SETTINGS_PAGE: false,
           SHOW_NETWORK_SETTINGS_PAGE: false,
-          SHOW_ABOUT_DEVICE_PAGE: false,
-          SHOW_ABOUT_NETWORK_PAGE: false,
-          SHOW_ABOUT_AUDIO_PAGE: false,
-          SHOW_ABOUT_VIDEO_PAGE: false,
-          SHOW_ABOUT_MORE_PAGE: false,
-          SHOW_ABOUT_DEVICE_MORE_PAGE: false,
-          SHOW_ABOUT_NETWORK_MORE_PAGE: false,
-          SHOW_ABOUT_AUDIO_MORE_PAGE: false,
-          SHOW_ABOUT_VIDEO_MORE_PAGE: false,
-          SHOW_ABOUT_MORE_MORE_PAGE: false,
+          
+          // Toolbar configuration for education
           TOOLBAR_BUTTONS: [
             'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
             'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
@@ -428,9 +443,37 @@ export class LibJitsiVideoCallComponent implements OnInit, AfterViewInit, OnDest
             'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts',
             'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone'
           ],
+          
+          // Settings sections
           SETTINGS_SECTIONS: [
             'devices', 'language', 'moderator', 'profile', 'calendar', 'sounds', 'more'
-          ]
+          ],
+          
+          // Connection and performance
+          CONNECTION_INDICATOR_AUTO_HIDE_ENABLED: true,
+          CONNECTION_INDICATOR_AUTO_HIDE_TIMEOUT: 5000,
+          CONNECTION_INDICATOR_DISABLED: false,
+          
+          // Video layout
+          VIDEO_LAYOUT_FIT: 'both',
+          
+          // Notifications
+          ENFORCE_NOTIFICATION_AUTO_DISMISS_TIMEOUT: 15000,
+          
+          // Security and privacy
+          WHITELISTED_DOMAINS: ['riverlearn.co.ke', 'co.riverlearn.co.ke'],
+          DISABLE_DOMINANT_SPEAKER_INDICATOR: false,
+          DISABLE_FOCUS_INDICATOR: false,
+          DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+          DISABLE_PRESENCE_STATUS: false,
+          DISABLE_RINGING: false,
+          
+          // Support and branding
+          SUPPORT_URL: 'https://riverlearn.co.ke/support',
+          DEFAULT_LOCAL_DISPLAY_NAME: 'Participant',
+          RECENT_LIST_ENABLED: true,
+          RENDER_RECENT_LIST_ONLY: false,
+          REMOTE_VIDEO_MENU_DISABLED: false
         }
       };
 
