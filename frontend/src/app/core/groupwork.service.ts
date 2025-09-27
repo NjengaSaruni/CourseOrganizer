@@ -81,7 +81,7 @@ export class GroupworkService {
     return this.http.get<any>(`${this.baseUrl}/study-groups/${groupId}/meetings/`).pipe(this.unwrap<GroupMeeting[]>());
   }
 
-  createMeeting(groupId: number, payload: { title: string; description?: string; scheduled_time?: string; platform?: 'jitsi' | 'daily'; room_password?: string; }): Observable<GroupMeeting> {
+  createMeeting(groupId: number, payload: { title: string; description?: string; scheduled_time?: string; platform?: 'jitsi' | 'daily' | 'physical'; room_password?: string; location?: string; }): Observable<GroupMeeting> {
     return this.http.post<GroupMeeting>(`${this.baseUrl}/study-groups/${groupId}/meetings/create/`, payload);
   }
 

@@ -18,6 +18,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/study-groups/study-groups.component').then(m => m.StudyGroupsComponent),
     canActivate: [AuthGuard]
   },
+  {
+    path: 'study-groups/:id',
+    loadComponent: () => import('./features/study-groups/study-group-detail/study-group-detail.component').then(m => m.StudyGroupDetailComponent),
+    canActivate: [AuthGuard]
+  },
   { 
     path: 'timetable', 
     loadComponent: () => import('./features/timetable/timetable.component').then(m => m.TimetableComponent),

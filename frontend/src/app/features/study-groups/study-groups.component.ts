@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
 
 @Component({
@@ -52,14 +53,7 @@ import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
         <!-- Create Group Section (Collapsible) -->
         <div *ngIf="showCreateForm()" class="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
           <div class="flex items-center justify-between mb-6">
-            <div class="flex items-center">
-              <div class="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center mr-4">
-                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
-              </div>
-              <h2 class="text-2xl font-bold text-gray-900">Create Study Group</h2>
-            </div>
+            <h2 class="text-2xl font-bold text-gray-900">Create Study Group</h2>
             <button 
               (click)="toggleCreateForm()" 
               class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
@@ -186,13 +180,21 @@ import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
                   </span>
                 </button>
                 
+                <!-- View Group Button (for members) -->
+                <button 
+                  *ngIf="isMemberOfGroup(g.id)"
+                  (click)="viewGroup(g)" 
+                  class="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-colors">
+                  View Group
+                </button>
+                
                 <!-- Leave Button (for members) -->
                 <button 
                   *ngIf="isMemberOfGroup(g.id)"
                   (click)="leave(g)" 
                   [disabled]="leavingGroup() === g.id"
                   class="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors">
-                  <span *ngIf="leavingGroup() !== g.id">Leave Group</span>
+                  <span *ngIf="leavingGroup() !== g.id">Leave</span>
                   <span *ngIf="leavingGroup() === g.id" class="flex items-center">
                     <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -222,6 +224,7 @@ import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
 })
 export class StudyGroupsComponent {
   private api = inject(GroupworkService);
+  private router = inject(Router);
 
   groups = signal<StudyGroup[]>([]);
   query = signal('');
@@ -353,6 +356,10 @@ export class StudyGroupsComponent {
         // TODO: Show error message to user
       }
     });
+  }
+
+  viewGroup(g: StudyGroup) {
+    this.router.navigate(['/study-groups', g.id]);
   }
 }
 
