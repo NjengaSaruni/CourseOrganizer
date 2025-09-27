@@ -69,6 +69,10 @@ export class GroupworkService {
     return this.http.post<{ message: string }>(`${this.baseUrl}/study-groups/${groupId}/join/`, {});
   }
 
+  leaveGroup(groupId: number): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.baseUrl}/study-groups/${groupId}/leave/`, {});
+  }
+
   members(groupId: number): Observable<StudyGroupMembership[]> {
     return this.http.get<any>(`${this.baseUrl}/study-groups/${groupId}/members/`).pipe(this.unwrap<StudyGroupMembership[]>());
   }

@@ -31,23 +31,42 @@ import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all" 
               />
             </div>
-            <button 
-              (click)="refresh()" 
-              class="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-colors">
-              Search
-            </button>
+            <div class="flex gap-3">
+              <button 
+                (click)="refresh()" 
+                class="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-colors">
+                Search
+              </button>
+              <button 
+                (click)="toggleCreateForm()" 
+                class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-medium transition-colors flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+                Create Group
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- Create Group Section -->
-        <div class="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
-          <div class="flex items-center mb-6">
-            <div class="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center mr-4">
-              <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-              </svg>
+        <!-- Create Group Section (Collapsible) -->
+        <div *ngIf="showCreateForm()" class="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
+          <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center">
+              <div class="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                </svg>
+              </div>
+              <h2 class="text-2xl font-bold text-gray-900">Create Study Group</h2>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900">Create Study Group</h2>
+            <button 
+              (click)="toggleCreateForm()" 
+              class="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+              <svg class="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
           
           <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -151,7 +170,9 @@ import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
               </div>
               
               <div class="flex items-center space-x-3 ml-6">
+                <!-- Join Button (for non-members) -->
                 <button 
+                  *ngIf="!isMemberOfGroup(g.id)"
                   (click)="join(g)" 
                   [disabled]="joiningGroup() === g.id"
                   class="px-6 py-3 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors">
@@ -162,6 +183,22 @@ import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
                       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                     Joining...
+                  </span>
+                </button>
+                
+                <!-- Leave Button (for members) -->
+                <button 
+                  *ngIf="isMemberOfGroup(g.id)"
+                  (click)="leave(g)" 
+                  [disabled]="leavingGroup() === g.id"
+                  class="px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors">
+                  <span *ngIf="leavingGroup() !== g.id">Leave Group</span>
+                  <span *ngIf="leavingGroup() === g.id" class="flex items-center">
+                    <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Leaving...
                   </span>
                 </button>
               </div>
@@ -196,10 +233,14 @@ export class StudyGroupsComponent {
   loading = signal(false);
   creating = signal(false);
   joiningGroup = signal<number | null>(null);
+  leavingGroup = signal<number | null>(null);
+  showCreateForm = signal(false);
+  myGroupIds = signal<number[]>([]);
 
   ngOnInit() {
     this.loadGroups();
     this.loadCourses();
+    this.loadMyGroups();
   }
 
   loadGroups() {
@@ -223,8 +264,19 @@ export class StudyGroupsComponent {
     });
   }
 
+  loadMyGroups() {
+    this.api.myGroups().subscribe({
+      next: (groups) => {
+        const groupIds = groups.map(g => g.id);
+        this.myGroupIds.set(groupIds);
+      },
+      error: (error) => console.error('Error loading my groups:', error)
+    });
+  }
+
   refresh() {
     this.loadGroups();
+    this.loadMyGroups();
   }
 
   create() {
@@ -246,6 +298,7 @@ export class StudyGroupsComponent {
         this.isPrivate.set(false);
         this.selectedCourseId.set(null);
         this.creating.set(false);
+        this.showCreateForm.set(false);
         this.refresh();
       },
       error: (error) => {
@@ -270,6 +323,33 @@ export class StudyGroupsComponent {
       error: (error) => {
         console.error('Error joining group:', error);
         this.joiningGroup.set(null);
+        // TODO: Show error message to user
+      }
+    });
+  }
+
+  toggleCreateForm() {
+    this.showCreateForm.set(!this.showCreateForm());
+  }
+
+  isMemberOfGroup(groupId: number): boolean {
+    return this.myGroupIds().includes(groupId);
+  }
+
+  leave(g: StudyGroup) {
+    if (this.leavingGroup() === g.id) return;
+    
+    this.leavingGroup.set(g.id);
+    this.api.leaveGroup(g.id).subscribe({
+      next: (response) => {
+        console.log('Leave response:', response);
+        this.leavingGroup.set(null);
+        this.refresh();
+        // TODO: Show success message to user
+      },
+      error: (error) => {
+        console.error('Error leaving group:', error);
+        this.leavingGroup.set(null);
         // TODO: Show error message to user
       }
     });

@@ -806,6 +806,30 @@ def remove_member_from_group(request, group_id):
     return Response({'error': 'Membership not found'}, status=status.HTTP_404_NOT_FOUND)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def leave_study_group(request, group_id):
+    """Leave a study group (self-removal)."""
+    try:
+        group = StudyGroup.objects.get(id=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'error': 'Group not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Check if user is a member
+    membership = StudyGroupMembership.objects.filter(group=group, user=request.user).first()
+    if not membership:
+        return Response({'error': 'You are not a member of this group'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if user is the only admin (prevent leaving if they're the only admin)
+    admin_count = StudyGroupMembership.objects.filter(group=group, role='admin').count()
+    if membership.role == 'admin' and admin_count == 1:
+        return Response({'error': 'Cannot leave group as the only admin. Transfer admin role first or delete the group.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Remove the membership
+    membership.delete()
+    return Response({'message': 'Successfully left the group'})
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_class_courses(request, class_id):
