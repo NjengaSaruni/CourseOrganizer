@@ -3,22 +3,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
+import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-study-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageLayoutComponent],
   template: `
-    <div class="min-h-screen bg-gray-50">
+    <app-page-layout 
+      [pageTitle]="'Study Groups'" 
+      [pageSubtitle]="'Collaborate with classmates and organize study sessions'">
+      <div class="min-h-screen bg-gray-50">
       <!-- Header -->
-      <div class="bg-white border-b border-gray-200">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6">
-          <div class="py-6">
-            <h1 class="text-3xl font-bold text-gray-900">Study Groups</h1>
-            <p class="text-gray-600 mt-2">Collaborate with classmates and organize study sessions</p>
-          </div>
-        </div>
-      </div>
+      <div class="bg-white border-b border-gray-200"></div>
 
       <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         <!-- Search and Filter -->
@@ -219,7 +216,8 @@ import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
           <p class="text-gray-600">Loading study groups...</p>
         </div>
       </div>
-    </div>
+      </div>
+    </app-page-layout>
   `
 })
 export class StudyGroupsComponent {

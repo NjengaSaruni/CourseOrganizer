@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupworkService, StudyGroup, StudyGroupMembership, GroupMeeting } from '../../../core/groupwork.service';
+import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
   selector: 'app-study-group-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PageLayoutComponent],
   template: `
+    <app-page-layout [pageTitle]="group()?.name || 'Study Group'" [pageSubtitle]="group()?.description || ''">
     <div class="min-h-screen bg-gray-50">
       <!-- Header -->
       <div class="bg-white border-b border-gray-200">
@@ -261,6 +263,7 @@ import { GroupworkService, StudyGroup, StudyGroupMembership, GroupMeeting } from
         </div>
       </div>
     </div>
+    </app-page-layout>
   `
 })
 export class StudyGroupDetailComponent implements OnInit {

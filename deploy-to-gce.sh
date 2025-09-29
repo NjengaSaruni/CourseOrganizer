@@ -57,9 +57,19 @@ gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command "
     
     echo '🛑 Stopping existing services...'
     docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml down || true
-    
-    echo '🏗️  Building and starting updated services...'
-    docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml up -d --build
+
+    echo '🧹 Clearing old static files volume to avoid stale assets...'
+    # Remove persisted static volume so new image assets are not masked
+    docker volume ls --format '{{.Name}}' | grep -q '^course-organizer_static_files$' && docker volume rm course-organizer_static_files || true
+
+    echo '🏗️  Building images without cache...'
+    docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml build --no-cache
+
+    echo '🚀 Starting updated services...'
+    docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml up -d
+
+    echo '📦 Collecting static files into the fresh volume...'
+    docker exec course-organizer-backend python3 manage.py collectstatic --noinput | tail -n +1
     
     echo '⏳ Waiting for services to start...'
     sleep 30

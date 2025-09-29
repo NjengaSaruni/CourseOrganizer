@@ -243,7 +243,55 @@ gcloud compute scp course-organizer-app:/opt/course-organizer/file local-file --
 - Adjust the zone and instance name if different
 - Use `docker-compose -f docker-compose.gce.yml` for production environment
 
+## User Password Management
+
+### Change User Password (from local machine)
+```bash
+# Change password for specific user (GPR31505612025@students.uonbi.ac.ke)
+gcloud compute ssh ubuntu@course-organizer-app --zone=us-central1-a --command 'cd /opt/course-organizer && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml exec -T backend python3 manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); user = U.objects.get(email=\"GPR31505612025@students.uonbi.ac.ke\"); user.set_password(\"kingjulian\"); user.save(); print(f\"Password changed for {user.email}\")"'
+
+# Change password for any user (replace email and password)
+gcloud compute ssh ubuntu@course-organizer-app --zone=us-central1-a --command 'cd /opt/course-organizer && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml exec -T backend python3 manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); user = U.objects.get(email=\"USER_EMAIL_HERE\"); user.set_password(\"NEW_PASSWORD_HERE\"); user.save(); print(f\"Password changed for {user.email}\")"'
+```
+
+### Check User Status (from local machine)
+```bash
+# Check if user exists and get details
+gcloud compute ssh ubuntu@course-organizer-app --zone=us-central1-a --command 'cd /opt/course-organizer && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml exec -T backend python3 manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); user = U.objects.get(email=\"GPR31505612025@students.uonbi.ac.ke\"); print(f\"User: {user.email}\"); print(f\"Active: {user.is_active}\"); print(f\"Verified: {user.email_verified}\"); print(f\"Status: {user.status}\"); print(f\"Class: {user.student_class}\")"'
+```
+
+### Reset User Password to Default (from local machine)
+```bash
+# Reset password to a simple default for testing
+gcloud compute ssh ubuntu@course-organizer-app --zone=us-central1-a --command 'cd /opt/course-organizer && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml exec -T backend python3 manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); user = U.objects.get(email=\"GPR31505612025@students.uonbi.ac.ke\"); user.set_password(\"password123\"); user.save(); print(f\"Password reset to \'password123\' for {user.email}\")"'
+```
+
+### Make User Active and Verified (from local machine)
+```bash
+# Make user active and verify email
+gcloud compute ssh ubuntu@course-organizer-app --zone=us-central1-a --command 'cd /opt/course-organizer && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml exec -T backend python3 manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); user = U.objects.get(email=\"GPR31505612025@students.uonbi.ac.ke\"); user.is_active = True; user.email_verified = True; user.status = \"approved\"; user.save(); print(f\"User {user.email} is now active, verified, and approved\")"'
+```
+
+### Complete User Setup (Password + Status) (from local machine)
+```bash
+# Complete setup: change password, make active, verify email, and approve
+gcloud compute ssh ubuntu@course-organizer-app --zone=us-central1-a --command 'cd /opt/course-organizer && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml exec -T backend python3 manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); user = U.objects.get(email=\"GPR31505612025@students.uonbi.ac.ke\"); user.set_password(\"password123\"); user.is_active = True; user.email_verified = True; user.status = \"approved\"; user.save(); print(f\"User {user.email} is fully set up with password \'password123\'\")"'
+```
+
 # Delete test student
 ```bash
 gcloud compute ssh ubuntu@course-organizer-app --zone=us-central1-a --command 'cd /opt/course-organizer && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml exec -T backend python3 manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); print(U.objects.filter(email=\"GPR31505612025@students.uonbi.ac.ke\").delete())"'
 ```
+
+
+iq xmlns='jabber:client' id='453e261a-5c50-491c-91c6-5e59cbe81b74:sendIQ' from='jitsi.riverlearn.co.ke' type='result' to='moderator@auth.jitsi.riverlearn.co.ke/lTT4j9VhFt-h'><query xmlns='http://jabber.org/protocol/disco#info'><identity category='component' type='room_metadata' name='metadata.jitsi.riverlearn.co.ke'/><identity category='component' type='av_moderation' name='avmoderation.jitsi.riverlearn.co.ke'/><identity category='component' type='end_conference' name='endconference.jitsi.riverlearn.co.ke'/><identity category='component' type='speakerstats' name='speakerstats.jitsi.riverlearn.co.ke'/><identity category='component' type='polls' name='polls.jitsi.riverlearn.co.ke'/><identity category='component' type='lobbyrooms' name='lobby.jitsi.riverlearn.co.ke'/><identity category='component' type='conference_duration' name='conferenceduration.jitsi.riverlearn.co.ke'/><identity category='server' type='im' name='Prosody'/><identity category='component' type='breakout_rooms' name='breakout.jitsi.riverlearn.co.ke'/><feature var='jabber:iq:roster'/><feature var='http://jabber.org/protocol/disco#info'/><feature var='http://jabber.org/protocol/disco#items'/><feature var='urn:xmpp:ping'/><feature var='jabber:iq:version'/><feature var='jabber:iq:private'/></query></iq>	1284	
+11:16:27.314
+<iq from="moderator@auth.jitsi.riverlearn.co.ke/lTT4j9VhFt-h" id="fe4b9bba-2b0f-4f1f-8636-bc9b91b77449:sendIQ" to="lobby.jitsi.riverlearn.co.ke" type="get" xmlns="jabber:client"><query node="lobbyrooms" xmlns="http://jabber.org/protocol/disco#info"/></iq>	255	
+11:16:27.314
+<iq from="moderator@auth.jitsi.riverlearn.co.ke/lTT4j9VhFt-h" id="533404ce-b5a2-41a4-893f-45efa1269209:sendIQ" to="breakout.jitsi.riverlearn.co.ke" type="get" xmlns="jabber:client"><query node="breakout_rooms" xmlns="http://jabber.org/protocol/disco#info"/></iq>	262	
+11:16:27.314
+<iq xml:lang='en-US' id='33d94fa5-5b0e-4aaa-8602-d881489d1de9:sendIQ' xmlns='jabber:client' to='moderator@auth.jitsi.riverlearn.co.ke/lTT4j9VhFt-h' type='error' from='focus.jitsi.riverlearn.co.ke'><error type='auth'><not-authorized xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/><text xml:lang='en'>not authorized user domain</text></error><conference machine-uid='a2e49480ed6847c787abb294829abc97' xmlns='http://jitsi.org/protocol/focus' room='reliablechambersdesignateabsolutely@conference.jitsi.riverlearn.co.ke'/></iq>	520	
+11:16:27.314
+<presence type="unavailable" xmlns="jabber:client"/>	52	
+11:16:27.315
+<close xmlns="urn:ietf:params:xml:ns:xmpp-framing"/>
