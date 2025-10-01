@@ -1,4 +1,16 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: course-organizer-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
   postgres:
     image: postgres:15
     container_name: course-organizer-postgres
@@ -55,6 +67,7 @@ services:
       - db_data:/app/db
     depends_on:
       - postgres
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/"]
       interval: 30s
@@ -76,6 +89,9 @@ services:
       - ./ssl:/etc/nginx/ssl:ro
       - certbot-webroot:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
+    environment:
+      - XMPP_WEBSOCKET_UPSTREAM=${XMPP_WEBSOCKET_UPSTREAM:-https://jitsi.riverlearn.co.ke/xmpp-websocket}
+      - XMPP_BOSH_UPSTREAM=${XMPP_BOSH_UPSTREAM:-https://jitsi.riverlearn.co.ke/http-bind}
     depends_on:
       - backend
     healthcheck:

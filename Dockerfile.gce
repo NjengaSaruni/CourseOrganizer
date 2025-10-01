@@ -16,6 +16,9 @@ COPY frontend/ ./
 # Build Angular application
 RUN npm run build:prod
 
+# Debug: List build output to verify structure
+RUN echo "=== Angular build output structure ===" && find /app/frontend/dist -type f -name "*.js" -o -name "*.html" -o -name "*.css" | head -10
+
 # Production stage
 FROM python:3.11-slim
 
@@ -40,17 +43,19 @@ WORKDIR /app
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create necessary directories first
+RUN mkdir -p static/browser media db
+
 # Copy backend source
 COPY backend/ ./
 
 # Copy built frontend from builder stage
 COPY --from=frontend-builder /app/frontend/dist/course-organizer/browser ./static/browser
 
-# Create necessary directories
-RUN mkdir -p static/browser media db
+# Debug: List frontend files to verify build
+RUN echo "=== Frontend build files ===" && ls -la ./static/browser/ | head -10 || echo "No frontend files found"
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Note: collectstatic is not needed since we have no Django static files to collect
 
 # Add startup script
 COPY backend/startup.sh /app/startup.sh

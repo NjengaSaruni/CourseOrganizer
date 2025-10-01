@@ -38,6 +38,7 @@ if not DEBUG:
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'channels',
     'directory',
     'course_api',
     'course_content',
@@ -97,6 +99,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'course_organizer.wsgi.application'
+ASGI_APPLICATION = 'course_organizer.asgi.application'
+
+# Channels configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('redis', 6379)],
+        },
+    },
+}
 
 
 # Database

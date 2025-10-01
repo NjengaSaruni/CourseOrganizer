@@ -30,6 +30,8 @@ urlpatterns = [
     path('courses/', views.CourseListCreateView.as_view(), name='course_list'),
     path('courses/my-courses/', views.get_user_courses, name='user_courses'),
     path('courses/class/<int:class_id>/', views.get_class_courses, name='class_courses'),
+    # Study group messages
+    path('study-groups/<int:group_id>/messages/', views.group_messages, name='group_messages'),
     
     # Timetable endpoints
     path('timetable/', views.TimetableEntryListView.as_view(), name='timetable_list'),

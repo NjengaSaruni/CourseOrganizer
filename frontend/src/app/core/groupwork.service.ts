@@ -11,6 +11,8 @@ export interface StudyGroup {
   course_name?: string;
   is_private: boolean;
   max_members: number;
+  xmpp_room_name?: string;
+  xmpp_room_jid?: string;
   created_at: string;
   updated_at: string;
   members_count: number;
@@ -79,6 +81,17 @@ export class GroupworkService {
 
   meetings(groupId: number): Observable<GroupMeeting[]> {
     return this.http.get<any>(`${this.baseUrl}/study-groups/${groupId}/meetings/`).pipe(this.unwrap<GroupMeeting[]>());
+  }
+
+  // Messages persistence
+  listMessages(groupId: number, limit = 50) {
+    return this.http.get<Array<{ id: number; group: number; sender: number; sender_name: string; body: string; created_at: string }>>(
+      `${this.baseUrl}/study-groups/${groupId}/messages/?limit=${limit}`
+    );
+  }
+
+  createMessage(groupId: number, body: string) {
+    return this.http.post<{ status: 'ok' }>(`${this.baseUrl}/study-groups/${groupId}/messages/`, { body });
   }
 
   createMeeting(groupId: number, payload: { title: string; description?: string; scheduled_time?: string; platform?: 'jitsi' | 'daily' | 'physical'; room_password?: string; location?: string; }): Observable<GroupMeeting> {

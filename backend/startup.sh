@@ -46,5 +46,5 @@ echo "📚 Creating demo data..."
 python manage.py create_uon_law_data || echo "Skipping demo data creation"
 
 # Start server
-echo "🌐 Starting Django server..."
-exec gunicorn --bind 0.0.0.0:8080 --workers 3 --timeout 120 course_organizer.wsgi:application
+echo "🌐 Starting Django server with ASGI support for WebSockets..."
+exec daphne -b 0.0.0.0 -p 8080 course_organizer.asgi:application

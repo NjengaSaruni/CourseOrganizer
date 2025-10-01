@@ -1,9 +1,9 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { GroupworkService, StudyGroup, StudyGroupMembership, GroupMeeting } from '../../../core/groupwork.service';
-import { ChatService } from '../../../core/chat.service';
+import { ChatService, ChatMessage } from '../../../core/chat.service';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 
 @Component({
@@ -272,7 +272,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     </app-page-layout>
   `
 })
-export class StudyGroupDetailComponent implements OnInit, OnDestroy {
+export class StudyGroupDetailComponent implements OnInit {
   private api = inject(GroupworkService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -318,10 +318,6 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy() {
-    this.chat.disconnect();
-  }
-
   loadGroupDetails(groupId: number) {
     this.loading.set(true);
     
@@ -340,6 +336,26 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
       console.error('Error loading group details:', error);
       this.loading.set(false);
     });
+  }
+
+  private getRoomName(): string | null {
+    const g = this.group();
+    if (!g) return null;
+    // Use backend-provided mapping when available
+    if (g.xmpp_room_name) return g.xmpp_room_name;
+    return `sg-${g.id}`;
+  }
+
+  async ensureJoined() {
+    const room = this.getRoomName();
+    if (!room) return;
+    // Use initials as nick
+    const nick = 'WebUser';
+    try {
+      // Removed XMPP logic - now using Channels
+    } catch (e) {
+      console.warn('Join room failed', e);
+    }
   }
 
   sendChat() {
@@ -407,4 +423,3 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   }
 }
-

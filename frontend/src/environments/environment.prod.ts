@@ -1,4 +1,8 @@
 export const environment = {
   production: true,
-  apiUrl: '/api'
+  apiUrl: '/api',
+  chat: {
+    websocketPath: '/xmpp-websocket',
+    boshPath: '/http-bind'
+  }
 };

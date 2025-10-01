@@ -8,14 +8,38 @@ from django.contrib.auth import login
 from django.db.models import Q
 from django.http import JsonResponse
 from directory.models import User
-from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent, StudyGroup, StudyGroupMembership, GroupMeeting, StudyGroupJoinRequest
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent, StudyGroup, StudyGroupMembership, GroupMeeting, StudyGroupJoinRequest, GroupMessage
 from .serializers import (
     UserRegistrationSerializer, UserSerializer, LoginSerializer,
     CourseSerializer, TimetableEntrySerializer, CourseMaterialSerializer,
     RecordingSerializer, MeetingSerializer, JitsiRecordingSerializer, TimetableEntryWithRecordingsSerializer,
     CourseWithDetailsSerializer, CourseContentSerializer, CourseContentCreateSerializer, CourseTimelineSerializer,
-    StudyGroupSerializer, StudyGroupCreateSerializer, StudyGroupMembershipSerializer, GroupMeetingSerializer, StudyGroupJoinRequestSerializer
+    StudyGroupSerializer, StudyGroupCreateSerializer, StudyGroupMembershipSerializer, GroupMeetingSerializer, StudyGroupJoinRequestSerializer, GroupMessageSerializer
 )
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def group_messages(request, group_id: int):
+    try:
+        group = StudyGroup.objects.get(pk=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Only members can access
+    if not StudyGroupMembership.objects.filter(group=group, user=request.user).exists():
+        return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == 'GET':
+        limit = int(request.query_params.get('limit', 50))
+        msgs = GroupMessage.objects.filter(group=group).order_by('-created_at')[:limit]
+        data = GroupMessageSerializer(reversed(list(msgs)), many=True).data
+        return Response(data)
+
+    # POST
+    serializer = GroupMessageSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    GroupMessage.objects.create(group=group, sender=request.user, body=serializer.validated_data['body'])
+    return Response({'status': 'ok'})
 from .jitsi_auth import jitsi_auth
 from .email_service import notify_admin_of_student_registration
 

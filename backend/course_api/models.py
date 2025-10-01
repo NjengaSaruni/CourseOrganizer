@@ -614,6 +614,8 @@ class StudyGroup(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_groups_created')
     is_private = models.BooleanField(default=False, help_text="If true, members must be invited or approved")
     max_members = models.PositiveIntegerField(default=8, help_text="Maximum members allowed in this group")
+    xmpp_room_name = models.CharField(max_length=120, blank=True, help_text="Local room name for XMPP MUC (e.g., sg-123)")
+    xmpp_room_jid = models.CharField(max_length=255, blank=True, help_text="Full room JID for XMPP MUC (e.g., sg-123@conference.example.com)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -694,19 +696,20 @@ class GroupMeeting(models.Model):
     def __str__(self):
         return f"{self.title} - {self.scheduled_time}"
 
+
+class GroupMessage(models.Model):
+    """Persistent messages for study group chat."""
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_messages_sent')
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.group_id} - {self.sender_id}: {self.body[:30]}"
+
     def save(self, *args, **kwargs):
-        if not self.meeting_id:
-            import uuid
-            self.meeting_id = f"sg-{uuid.uuid4().hex[:12]}"
-        if self.platform == 'jitsi' and not self.meeting_url:
-            from django.conf import settings
-            jitsi_domain = getattr(settings, 'JITSI_DOMAIN', 'meet.jit.si')
-            base_url = f"https://{jitsi_domain}/{self.meeting_id}"
-            self.meeting_url = base_url
-        elif self.platform == 'daily' and not self.meeting_url:
-            # For now we don't auto-provision Daily rooms for group meetings; leave URL blank
-            pass
-        elif self.platform == 'physical':
-            # Ensure no meeting URL for physical meetings
-            self.meeting_url = ''
+        # Simple save for chat messages - no special processing needed
         super().save(*args, **kwargs)

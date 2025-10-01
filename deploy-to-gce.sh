@@ -61,15 +61,30 @@ gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command "
     echo '🧹 Clearing old static files volume to avoid stale assets...'
     # Remove persisted static volume so new image assets are not masked
     docker volume ls --format '{{.Name}}' | grep -q '^course-organizer_static_files$' && docker volume rm course-organizer_static_files || true
+    
+    # Also clear any orphaned volumes with similar names
+    docker volume ls --format '{{.Name}}' | grep -E '^course-organizer.*static' | xargs -r docker volume rm || true
+
+    echo '🧹 Clearing Docker build cache to ensure fresh Angular build...'
+    # Remove all build cache to ensure Angular build runs fresh
+    docker builder prune -af || true
 
     echo '🏗️  Building images without cache...'
-    docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml build --no-cache
+    docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml build --no-cache --pull
 
     echo '🚀 Starting updated services...'
     docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml up -d
 
-    echo '📦 Collecting static files into the fresh volume...'
-    docker exec course-organizer-backend python3 manage.py collectstatic --noinput | tail -n +1
+    echo '📦 Populating static files volume with fresh Angular build...'
+    # Wait for backend to start, then copy files from image to volume
+    sleep 10
+    docker run --rm -v course-organizer_static_files:/target course-organizer-backend cp -r /app/static/* /target/ 2>/dev/null || echo 'Warning: Could not copy static files'
+   
+    echo '🔍 Verifying Angular build files are present...'
+    docker exec course-organizer-backend ls -la /app/static/browser/ | head -10 || echo 'Warning: Angular build files not found'
+    
+    echo '🔍 Verifying nginx can access the same files...'
+    docker exec course-organizer-nginx ls -la /var/www/static/browser/ | head -10 || echo 'Warning: Nginx cannot access Angular build files'
     
     echo '⏳ Waiting for services to start...'
     sleep 30
@@ -100,4 +115,11 @@ echo "gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command 'cd $APP_DIR && 
 rm -f course-organizer-update.tar.gz
 
 echo ""
-echo "🎉 Deployment finished! The frontend should now use the local backend instead of Railway."
+echo "🎉 Deployment finished! The frontend should now use the updated Angular build."
+echo ""
+echo "🔍 To verify the deployment:"
+echo "1. Check if Angular files are present: gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command 'docker exec course-organizer-backend ls -la /app/static/browser/'"
+echo "2. Check application logs: gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command 'cd $APP_DIR && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml logs backend'"
+echo ""
+echo "🚨 EMERGENCY FIX (if 502 errors):"
+echo "gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command 'cd $APP_DIR && docker run --rm -v course-organizer_static_files:/target course-organizer-backend cp -r /app/static/* /target/'"
