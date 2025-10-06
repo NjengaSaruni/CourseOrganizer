@@ -18,12 +18,15 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'course_organizer.settings')
 django_asgi_app = get_asgi_application()
 
 from course_api.routing import websocket_urlpatterns
+from course_api.auth import TokenAuthMiddleware
 
 application = ProtocolTypeRouter({
     'http': django_asgi_app,
     'websocket': AllowedHostsOriginValidator(
-        AuthMiddlewareStack(
-            URLRouter(websocket_urlpatterns)
+        TokenAuthMiddleware(
+            AuthMiddlewareStack(
+                URLRouter(websocket_urlpatterns)
+            )
         )
     ),
 })

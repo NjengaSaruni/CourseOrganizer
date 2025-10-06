@@ -123,7 +123,7 @@ import { AuthService } from '../../core/auth.service';
           <div class="bg-gray-50 rounded-xl p-6">
             <div class="text-center">
               <h3 class="text-lg font-semibold text-gray-900 mb-4">Simple Registration Process</h3>
-              <div class="grid md:grid-cols-4 gap-4 text-sm text-gray-600">
+              <div class="grid md:grid-cols-3 gap-3 text-sm text-gray-600">
                 <div class="flex flex-col items-center">
                   <span class="w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-semibold mb-2">1</span>
                   <span>Request Registration</span>
@@ -134,10 +134,6 @@ import { AuthService } from '../../core/auth.service';
                 </div>
                 <div class="flex flex-col items-center">
                   <span class="w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-semibold mb-2">3</span>
-                  <span>SMS Passcode</span>
-                </div>
-                <div class="flex flex-col items-center">
-                  <span class="w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-semibold mb-2">4</span>
                   <span>Complete Setup</span>
                 </div>
               </div>

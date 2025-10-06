@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('course_api', '0005_coursecontent'),
+        ('course_api', '__first__'),
         ('directory', '0006_remove_academicyear_first_semester_end_and_more'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]

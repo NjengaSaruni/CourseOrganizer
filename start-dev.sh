@@ -57,11 +57,16 @@ python -m pip install -r requirements.txt
 echo "🗄️ Resetting database with fresh academic year structure..."
 python manage.py reset_database
 
-# Set up admin account
+# Set up admin account (non-interactive)
 echo "🔐 Setting up admin account..."
-echo "You need to set a password for the admin account (admin@uon.ac.ke)"
-echo "If the admin already exists, use --force to reset the password"
-python manage.py setup_admin --force
+if [ -n "${ADMIN_PASSWORD:-}" ]; then
+  echo "Using ADMIN_PASSWORD from environment"
+  python manage.py manage_admin create --email admin@uon.ac.ke --password "$ADMIN_PASSWORD" --force || \
+  python manage.py manage_admin reset-password --email admin@uon.ac.ke --password "$ADMIN_PASSWORD" --force
+else
+  python manage.py manage_admin create --email admin@uon.ac.ke --force || \
+  python manage.py manage_admin reset-password --email admin@uon.ac.ke --force
+fi
 
 # Start Django server in background
 echo "🚀 Starting Django server on http://localhost:8000"

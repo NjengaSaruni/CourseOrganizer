@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files and proxy config
+COPY package*.json proxy.conf.json ./
 
 # Install dependencies
 RUN npm install
@@ -14,5 +14,5 @@ COPY . .
 # Expose port
 EXPOSE 4200
 
-# Start development server
-CMD ["npm", "start", "--", "--host", "0.0.0.0"]
+# Start development server with proxy config
+CMD ["npm", "start", "--", "--host", "0.0.0.0", "--proxy-config", "proxy.conf.json"]

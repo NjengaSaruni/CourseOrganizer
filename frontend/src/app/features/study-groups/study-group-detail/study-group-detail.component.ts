@@ -37,6 +37,14 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                 <span *ngIf="!group()?.is_private" class="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
                   Open
                 </span>
+
+                <!-- Top App Bar Chat Toggle -->
+                <button 
+                  (click)="openChatPanel()"
+                  class="ml-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors">
+                  <span class="w-2 h-2 rounded-full" [class]="chatConnected ? 'bg-green-300' : 'bg-red-300'"></span>
+                  Open Chat
+                </button>
               </div>
             </div>
           </div>
@@ -247,29 +255,93 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
               </div>
             </div>
 
-            <!-- Chat Section -->
-            <div class="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 class="text-xl font-bold text-gray-900 mb-4">Group Chat</h2>
-              <div class="space-y-3">
-                <div class="max-h-64 overflow-auto border border-gray-100 rounded-lg p-3 bg-gray-50">
-                  <div *ngFor="let m of chatLog" class="text-sm text-gray-800 mb-2">
-                    <span class="font-medium">{{ m.from }}</span>:
-                    <span class="ml-2">{{ m.body }}</span>
-                  </div>
-                  <div *ngIf="chatLog.length === 0" class="text-gray-500 text-sm">No messages yet.</div>
-                </div>
-                <div class="flex gap-2">
-                  <input [(ngModel)]="chatMessage" placeholder="Type a message" class="flex-1 px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent" />
-                  <button (click)="sendChat()" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl">Send</button>
-                </div>
-                <p class="text-xs text-gray-500">Real-time chat powered by Django Channels. Messages persist across sessions.</p>
-              </div>
-            </div>
+            <!-- Chat Section (sidebar) hidden in favor of top-level panel -->
+            <div class="hidden"></div>
           </div>
         </div>
       </div>
     </div>
     </app-page-layout>
+
+  <!-- Large Chat Panel -->
+  <div *ngIf="chatPanelOpen" class="fixed inset-0 z-50">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/40" (click)="closeChatPanel()"></div>
+    <!-- Panel -->
+    <div class="absolute inset-0 md:inset-y-6 md:inset-x-6">
+      <div class="h-full bg-white rounded-none md:rounded-2xl shadow-xl border border-gray-200 flex flex-col">
+        <!-- Header -->
+        <div class="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <h3 class="text-xl font-semibold text-gray-900">Group Chat</h3>
+            <div class="flex items-center gap-2 text-xs text-gray-600">
+              <span class="w-2 h-2 rounded-full" [class]="chatConnected ? 'bg-green-500' : 'bg-red-500'"></span>
+              <span>{{ chatConnected ? 'Connected' : 'Connecting...' }}</span>
+              <span class="ml-3">Online: {{ onlineCount() }}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <!-- Future tabs stub -->
+            <div class="hidden md:flex rounded-lg bg-gray-100 p-1 mr-3">
+              <button class="px-3 py-1.5 text-sm rounded-md bg-white shadow">Chat</button>
+              <button class="px-3 py-1.5 text-sm rounded-md text-gray-400" disabled>Materials (soon)</button>
+            </div>
+            <button (click)="closeChatPanel()" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+          </div>
+        </div>
+
+        <!-- Body -->
+        <div class="flex-1 grid grid-rows-[1fr_auto_auto]">
+          <!-- Messages -->
+          <div class="overflow-auto p-4 bg-gray-50 space-y-3">
+            <div *ngFor="let m of chatLog; trackBy: trackByMessage" class="flex items-start space-x-3 p-3 bg-white rounded-lg shadow-sm">
+              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span class="text-xs font-medium text-blue-700">{{ getInitials(m.from) }}</span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center space-x-2 mb-1">
+                  <span class="text-sm font-medium text-gray-900">{{ m.from }}</span>
+                  <span class="text-xs text-gray-500">{{ formatMessageTime(m.timestamp) }}</span>
+                </div>
+                <p class="text-sm text-gray-800 break-words">{{ m.body }}</p>
+              </div>
+            </div>
+            <div *ngIf="chatLog.length === 0" class="text-center py-12 text-gray-500">No messages yet. Start the conversation!</div>
+          </div>
+
+          <!-- Typing -->
+          <div *ngIf="typingIndicator()" class="px-4 py-2 text-xs text-gray-600 flex items-center gap-2">
+            <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+            <span>{{ typingIndicator() }}</span>
+          </div>
+
+          <!-- Composer -->
+          <div class="p-4 border-t border-gray-200 flex gap-2">
+            <input 
+              [(ngModel)]="chatMessage"
+              (input)="onMessageInput()"
+              (keydown.enter)="sendChat()"
+              placeholder="Type a message..." 
+              class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              [disabled]="!chatConnected" />
+            <button 
+              (click)="sendChat()"
+              [disabled]="!chatMessage.trim() || !chatConnected || isSending"
+              class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center gap-2">
+              <svg *ngIf="!isSending" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+              <svg *ngIf="isSending" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+              </svg>
+              <span>{{ isSending ? 'Sending' : 'Send' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   `
 })
 export class StudyGroupDetailComponent implements OnInit, OnDestroy {
@@ -284,8 +356,16 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   loading = signal(true);
   creatingMeeting = signal(false);
   showCreateMeeting = false;
+  showChat = true; // Start with chat visible by default
+  chatPanelOpen = false;
   chatMessage = '';
-  chatLog: { from: string; body: string }[] = [];
+  chatLog: { from: string; body: string; timestamp?: Date }[] = [];
+  chatConnected = false;
+  isSending = false;
+  onlineUserIds = new Set<number>();
+  typingUsers = new Map<number, string>();
+  private typingNotifyTimeout: any = null;
+  private typingClearTimeout: any = null;
 
   newMeeting = {
     title: '',
@@ -303,15 +383,57 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
       // Connect to WebSocket chat
       this.chat.connect(gid);
       
+      // Subscribe to connection status
+      this.chat.connected$.subscribe(connected => {
+        this.chatConnected = connected;
+      });
+ 
       // Subscribe to incoming messages
       this.chat.messages$.subscribe((msg) => {
-        this.chatLog.push({ from: msg.sender_name, body: msg.body });
+        this.chatLog.push({ 
+          from: msg.sender_name, 
+          body: msg.body, 
+          timestamp: new Date() 
+        });
+        // Auto-scroll to bottom when new message arrives
+        setTimeout(() => this.scrollToBottom(), 100);
+        this.isSending = false;
+      });
+
+      // Presence events (join/leave/snapshot)
+      this.chat.presence$.subscribe((evt: any) => {
+        if (evt.type === 'snapshot') {
+          this.onlineUserIds = new Set(evt.users.map((u: any) => u.id));
+          return;
+        }
+        if (evt.type === 'presence') {
+          if (evt.action === 'join') this.onlineUserIds.add(evt.user.id);
+          if (evt.action === 'leave') this.onlineUserIds.delete(evt.user.id);
+        }
+      });
+
+      // Typing events
+      this.chat.typing$.subscribe((evt: any) => {
+        if (evt.is_typing) {
+          this.typingUsers.set(evt.user.id, evt.user.name);
+          // Clear typing after 4s if no further events
+          if (this.typingClearTimeout) clearTimeout(this.typingClearTimeout);
+          this.typingClearTimeout = setTimeout(() => {
+            this.typingUsers.delete(evt.user.id);
+          }, 4000);
+        } else {
+          this.typingUsers.delete(evt.user.id);
+        }
       });
 
       // Load persisted messages
       this.api.listMessages(gid, 50).subscribe({
         next: (msgs) => {
-          this.chatLog = msgs.map(m => ({ from: m.sender_name, body: m.body }));
+          this.chatLog = msgs.map(m => ({ 
+            from: m.sender_name, 
+            body: m.body, 
+            timestamp: new Date(m.created_at || Date.now())
+          }));
         },
         error: (err) => console.warn('Failed to load messages', err)
       });
@@ -344,8 +466,11 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
 
   sendChat() {
     if (!this.chatMessage.trim()) return;
+    this.isSending = true;
     this.chat.sendMessage(this.chatMessage.trim());
     this.chatMessage = '';
+    // Stop typing when message sent
+    this.chat.sendTyping(false);
   }
 
   goBack() {
@@ -405,6 +530,70 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
 
   getInitials(name: string): string {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
+  toggleChat() {
+    this.showChat = !this.showChat;
+  }
+
+  openChatPanel() {
+    this.chatPanelOpen = true;
+  }
+
+  closeChatPanel() {
+    this.chatPanelOpen = false;
+  }
+
+  onMessageInput() {
+    // Debounced typing notifications
+    if (this.typingNotifyTimeout) clearTimeout(this.typingNotifyTimeout);
+    this.chat.sendTyping(true);
+    this.typingNotifyTimeout = setTimeout(() => this.chat.sendTyping(false), 1500);
+  }
+
+  scrollToBottom() {
+    // This will be handled by the template reference
+    const chatContainer = document.querySelector('#chatContainer');
+    if (chatContainer) {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  }
+
+  trackByMessage(index: number, message: any): string {
+    return `${message.from}-${message.body}-${message.timestamp}`;
+  }
+
+  onlineCount(): number {
+    return this.onlineUserIds.size;
+  }
+
+  isOnline(userId: number): boolean {
+    return this.onlineUserIds.has(userId);
+  }
+
+  typingIndicator(): string | null {
+    if (this.typingUsers.size === 0) return null;
+    const names = Array.from(this.typingUsers.values());
+    if (names.length === 1) return `${names[0]} is typing...`;
+    if (names.length === 2) return `${names[0]} and ${names[1]} are typing...`;
+    return `${names[0]}, ${names[1]} and others are typing...`;
+  }
+
+  formatMessageTime(timestamp?: Date): string {
+    if (!timestamp) return '';
+    
+    const now = new Date();
+    const diff = now.getTime() - timestamp.getTime();
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    
+    return timestamp.toLocaleDateString();
   }
 }
 
