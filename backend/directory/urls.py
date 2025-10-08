@@ -7,6 +7,7 @@ urlpatterns = [
     path('auth/logout/', views.logout_view, name='logout'),
     path('auth/profile/', views.user_profile, name='user_profile'),
     path('auth/profile/update/', views.update_profile, name='update_profile'),
+    path('auth/login-stats/', views.login_stats, name='login_stats'),
     
     # Academic Years
     path('academic-years/', views.AcademicYearListView.as_view(), name='academic_years'),

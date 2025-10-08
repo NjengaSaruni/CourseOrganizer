@@ -51,7 +51,7 @@ class PastPaperSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploaded_by', 'created_at', 'updated_at']
 
     def get_academic_year_display(self, obj):
-        return f"{obj.academic_year}/{obj.academic_year + 1}"
+        return str(obj.academic_year)
 
     def get_file_size_display(self, obj):
         return "N/A"
@@ -80,7 +80,7 @@ class RecordingSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploaded_by', 'created_at', 'updated_at']
 
     def get_academic_year_display(self, obj):
-        return f"{obj.academic_year}/{obj.academic_year + 1}"
+        return str(obj.academic_year)
 
     def get_duration_display(self, obj):
         if obj.duration:
@@ -119,7 +119,7 @@ class MaterialSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploaded_by', 'created_at', 'updated_at']
 
     def get_academic_year_display(self, obj):
-        return f"{obj.academic_year}/{obj.academic_year + 1}"
+        return str(obj.academic_year)
 
     def get_file_size_display(self, obj):
         return "N/A"
@@ -148,7 +148,7 @@ class AssignmentSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploaded_by', 'created_at', 'updated_at']
 
     def get_academic_year_display(self, obj):
-        return f"{obj.academic_year}/{obj.academic_year + 1}"
+        return str(obj.academic_year)
 
     def get_file_size_display(self, obj):
         return "N/A"
@@ -184,7 +184,7 @@ class AnnouncementSerializer(serializers.ModelSerializer):
         read_only_fields = ['uploaded_by', 'created_at', 'updated_at']
 
     def get_academic_year_display(self, obj):
-        return f"{obj.academic_year}/{obj.academic_year + 1}"
+        return str(obj.academic_year)
 
     def get_is_expired(self, obj):
         from django.utils import timezone

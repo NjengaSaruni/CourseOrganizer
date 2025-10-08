@@ -435,3 +435,58 @@ class User(AbstractUser):
             self.validate_registration_number()
         
         super().save(*args, **kwargs)
+
+
+class LoginHistory(models.Model):
+    """Track user login and logout events for analytics and security"""
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_history')
+    login_time = models.DateTimeField(auto_now_add=True)
+    logout_time = models.DateTimeField(null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True, help_text="Browser and device information")
+    device_type = models.CharField(max_length=50, blank=True, help_text="Mobile, Desktop, Tablet")
+    browser = models.CharField(max_length=100, blank=True)
+    operating_system = models.CharField(max_length=100, blank=True)
+    location = models.CharField(max_length=200, blank=True, help_text="City, Country from IP")
+    session_key = models.CharField(max_length=255, blank=True, help_text="Django session key")
+    success = models.BooleanField(default=True, help_text="Whether login was successful")
+    failure_reason = models.CharField(max_length=255, blank=True, help_text="Reason for failed login")
+    
+    class Meta:
+        ordering = ['-login_time']
+        verbose_name = "Login History"
+        verbose_name_plural = "Login Histories"
+        indexes = [
+            models.Index(fields=['-login_time']),
+            models.Index(fields=['user', '-login_time']),
+            models.Index(fields=['ip_address']),
+        ]
+    
+    def __str__(self):
+        status = "Successful" if self.success else "Failed"
+        return f"{self.user.get_full_name()} - {status} login at {self.login_time}"
+    
+    @property
+    def session_duration(self):
+        """Calculate session duration if logged out"""
+        if self.logout_time:
+            return self.logout_time - self.login_time
+        return None
+    
+    @property
+    def is_active(self):
+        """Check if session is still active"""
+        return self.logout_time is None
+    
+    def get_session_duration_display(self):
+        """Get human-readable session duration"""
+        duration = self.session_duration
+        if duration:
+            total_seconds = int(duration.total_seconds())
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            if hours > 0:
+                return f"{hours}h {minutes}m"
+            return f"{minutes}m"
+        return "Active" if self.is_active else "Unknown"

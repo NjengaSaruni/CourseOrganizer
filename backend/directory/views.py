@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-from .models import User, AcademicYear, Semester
+from .models import User, AcademicYear, Semester, LoginHistory
 from school.models import Class
 from .extended_models import Student, Teacher, RegistrationRequest
 from .serializers import (
@@ -465,4 +465,124 @@ def my_class_info(request):
         'total_classmates': classmates.count(),
         'is_class_of_2029': request.user.is_class_of_2029,
         'is_first_year_law_student': request.user.is_first_year_law_student
+    })
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def login_stats(request):
+    """Get login statistics (admin only)"""
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.db.models import Count
+    
+    if not request.user.is_admin:
+        return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
+    
+    # Total stats
+    total_logins = LoginHistory.objects.count()
+    successful_logins = LoginHistory.objects.filter(success=True).count()
+    failed_logins = LoginHistory.objects.filter(success=False).count()
+    
+    # Today's stats
+    today_logins = LoginHistory.objects.filter(login_time__gte=today_start).count()
+    today_successful = LoginHistory.objects.filter(login_time__gte=today_start, success=True).count()
+    today_failed = LoginHistory.objects.filter(login_time__gte=today_start, success=False).count()
+    
+    # Active sessions
+    active_sessions = LoginHistory.objects.filter(logout_time__isnull=True, success=True).count()
+    
+    # Week stats
+    week_logins = LoginHistory.objects.filter(login_time__gte=week_ago).count()
+    week_successful = LoginHistory.objects.filter(login_time__gte=week_ago, success=True).count()
+    
+    # Month stats
+    month_logins = LoginHistory.objects.filter(login_time__gte=month_ago).count()
+    
+    # Unique users
+    unique_users_today = LoginHistory.objects.filter(
+        login_time__gte=today_start, success=True
+    ).values('user').distinct().count()
+    
+    unique_users_week = LoginHistory.objects.filter(
+        login_time__gte=week_ago, success=True
+    ).values('user').distinct().count()
+    
+    # Most active users (last 7 days)
+    most_active = LoginHistory.objects.filter(
+        login_time__gte=week_ago, success=True
+    ).values(
+        'user__id', 'user__email', 'user__first_name', 'user__last_name', 'user__user_type'
+    ).annotate(
+        login_count=Count('id')
+    ).order_by('-login_count')[:10]
+    
+    # Device breakdown
+    device_breakdown = LoginHistory.objects.filter(
+        login_time__gte=week_ago, success=True
+    ).values('device_type').annotate(count=Count('id')).order_by('-count')
+    
+    # Browser breakdown
+    browser_breakdown = LoginHistory.objects.filter(
+        login_time__gte=week_ago, success=True
+    ).values('browser').annotate(count=Count('id')).order_by('-count')[:5]
+    
+    # Failed login attempts by IP (last 24 hours)
+    suspicious_ips = LoginHistory.objects.filter(
+        login_time__gte=now - timedelta(hours=24), success=False
+    ).values('ip_address').annotate(
+        attempt_count=Count('id')
+    ).filter(attempt_count__gte=3).order_by('-attempt_count')[:10]
+    
+    # Recent logins (last 20)
+    recent_logins = LoginHistory.objects.filter(success=True).order_by('-login_time')[:20]
+    recent_logins_data = [
+        {
+            'id': login.id,
+            'user': {
+                'id': login.user.id,
+                'email': login.user.email,
+                'name': login.user.get_full_name(),
+                'user_type': login.user.user_type
+            },
+            'login_time': login.login_time,
+            'ip_address': login.ip_address,
+            'device_type': login.device_type,
+            'browser': login.browser,
+            'is_active': login.is_active
+        }
+        for login in recent_logins
+    ]
+    
+    return Response({
+        'overview': {
+            'total_logins': total_logins,
+            'successful_logins': successful_logins,
+            'failed_logins': failed_logins,
+            'active_sessions': active_sessions,
+        },
+        'today': {
+            'total': today_logins,
+            'successful': today_successful,
+            'failed': today_failed,
+            'unique_users': unique_users_today,
+        },
+        'week': {
+            'total': week_logins,
+            'successful': week_successful,
+            'unique_users': unique_users_week,
+        },
+        'month': {
+            'total': month_logins,
+        },
+        'most_active_users': list(most_active),
+        'device_breakdown': list(device_breakdown),
+        'browser_breakdown': list(browser_breakdown),
+        'suspicious_ips': list(suspicious_ips),
+        'recent_logins': recent_logins_data,
     })

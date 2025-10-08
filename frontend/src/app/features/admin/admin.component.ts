@@ -283,7 +283,60 @@ import { AuthService, User } from '../../core/auth.service';
       </div>
 
       <!-- Management Sections Grid -->
-      <div class="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Login Tracking Section -->
+        <div class="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+          <div class="px-8 py-6 border-b border-gray-100">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900">Login Tracking</h2>
+                <p class="text-sm text-gray-600 mt-1">Monitor user logins and security</p>
+              </div>
+              <div class="text-2xl">🔐</div>
+            </div>
+          </div>
+          
+          <div class="p-8">
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100">
+              <div class="flex flex-col">
+                <div class="flex-1">
+                  <h3 class="text-lg font-semibold text-gray-900 mb-2">Track User Activity</h3>
+                  <p class="text-gray-700 mb-4">
+                    View login statistics, track active sessions, monitor failed login attempts, and analyze usage patterns.
+                  </p>
+                  <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="flex items-center text-sm text-gray-600">
+                      <span class="mr-2">📊</span>
+                      <span>Login Stats</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                      <span class="mr-2">👥</span>
+                      <span>Active Sessions</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                      <span class="mr-2">🛡️</span>
+                      <span>Security Alerts</span>
+                    </div>
+                    <div class="flex items-center text-sm text-gray-600">
+                      <span class="mr-2">📱</span>
+                      <span>Device Tracking</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-4">
+                  <a routerLink="/admin/login-tracking"
+                     class="inline-flex items-center px-6 py-3 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors w-full justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    View Login Tracking
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Class Representative Management Section -->
         <div class="bg-white border border-gray-200 rounded-3xl overflow-hidden">
           <div class="px-8 py-6 border-b border-gray-100">

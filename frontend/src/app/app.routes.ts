@@ -64,6 +64,11 @@ export const routes: Routes = [
     canActivate: [AdminGuard]
   },
   { 
+    path: 'admin/login-tracking', 
+    loadComponent: () => import('./features/login-tracking/login-tracking.component').then(m => m.LoginTrackingComponent),
+    canActivate: [AdminGuard]
+  },
+  { 
     path: 'profile-settings', 
     loadComponent: () => import('./features/profile-settings/profile-settings.component').then(m => m.ProfileSettingsComponent),
     canActivate: [AuthGuard]

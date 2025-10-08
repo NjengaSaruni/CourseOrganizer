@@ -23,7 +23,7 @@ class BaseContentModel(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.title} - {self.course.name} ({self.academic_year}/{self.academic_year + 1})"
+        return f"{self.title} - {self.course.name} ({self.academic_year})"
 
 
 class CourseOutline(BaseContentModel):

@@ -2,7 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 from django.core.exceptions import ValidationError
-from .models import User, AcademicYear, Semester
+from django.db.models import Count, Q
+from django.utils import timezone
+from datetime import timedelta
+from .models import User, AcademicYear, Semester, LoginHistory
 from .extended_models import Student, Teacher, RegistrationRequest
 
 
@@ -150,3 +153,130 @@ class RegistrationRequestAdmin(admin.ModelAdmin):
         
         self.message_user(request, f"Successfully rejected {rejected_count} registration requests.")
     reject_requests.short_description = "Reject selected requests"
+
+
+@admin.register(LoginHistory)
+class LoginHistoryAdmin(admin.ModelAdmin):
+    list_display = [
+        'user', 'login_time', 'logout_time', 'session_duration_display',
+        'ip_address', 'device_type', 'browser', 'success', 'is_active_session'
+    ]
+    list_filter = [
+        'success', 'device_type', 'login_time',
+        ('user__user_type', admin.ChoicesFieldListFilter),
+    ]
+    search_fields = [
+        'user__email', 'user__first_name', 'user__last_name',
+        'ip_address', 'browser', 'operating_system'
+    ]
+    ordering = ['-login_time']
+    readonly_fields = [
+        'user', 'login_time', 'logout_time', 'ip_address', 'user_agent',
+        'device_type', 'browser', 'operating_system', 'location',
+        'session_key', 'success', 'failure_reason', 'session_duration_display'
+    ]
+    
+    fieldsets = (
+        ('User & Time', {
+            'fields': ('user', 'login_time', 'logout_time', 'session_duration_display')
+        }),
+        ('Connection Details', {
+            'fields': ('ip_address', 'location', 'session_key')
+        }),
+        ('Device Information', {
+            'fields': ('device_type', 'browser', 'operating_system', 'user_agent')
+        }),
+        ('Status', {
+            'fields': ('success', 'failure_reason')
+        }),
+    )
+    
+    def has_add_permission(self, request):
+        """Disable manual creation of login history"""
+        return False
+    
+    def has_change_permission(self, request, obj=None):
+        """Make login history read-only"""
+        return False
+    
+    def has_delete_permission(self, request, obj=None):
+        """Only allow superusers to delete login history"""
+        return request.user.is_superuser
+    
+    def session_duration_display(self, obj):
+        """Display session duration in human-readable format"""
+        return obj.get_session_duration_display()
+    session_duration_display.short_description = 'Session Duration'
+    
+    def is_active_session(self, obj):
+        """Display if session is currently active"""
+        if obj.is_active:
+            return format_html('<span style="color: green;">●</span> Active')
+        return format_html('<span style="color: gray;">●</span> Ended')
+    is_active_session.short_description = 'Session Status'
+    
+    def changelist_view(self, request, extra_context=None):
+        """Add statistics to the changelist view"""
+        extra_context = extra_context or {}
+        
+        # Calculate statistics
+        now = timezone.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_ago = now - timedelta(days=7)
+        
+        # Total stats
+        total_logins = LoginHistory.objects.count()
+        successful_logins = LoginHistory.objects.filter(success=True).count()
+        failed_logins = LoginHistory.objects.filter(success=False).count()
+        
+        # Today's stats
+        today_logins = LoginHistory.objects.filter(
+            login_time__gte=today_start
+        ).count()
+        
+        # Active sessions
+        active_sessions = LoginHistory.objects.filter(
+            logout_time__isnull=True,
+            success=True
+        ).count()
+        
+        # Last week stats
+        week_logins = LoginHistory.objects.filter(
+            login_time__gte=week_ago
+        ).count()
+        
+        # Unique users today
+        unique_users_today = LoginHistory.objects.filter(
+            login_time__gte=today_start,
+            success=True
+        ).values('user').distinct().count()
+        
+        # Most active users (last 7 days)
+        most_active = LoginHistory.objects.filter(
+            login_time__gte=week_ago,
+            success=True
+        ).values('user__email', 'user__first_name', 'user__last_name').annotate(
+            login_count=Count('id')
+        ).order_by('-login_count')[:5]
+        
+        # Failed login attempts by IP (last 24 hours)
+        suspicious_ips = LoginHistory.objects.filter(
+            login_time__gte=now - timedelta(hours=24),
+            success=False
+        ).values('ip_address').annotate(
+            attempt_count=Count('id')
+        ).filter(attempt_count__gte=3).order_by('-attempt_count')[:5]
+        
+        extra_context['login_stats'] = {
+            'total_logins': total_logins,
+            'successful_logins': successful_logins,
+            'failed_logins': failed_logins,
+            'today_logins': today_logins,
+            'active_sessions': active_sessions,
+            'week_logins': week_logins,
+            'unique_users_today': unique_users_today,
+            'most_active': most_active,
+            'suspicious_ips': suspicious_ips,
+        }
+        
+        return super().changelist_view(request, extra_context=extra_context)
