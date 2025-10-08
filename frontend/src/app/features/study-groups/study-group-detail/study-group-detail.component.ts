@@ -302,16 +302,12 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
               <!-- Message with hover actions -->
               <div class="flex items-start space-x-3 p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.01]">
                 <!-- Profile Picture or Initials -->
-                <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div class="w-8 h-8 rounded-full flex-shrink-0 overflow-hidden bg-blue-100 flex items-center justify-center">
                   <img *ngIf="m.profile_picture" 
                        [src]="m.profile_picture" 
                        [alt]="m.from"
-                       class="w-full h-full object-cover"
-                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                  <div *ngIf="!m.profile_picture" 
-                       class="w-full h-full bg-blue-100 rounded-full flex items-center justify-center">
-                    <span class="text-xs font-medium text-blue-700">{{ getInitials(m.from) }}</span>
-                  </div>
+                       class="w-full h-full object-cover">
+                  <span *ngIf="!m.profile_picture" class="text-xs font-medium text-blue-700">{{ getInitials(m.from) }}</span>
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center space-x-2 mb-1">
@@ -506,6 +502,11 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
     // Subscribe to incoming messages
     const messagesSub = this.chat.messages$.subscribe((msg: any) => {
       console.log('📨 Received WebSocket message:', msg);
+      console.log('🖼️ Message profile picture:', { 
+        has_picture: !!msg.sender_profile_picture, 
+        url: msg.sender_profile_picture,
+        sender: msg.sender_name
+      });
       
       // Check if this is a duplicate message by body and sender (more aggressive detection)
       const isDuplicate = this.chatLog.some((existingMsg: any) => {
@@ -665,6 +666,11 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
           reply_to: m.reply_to
         }));
         console.log('📝 Processed chat log:', this.chatLog);
+        console.log('🖼️ Profile pictures in messages:', this.chatLog.map(m => ({ 
+          sender: m.from, 
+          has_picture: !!m.profile_picture,
+          picture_url: m.profile_picture 
+        })));
         this.cdr.detectChanges();
       },
       error: (err) => console.warn('Failed to load messages', err)
