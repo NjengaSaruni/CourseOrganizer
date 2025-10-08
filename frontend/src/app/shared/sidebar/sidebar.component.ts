@@ -212,6 +212,27 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
             </div>
+
+            <!-- Class Representative Section (Content Upload) -->
+            <div *ngIf="canUploadContent() && !isAdmin()" class="space-y-2">
+              <div class="px-3 py-2">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Class Rep</h3>
+              </div>
+              
+              <a routerLink="/content-manager" 
+                 routerLinkActive="bg-emerald-50 text-emerald-700 border-r-2 border-emerald-500" 
+                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Upload Content</div>
+                  <div class="text-xs text-gray-500">Add materials & recordings</div>
+                </div>
+              </a>
+            </div>
           </nav>
         </div>
         
@@ -460,6 +481,28 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
             </div>
+
+            <!-- Class Representative Section (Content Upload) -->
+            <div *ngIf="canUploadContent() && !isAdmin()" class="space-y-2">
+              <div class="px-3 py-2">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Class Rep</h3>
+              </div>
+              
+              <a routerLink="/content-manager" 
+                 routerLinkActive="bg-emerald-50 text-emerald-700" 
+                 (click)="toggleSidebar()"
+                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">Upload Content</div>
+                  <div class="text-xs text-gray-500">Add materials & recordings</div>
+                </div>
+              </a>
+            </div>
           </nav>
         </div>
         
@@ -529,6 +572,11 @@ export class SidebarComponent {
     });
     
     return user?.user_type === 'student' && user?.class_rep_role?.is_active === true;
+  }
+
+  canUploadContent(): boolean {
+    const user = this.authService.getCurrentUser();
+    return user?.can_upload_content === true;
   }
 
   getInitials(): string {

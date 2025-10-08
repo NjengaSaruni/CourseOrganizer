@@ -387,6 +387,12 @@ class User(AbstractUser):
             pass
         return False
     
+    def can_upload_content(self):
+        """Check if user can upload course content (admin or class rep with permission)"""
+        if self.is_admin:
+            return True
+        return self.has_class_rep_permission('upload_content')
+    
     def generate_email_verification_token(self):
         """Generate a secure email verification token"""
         # Generate a 32-character random token

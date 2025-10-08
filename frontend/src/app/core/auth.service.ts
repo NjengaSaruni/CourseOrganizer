@@ -14,6 +14,7 @@ export interface User {
   phone_number: string;
   status: 'pending' | 'approved' | 'rejected';
   is_admin: boolean;
+  can_upload_content?: boolean;
   user_type: 'student' | 'teacher' | 'admin';
   date_joined: string;
   date_joined_formatted?: string;

@@ -69,6 +69,7 @@ class UserSerializer(serializers.ModelSerializer):
     is_class_of_2029 = serializers.ReadOnlyField()
     is_first_year_law_student = serializers.ReadOnlyField()
     is_admin = serializers.ReadOnlyField()
+    can_upload_content = serializers.SerializerMethodField()
     class_rep_role = serializers.SerializerMethodField()
     
     class Meta:
@@ -78,10 +79,15 @@ class UserSerializer(serializers.ModelSerializer):
                  'academic_year', 'academic_year_display', 'student_class', 'student_class_display',
                  'current_year', 'current_semester', 'year_display', 'semester_display', 
                  'class_of', 'class_display_name', 'is_class_of_2029', 'is_first_year_law_student',
-                 'profile_picture', 'bio', 'registration_info', 'is_active', 'date_joined', 'is_admin', 'class_rep_role']
+                 'profile_picture', 'bio', 'registration_info', 'is_active', 'date_joined', 'is_admin', 
+                 'can_upload_content', 'class_rep_role']
         read_only_fields = ['id', 'date_joined', 'registration_info', 'class_display_name', 
-                           'is_class_of_2029', 'is_first_year_law_student', 'is_admin', 'class_rep_role']
+                           'is_class_of_2029', 'is_first_year_law_student', 'is_admin', 'can_upload_content', 'class_rep_role']
 
+    def get_can_upload_content(self, obj):
+        """Check if user can upload course content"""
+        return obj.can_upload_content()
+    
     def get_class_rep_role(self, obj):
         """Get class rep role information for the user"""
         try:

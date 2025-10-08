@@ -951,8 +951,8 @@ def get_course_timetable_entries(request, course_id):
 @permission_classes([IsAuthenticated])
 def add_recording(request):
     """Add a recording for a specific timetable entry"""
-    if not request.user.is_admin:
-        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    if not request.user.can_upload_content():
+        return Response({'error': 'You do not have permission to upload content'}, status=status.HTTP_403_FORBIDDEN)
     
     serializer = RecordingSerializer(data=request.data)
     if serializer.is_valid():
@@ -965,8 +965,8 @@ def add_recording(request):
 @permission_classes([IsAuthenticated])
 def add_course_material(request):
     """Add course material (course-wide, topic-wise, or lesson-specific)"""
-    if not request.user.is_admin:
-        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    if not request.user.can_upload_content():
+        return Response({'error': 'You do not have permission to upload content'}, status=status.HTTP_403_FORBIDDEN)
     
     serializer = CourseMaterialSerializer(data=request.data)
     if serializer.is_valid():
@@ -979,8 +979,8 @@ def add_course_material(request):
 @permission_classes([IsAuthenticated])
 def update_recording(request, recording_id):
     """Update a recording"""
-    if not request.user.is_admin:
-        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    if not request.user.can_upload_content():
+        return Response({'error': 'You do not have permission to update content'}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         recording = Recording.objects.get(id=recording_id)
@@ -997,8 +997,8 @@ def update_recording(request, recording_id):
 @permission_classes([IsAuthenticated])
 def update_course_material(request, material_id):
     """Update a course material"""
-    if not request.user.is_admin:
-        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    if not request.user.can_upload_content():
+        return Response({'error': 'You do not have permission to update content'}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         material = CourseMaterial.objects.get(id=material_id)
@@ -1015,8 +1015,8 @@ def update_course_material(request, material_id):
 @permission_classes([IsAuthenticated])
 def delete_recording(request, recording_id):
     """Delete a recording"""
-    if not request.user.is_admin:
-        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    if not request.user.can_upload_content():
+        return Response({'error': 'You do not have permission to delete content'}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         recording = Recording.objects.get(id=recording_id)
@@ -1030,8 +1030,8 @@ def delete_recording(request, recording_id):
 @permission_classes([IsAuthenticated])
 def delete_course_material(request, material_id):
     """Delete a course material"""
-    if not request.user.is_admin:
-        return Response({'error': 'Admin access required'}, status=status.HTTP_403_FORBIDDEN)
+    if not request.user.can_upload_content():
+        return Response({'error': 'You do not have permission to delete content'}, status=status.HTTP_403_FORBIDDEN)
     
     try:
         material = CourseMaterial.objects.get(id=material_id)
@@ -1629,17 +1629,7 @@ class CourseContentCreateView(generics.CreateAPIView):
 
     def _has_content_permission(self):
         """Check if user has permission to add content"""
-        user = self.request.user
-        
-        # Admins can always add content
-        if user.is_admin:
-            return True
-        
-        # Check if user is a class rep
-        if hasattr(user, 'class_rep_role') and user.class_rep_role.is_active:
-            return True
-        
-        return False
+        return self.request.user.can_upload_content()
 
 
 class CourseContentUpdateView(generics.UpdateAPIView):
@@ -1657,27 +1647,17 @@ class CourseContentUpdateView(generics.UpdateAPIView):
 
     def _has_content_permission(self):
         """Check if user has permission to update content"""
-        user = self.request.user
-        
-        # Admins can always update content
-        if user.is_admin:
-            return True
-        
-        # Check if user is a class rep
-        if hasattr(user, 'class_rep_role') and user.class_rep_role.is_active:
-            return True
-        
-        return False
+        return self.request.user.can_upload_content()
 
 
 class CourseContentDeleteView(generics.DestroyAPIView):
-    """Delete course content (admin only)"""
+    """Delete course content (admin and class rep with upload permission)"""
     permission_classes = [IsAuthenticated]
     queryset = CourseContent.objects.all()
 
     def perform_destroy(self, instance):
-        if not self.request.user.is_admin:
-            raise permissions.PermissionDenied("Only administrators can delete course content")
+        if not self.request.user.can_upload_content():
+            raise permissions.PermissionDenied("You do not have permission to delete course content")
         instance.delete()
 
 

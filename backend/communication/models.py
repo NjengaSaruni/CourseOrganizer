@@ -15,6 +15,7 @@ class ClassRepRole(models.Model):
         ('view_all_messages', 'View All Messages'),
         ('manage_polls', 'Manage Polls'),
         ('send_notifications', 'Send Notifications'),
+        ('upload_content', 'Upload Course Content'),
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='class_rep_role')
