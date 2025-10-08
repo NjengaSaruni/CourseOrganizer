@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef } from 
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { GroupworkService, StudyGroup, StudyGroupMembership, GroupMeeting } from '../../../core/groupwork.service';
 import { ChatService } from '../../../core/chat.service';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
@@ -435,6 +436,8 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   typingUsers = new Map<number, string>();
   private typingNotifyTimeout: any = null;
   private typingClearTimeout: any = null;
+  private subscriptions: Subscription[] = [];
+  private currentGroupId: number | null = null;
   
   // Reply functionality
   replyingTo: { id: number; from: string; body: string; timestamp?: Date } | null = null;
@@ -448,26 +451,55 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   };
 
   ngOnInit() {
-    const groupId = this.route.snapshot.paramMap.get('id');
-    if (groupId) {
-      const gid = parseInt(groupId);
-      this.loadGroupDetails(gid);
-      
-      // Connect to WebSocket chat
-      this.chat.connect(gid);
-      
-      // Subscribe to connection status
-      this.chat.connected$.subscribe(connected => {
-        this.chatConnected = connected;
-        this.cdr.detectChanges();
-      });
- 
-      // Subscribe to incoming messages
-      this.chat.messages$.subscribe((msg: any) => {
-        console.log('📨 Received WebSocket message:', msg);
+    // Subscribe to route parameter changes to handle navigation between groups
+    const routeSub = this.route.paramMap.subscribe(params => {
+      const groupId = params.get('id');
+      if (groupId) {
+        const gid = parseInt(groupId);
         
-        // Check if this is a duplicate message by body and sender (more aggressive detection)
-        const isDuplicate = this.chatLog.some((existingMsg: any) => {
+        // If navigating to a different group, disconnect from the old one first
+        if (this.currentGroupId !== null && this.currentGroupId !== gid) {
+          console.log(`🔄 Switching from group ${this.currentGroupId} to ${gid}`);
+          this.chat.disconnect();
+          this.resetChatState();
+        }
+        
+        this.currentGroupId = gid;
+        this.loadGroupDetails(gid);
+        this.setupChatConnection(gid);
+      }
+    });
+    this.subscriptions.push(routeSub);
+  }
+
+  private resetChatState() {
+    this.chatLog = [];
+    this.chatConnected = false;
+    this.onlineUserIds.clear();
+    this.typingUsers.clear();
+    this.replyingTo = null;
+    this.showReplyPreview = false;
+    this.cdr.detectChanges();
+  }
+
+  private setupChatConnection(gid: number) {
+    // Connect to WebSocket chat
+    this.chat.connect(gid);
+    
+    // Subscribe to connection status
+    const connectedSub = this.chat.connected$.subscribe(connected => {
+      this.chatConnected = connected;
+      this.cdr.detectChanges();
+      console.log(`💡 Chat connection status: ${connected ? 'Connected' : 'Disconnected'} for group ${gid}`);
+    });
+    this.subscriptions.push(connectedSub);
+
+    // Subscribe to incoming messages
+    const messagesSub = this.chat.messages$.subscribe((msg: any) => {
+      console.log('📨 Received WebSocket message:', msg);
+      
+      // Check if this is a duplicate message by body and sender (more aggressive detection)
+      const isDuplicate = this.chatLog.some((existingMsg: any) => {
           const sameBody = existingMsg.body === msg.body;
           const sameSender = existingMsg.from === msg.sender_name;
           const withinTimeWindow = Math.abs((existingMsg.timestamp?.getTime() || 0) - new Date(msg.created_at || Date.now()).getTime()) < 30000; // Within 30 seconds
@@ -564,67 +596,80 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
         this.isSending = false;
         this.cdr.detectChanges();
       });
+    this.subscriptions.push(messagesSub);
 
-      // Presence events (join/leave/snapshot)
-      this.chat.presence$.subscribe((evt: any) => {
-        if (evt.type === 'snapshot') {
-          this.onlineUserIds = new Set(evt.users.map((u: any) => u.id));
-          this.cdr.detectChanges();
-          return;
-        }
-        if (evt.type === 'presence') {
-          if (evt.action === 'join') this.onlineUserIds.add(evt.user.id);
-          if (evt.action === 'leave') this.onlineUserIds.delete(evt.user.id);
-          this.cdr.detectChanges();
-        }
-      });
-
-      // Typing events
-      this.chat.typing$.subscribe((evt: any) => {
-        console.log('📝 Typing event received in study group:', {
-          user: evt.user,
-          isTyping: evt.is_typing,
-          typingUsers: Array.from(this.typingUsers.entries())
-        });
-        
-        if (evt.is_typing) {
-          this.typingUsers.set(evt.user.id, evt.user.name);
-          console.log('➕ Added typing user:', evt.user.name, 'Total typing:', this.typingUsers.size);
-          // Clear typing after 4s if no further events
-          if (this.typingClearTimeout) clearTimeout(this.typingClearTimeout);
-          this.typingClearTimeout = setTimeout(() => {
-            this.typingUsers.delete(evt.user.id);
-            console.log('⏰ Cleared typing for:', evt.user.name, 'Remaining:', this.typingUsers.size);
-            this.cdr.detectChanges();
-          }, 4000);
-        } else {
-          this.typingUsers.delete(evt.user.id);
-          console.log('➖ Removed typing user:', evt.user.name, 'Remaining:', this.typingUsers.size);
-        }
+    // Presence events (join/leave/snapshot)
+    const presenceSub = this.chat.presence$.subscribe((evt: any) => {
+      if (evt.type === 'snapshot') {
+        this.onlineUserIds = new Set(evt.users.map((u: any) => u.id));
         this.cdr.detectChanges();
-      });
+        return;
+      }
+      if (evt.type === 'presence') {
+        if (evt.action === 'join') this.onlineUserIds.add(evt.user.id);
+        if (evt.action === 'leave') this.onlineUserIds.delete(evt.user.id);
+        this.cdr.detectChanges();
+      }
+    });
+    this.subscriptions.push(presenceSub);
 
-      // Load persisted messages
-      this.api.listMessages(gid, 50).subscribe({
-        next: (msgs) => {
-          console.log('📥 Loaded messages from API:', msgs);
-          this.chatLog = msgs.map(m => ({ 
-            from: m.sender_name, 
-            body: m.body, 
-            timestamp: new Date(m.created_at || Date.now()),
-            id: m.id,
-            reply_to: m.reply_to
-          }));
-          console.log('📝 Processed chat log:', this.chatLog);
-          this.cdr.detectChanges();
-        },
-        error: (err) => console.warn('Failed to load messages', err)
+    // Typing events
+    const typingSub = this.chat.typing$.subscribe((evt: any) => {
+      console.log('📝 Typing event received in study group:', {
+        user: evt.user,
+        isTyping: evt.is_typing,
+        typingUsers: Array.from(this.typingUsers.entries())
       });
-    }
+      
+      if (evt.is_typing) {
+        this.typingUsers.set(evt.user.id, evt.user.name);
+        console.log('➕ Added typing user:', evt.user.name, 'Total typing:', this.typingUsers.size);
+        // Clear typing after 4s if no further events
+        if (this.typingClearTimeout) clearTimeout(this.typingClearTimeout);
+        this.typingClearTimeout = setTimeout(() => {
+          this.typingUsers.delete(evt.user.id);
+          console.log('⏰ Cleared typing for:', evt.user.name, 'Remaining:', this.typingUsers.size);
+          this.cdr.detectChanges();
+        }, 4000);
+      } else {
+        this.typingUsers.delete(evt.user.id);
+        console.log('➖ Removed typing user:', evt.user.name, 'Remaining:', this.typingUsers.size);
+      }
+      this.cdr.detectChanges();
+    });
+    this.subscriptions.push(typingSub);
+
+    // Load persisted messages
+    this.api.listMessages(gid, 50).subscribe({
+      next: (msgs) => {
+        console.log('📥 Loaded messages from API:', msgs);
+        this.chatLog = msgs.map(m => ({ 
+          from: m.sender_name, 
+          body: m.body, 
+          timestamp: new Date(m.created_at || Date.now()),
+          id: m.id,
+          reply_to: m.reply_to
+        }));
+        console.log('📝 Processed chat log:', this.chatLog);
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.warn('Failed to load messages', err)
+    });
   }
 
   ngOnDestroy() {
+    // Unsubscribe from all subscriptions
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions = [];
+    
+    // Clear timeouts
+    if (this.typingNotifyTimeout) clearTimeout(this.typingNotifyTimeout);
+    if (this.typingClearTimeout) clearTimeout(this.typingClearTimeout);
+    
+    // Disconnect chat
     this.chat.disconnect();
+    
+    console.log('🧹 Component destroyed, cleaned up subscriptions and WebSocket connection');
   }
 
   loadGroupDetails(groupId: number) {

@@ -40,6 +40,7 @@ export class ChatService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
+  private currentGroupId: number | null = null;
   
   messages$ = new Subject<ChatMessage>();
   connected$ = new Subject<boolean>();
@@ -48,9 +49,19 @@ export class ChatService {
   private myUserId: number | null = null;
 
   connect(groupId: number): void {
-    if (this.ws?.readyState === WebSocket.OPEN) {
-      return; // Already connected
+    // If already connected to this group, don't reconnect
+    if (this.ws?.readyState === WebSocket.OPEN && this.currentGroupId === groupId) {
+      console.log(`Chat: Already connected to group ${groupId}`);
+      return;
     }
+    
+    // If connected to a different group, disconnect first
+    if (this.ws?.readyState === WebSocket.OPEN && this.currentGroupId !== groupId) {
+      console.log(`Chat: Disconnecting from group ${this.currentGroupId} to connect to ${groupId}`);
+      this.disconnect();
+    }
+    
+    this.currentGroupId = groupId;
 
     // Prefer direct backend in local Docker to avoid dev-proxy WS quirks
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -210,13 +221,16 @@ export class ChatService {
         this.connected$.next(false);
       };
 
-      this.ws.onclose = () => {
-        console.log('Chat: Disconnected');
+      this.ws.onclose = (event) => {
+        console.log('Chat: Disconnected', event.code, event.reason);
         this.connected$.next(false);
         
-        // Attempt reconnect with exponential backoff
-        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        // Only attempt reconnect if still connected to the same group and not a manual disconnect
+        if (this.reconnectAttempts < this.maxReconnectAttempts && 
+            this.currentGroupId === groupId && 
+            event.code !== 1000) { // 1000 is normal closure
           const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+          console.log(`Chat: Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
           setTimeout(() => {
             this.reconnectAttempts++;
             this.connect(groupId);
@@ -282,9 +296,13 @@ export class ChatService {
 
   disconnect(): void {
     if (this.ws) {
-      this.ws.close();
+      console.log('Chat: Manually disconnecting from group', this.currentGroupId);
+      this.ws.close(1000, 'Manual disconnect'); // 1000 = normal closure
       this.ws = null;
     }
+    this.currentGroupId = null;
+    this.reconnectAttempts = 0;
+    this.connected$.next(false);
   }
 
   private getCurrentUserIdFromStorage(): number | null {
