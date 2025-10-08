@@ -6,6 +6,7 @@ export interface ChatMessage {
   id?: number;
   sender: number;
   sender_name: string;
+  sender_profile_picture?: string | null;
   body: string;
   created_at: string;
   client_id?: string;
@@ -13,6 +14,7 @@ export interface ChatMessage {
   reply_to?: {
     id: number;
     sender_name: string;
+    sender_profile_picture?: string | null;
     body: string;
     created_at: string;
   };

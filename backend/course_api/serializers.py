@@ -473,6 +473,7 @@ class StudyGroupJoinRequestSerializer(serializers.ModelSerializer):
 
 class GroupMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
+    sender_profile_picture = serializers.SerializerMethodField()
     reply_to = serializers.SerializerMethodField()
     deleted = serializers.BooleanField(read_only=True)
     deleted_at = serializers.DateTimeField(read_only=True)
@@ -480,14 +481,31 @@ class GroupMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GroupMessage
-        fields = ('id', 'group', 'sender', 'sender_name', 'body', 'created_at', 'reply_to', 'deleted', 'deleted_at', 'deleted_by_name')
-        read_only_fields = ('id', 'created_at', 'sender_name', 'sender', 'deleted', 'deleted_at', 'deleted_by_name')
+        fields = ('id', 'group', 'sender', 'sender_name', 'sender_profile_picture', 'body', 'created_at', 'reply_to', 'deleted', 'deleted_at', 'deleted_by_name')
+        read_only_fields = ('id', 'created_at', 'sender_name', 'sender_profile_picture', 'sender', 'deleted', 'deleted_at', 'deleted_by_name')
+
+    def get_sender_profile_picture(self, obj):
+        if obj.sender.profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.sender.profile_picture.url)
+            return obj.sender.profile_picture.url
+        return None
 
     def get_reply_to(self, obj):
         if obj.reply_to:
+            profile_picture_url = None
+            if obj.reply_to.sender.profile_picture:
+                request = self.context.get('request')
+                if request:
+                    profile_picture_url = request.build_absolute_uri(obj.reply_to.sender.profile_picture.url)
+                else:
+                    profile_picture_url = obj.reply_to.sender.profile_picture.url
+            
             return {
                 'id': obj.reply_to.id,
                 'sender_name': obj.reply_to.sender.get_full_name(),
+                'sender_profile_picture': profile_picture_url,
                 'body': obj.reply_to.body,
                 'created_at': obj.reply_to.created_at.isoformat()
             }

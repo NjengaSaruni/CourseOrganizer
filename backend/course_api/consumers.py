@@ -232,6 +232,7 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             'id': msg.id,
             'sender': msg.sender.id,
             'sender_name': msg.sender.get_full_name(),
+            'sender_profile_picture': msg.sender.profile_picture.url if msg.sender.profile_picture else None,
             'body': msg.body,
             'created_at': msg.created_at.isoformat()
         }
@@ -241,6 +242,7 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             result['reply_to'] = {
                 'id': replied_message.id,
                 'sender_name': replied_message.sender.get_full_name(),
+                'sender_profile_picture': replied_message.sender.profile_picture.url if replied_message.sender.profile_picture else None,
                 'body': replied_message.body,
                 'created_at': replied_message.created_at.isoformat()
             }

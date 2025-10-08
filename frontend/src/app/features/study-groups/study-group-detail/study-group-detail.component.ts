@@ -301,8 +301,17 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                  class="group relative">
               <!-- Message with hover actions -->
               <div class="flex items-start space-x-3 p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.01]">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span class="text-xs font-medium text-blue-700">{{ getInitials(m.from) }}</span>
+                <!-- Profile Picture or Initials -->
+                <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  <img *ngIf="m.profile_picture" 
+                       [src]="m.profile_picture" 
+                       [alt]="m.from"
+                       class="w-full h-full object-cover"
+                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                  <div *ngIf="!m.profile_picture" 
+                       class="w-full h-full bg-blue-100 rounded-full flex items-center justify-center">
+                    <span class="text-xs font-medium text-blue-700">{{ getInitials(m.from) }}</span>
+                  </div>
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center space-x-2 mb-1">
@@ -429,7 +438,7 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   showChat = true; // Start with chat visible by default
   chatPanelOpen = false;
   chatMessage = '';
-  chatLog: { from: string; body: string; timestamp?: Date; id?: number; reply_to?: { id: number; sender_name: string; body: string; created_at: string } }[] = [];
+  chatLog: { from: string; body: string; timestamp?: Date; id?: number; profile_picture?: string | null; reply_to?: { id: number; sender_name: string; sender_profile_picture?: string | null; body: string; created_at: string } }[] = [];
   chatConnected = false;
   isSending = false;
   onlineUserIds = new Set<number>();
@@ -440,7 +449,7 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   private currentGroupId: number | null = null;
   
   // Reply functionality
-  replyingTo: { id: number; from: string; body: string; timestamp?: Date } | null = null;
+  replyingTo: { id: number; from: string; body: string; timestamp?: Date; profile_picture?: string | null } | null = null;
   showReplyPreview = false;
 
   newMeeting = {
@@ -527,7 +536,8 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
             const updated = { 
               ...this.chatLog[idx], 
               ...msg, 
-              from: msg.sender_name, 
+              from: msg.sender_name,
+              profile_picture: msg.sender_profile_picture,
               timestamp: new Date(msg.created_at || Date.now()), 
               status: 'sent',
               // Always preserve the existing reply_to from optimistic message
@@ -555,7 +565,8 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
               const updated = { 
                 ...this.chatLog[optimisticIdx], 
                 ...msg, 
-                from: msg.sender_name, 
+                from: msg.sender_name,
+                profile_picture: msg.sender_profile_picture,
                 timestamp: new Date(msg.created_at || Date.now()), 
                 status: 'sent',
                 // Always preserve the existing reply_to from optimistic message
@@ -569,7 +580,8 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
               });
             } else {
               const newMsg = { 
-                from: msg.sender_name, 
+                from: msg.sender_name,
+                profile_picture: msg.sender_profile_picture,
                 body: msg.body, 
                 timestamp: new Date(msg.created_at || Date.now()), 
                 client_id: msg.client_id, 
@@ -583,7 +595,8 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
           }
         } else {
           const newMsg = { 
-            from: msg.sender_name, 
+            from: msg.sender_name,
+            profile_picture: msg.sender_profile_picture,
             body: msg.body, 
             timestamp: new Date(msg.created_at || Date.now()),
             id: msg.id,
@@ -644,7 +657,8 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
       next: (msgs) => {
         console.log('📥 Loaded messages from API:', msgs);
         this.chatLog = msgs.map(m => ({ 
-          from: m.sender_name, 
+          from: m.sender_name,
+          profile_picture: m.sender_profile_picture,
           body: m.body, 
           timestamp: new Date(m.created_at || Date.now()),
           id: m.id,
@@ -861,7 +875,8 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
       id: message.id,
       from: message.from,
       body: message.body,
-      timestamp: message.timestamp
+      timestamp: message.timestamp,
+      profile_picture: message.profile_picture
     };
     this.showReplyPreview = true;
     this.cdr.detectChanges();

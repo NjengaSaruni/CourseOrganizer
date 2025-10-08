@@ -83,7 +83,7 @@ export class GroupworkService {
 
   // Messages persistence
   listMessages(groupId: number, limit = 50) {
-    return this.http.get<Array<{ id: number; group: number; sender: number; sender_name: string; body: string; created_at: string; reply_to?: { id: number; sender_name: string; body: string; created_at: string } }>>(
+    return this.http.get<Array<{ id: number; group: number; sender: number; sender_name: string; sender_profile_picture?: string | null; body: string; created_at: string; reply_to?: { id: number; sender_name: string; sender_profile_picture?: string | null; body: string; created_at: string } }>>(
       `${this.baseUrl}/study-groups/${groupId}/messages/?limit=${limit}`
     );
   }
