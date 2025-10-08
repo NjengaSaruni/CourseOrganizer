@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -35,7 +35,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                   Private
                 </span>
                 <span *ngIf="!group()?.is_private" class="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                  Open
+                  Public
                 </span>
 
                 <!-- Top App Bar Chat Toggle -->
@@ -43,7 +43,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                   (click)="openChatPanel()"
                   class="ml-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors">
                   <span class="w-2 h-2 rounded-full" [class]="chatConnected ? 'bg-green-300' : 'bg-red-300'"></span>
-                  Open Chat
+                  Chat
                 </button>
               </div>
             </div>
@@ -291,37 +291,88 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
         </div>
 
         <!-- Body -->
-        <div class="flex-1 grid grid-rows-[1fr_auto_auto]">
-          <!-- Messages -->
-          <div class="overflow-auto p-4 bg-gray-50 space-y-3">
-            <div *ngFor="let m of chatLog; trackBy: trackByMessage" class="flex items-start space-x-3 p-3 bg-white rounded-lg shadow-sm">
-              <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <span class="text-xs font-medium text-blue-700">{{ getInitials(m.from) }}</span>
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center space-x-2 mb-1">
-                  <span class="text-sm font-medium text-gray-900">{{ m.from }}</span>
-                  <span class="text-xs text-gray-500">{{ formatMessageTime(m.timestamp) }}</span>
+        <div class="flex-1 flex flex-col min-h-0">
+          <!-- Messages Container -->
+          <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3 min-h-0">
+            <div *ngFor="let m of chatLog; trackBy: trackByMessage" 
+                 class="group relative">
+              <!-- Message with hover actions -->
+              <div class="flex items-start space-x-3 p-3 bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.01]">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span class="text-xs font-medium text-blue-700">{{ getInitials(m.from) }}</span>
                 </div>
-                <p class="text-sm text-gray-800 break-words">{{ m.body }}</p>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="text-sm font-medium text-gray-900">{{ m.from }}</span>
+                    <span class="text-xs text-gray-500">{{ formatMessageTime(m.timestamp) }}</span>
+                  </div>
+                  
+                  <!-- Reply indicator if this is a reply -->
+                  <div *ngIf="m.reply_to" class="mb-2 p-2 bg-gray-100 rounded-xl border-l-4 border-blue-400">
+                    <div class="flex items-center space-x-2 mb-1">
+                      <svg class="w-3 h-3 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                      </svg>
+                      <span class="text-xs font-medium text-blue-600">{{ m.reply_to.sender_name }}</span>
+                    </div>
+                    <p class="text-xs text-gray-600 line-clamp-2">{{ truncateText(m.reply_to.body, 60) }}</p>
+                  </div>
+                  
+                  <p class="text-sm text-gray-800 break-words">{{ m.body }}</p>
+                </div>
+                
+                <!-- Hover Reply Button (Apple-style) - Only show for messages with valid IDs -->
+                <button 
+                  *ngIf="m.id && typeof m.id === 'number'"
+                  (click)="replyToMessage(m)"
+                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-gray-50 hover:scale-110 active:scale-95">
+                  <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                  </svg>
+                </button>
               </div>
             </div>
             <div *ngIf="chatLog.length === 0" class="text-center py-12 text-gray-500">No messages yet. Start the conversation!</div>
           </div>
 
-          <!-- Typing -->
-          <div *ngIf="typingIndicator()" class="px-4 py-2 text-xs text-gray-600 flex items-center gap-2">
+          <!-- Reply Preview (Apple-style) -->
+          <div *ngIf="replyingTo && showReplyPreview" 
+               class="flex-shrink-0 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-blue-200 p-4 animate-in slide-in-from-bottom-2 duration-300">
+            <div class="flex items-start space-x-3">
+              <div class="flex-1">
+                <div class="flex items-center space-x-2 mb-1">
+                  <svg class="w-4 h-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                  </svg>
+                  <span class="text-sm font-medium text-blue-700">Replying to {{ replyingTo.from }}</span>
+                </div>
+                <div class="bg-white/70 backdrop-blur-sm rounded-xl p-3 border border-blue-200">
+                  <p class="text-sm text-gray-700 line-clamp-2">{{ truncateText(replyingTo.body, 80) }}</p>
+                </div>
+              </div>
+              <button 
+                (click)="cancelReply()"
+                class="p-2 hover:bg-white/50 rounded-full transition-colors group">
+                <svg class="w-4 h-4 text-gray-500 group-hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Typing Indicator (sticky) -->
+          <div *ngIf="typingIndicator()" class="px-4 py-2 text-xs text-gray-600 flex items-center gap-2 bg-gray-50 border-t border-gray-200">
             <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
             <span>{{ typingIndicator() }}</span>
           </div>
 
-          <!-- Composer -->
-          <div class="p-4 border-t border-gray-200 flex gap-2">
+          <!-- Message Input (sticky at bottom) -->
+          <div class="flex-shrink-0 p-4 bg-white border-t border-gray-200 flex gap-2">
             <input 
               [(ngModel)]="chatMessage"
               (input)="onMessageInput()"
               (keydown.enter)="sendChat()"
-              placeholder="Type a message..." 
+              [placeholder]="replyingTo ? 'Reply to ' + replyingTo.from + '...' : 'Type a message...'" 
               class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               [disabled]="!chatConnected" />
             <button 
@@ -349,6 +400,7 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private chat = inject(ChatService);
+  private cdr = inject(ChangeDetectorRef);
 
   group = signal<StudyGroup | null>(null);
   members = signal<StudyGroupMembership[]>([]);
@@ -359,13 +411,17 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   showChat = true; // Start with chat visible by default
   chatPanelOpen = false;
   chatMessage = '';
-  chatLog: { from: string; body: string; timestamp?: Date }[] = [];
+  chatLog: { from: string; body: string; timestamp?: Date; id?: number; reply_to?: { id: number; sender_name: string; body: string; created_at: string } }[] = [];
   chatConnected = false;
   isSending = false;
   onlineUserIds = new Set<number>();
   typingUsers = new Map<number, string>();
   private typingNotifyTimeout: any = null;
   private typingClearTimeout: any = null;
+  
+  // Reply functionality
+  replyingTo: { id: number; from: string; body: string; timestamp?: Date } | null = null;
+  showReplyPreview = false;
 
   newMeeting = {
     title: '',
@@ -386,54 +442,164 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
       // Subscribe to connection status
       this.chat.connected$.subscribe(connected => {
         this.chatConnected = connected;
+        this.cdr.detectChanges();
       });
  
       // Subscribe to incoming messages
-      this.chat.messages$.subscribe((msg) => {
-        this.chatLog.push({ 
-          from: msg.sender_name, 
-          body: msg.body, 
-          timestamp: new Date() 
+      this.chat.messages$.subscribe((msg: any) => {
+        console.log('📨 Received WebSocket message:', msg);
+        
+        // Check if this is a duplicate message by body and sender (more aggressive detection)
+        const isDuplicate = this.chatLog.some((existingMsg: any) => {
+          const sameBody = existingMsg.body === msg.body;
+          const sameSender = existingMsg.from === msg.sender_name;
+          const withinTimeWindow = Math.abs((existingMsg.timestamp?.getTime() || 0) - new Date(msg.created_at || Date.now()).getTime()) < 30000; // Within 30 seconds
+          
+          return sameBody && sameSender && withinTimeWindow;
         });
-        // Auto-scroll to bottom when new message arrives
-        setTimeout(() => this.scrollToBottom(), 100);
+        
+        if (isDuplicate) {
+          console.log('🚫 Skipping duplicate message:', {
+            body: msg.body,
+            sender: msg.sender_name,
+            msg_reply_to: msg.reply_to,
+            existing_messages: this.chatLog.length,
+            chatLog: this.chatLog.map((m: any) => ({ body: m.body, from: m.from, reply_to: m.reply_to }))
+          });
+          return;
+        }
+        
+        // Coalesce duplicates by client_id; otherwise append
+        if (msg.client_id != null) {
+          const idx = this.chatLog.findIndex((m: any) => (m as any).client_id === msg.client_id);
+          if (idx >= 0) {
+            // When updating an existing message, preserve reply_to from the original optimistic message
+            const existingReplyTo = (this.chatLog as any)[idx].reply_to;
+            const updated = { 
+              ...this.chatLog[idx], 
+              ...msg, 
+              from: msg.sender_name, 
+              timestamp: new Date(msg.created_at || Date.now()), 
+              status: 'sent',
+              // Always preserve the existing reply_to from optimistic message
+              reply_to: existingReplyTo || msg.reply_to
+            } as any;
+            (this.chatLog as any)[idx] = updated;
+            console.log('🔄 Updated existing message by client_id:', {
+              client_id: msg.client_id,
+              updated: updated,
+              had_reply_to: !!existingReplyTo,
+              server_reply_to: !!msg.reply_to
+            });
+          } else {
+            // Check if this might be a server confirmation of an optimistic message without client_id
+            const optimisticIdx = this.chatLog.findIndex((m: any) => 
+              m.body === msg.body && 
+              m.from === msg.sender_name && 
+              !m.id && // Optimistic messages don't have database IDs
+              m.status === 'pending'
+            );
+            
+            if (optimisticIdx >= 0) {
+              // Update the optimistic message with server data
+              const existingReplyTo = (this.chatLog as any)[optimisticIdx].reply_to;
+              const updated = { 
+                ...this.chatLog[optimisticIdx], 
+                ...msg, 
+                from: msg.sender_name, 
+                timestamp: new Date(msg.created_at || Date.now()), 
+                status: 'sent',
+                // Always preserve the existing reply_to from optimistic message
+                reply_to: existingReplyTo || msg.reply_to
+              } as any;
+              (this.chatLog as any)[optimisticIdx] = updated;
+              console.log('🔄 Updated optimistic message with server confirmation:', {
+                original_reply_to: existingReplyTo,
+                server_reply_to: msg.reply_to,
+                final_reply_to: updated.reply_to
+              });
+            } else {
+              const newMsg = { 
+                from: msg.sender_name, 
+                body: msg.body, 
+                timestamp: new Date(msg.created_at || Date.now()), 
+                client_id: msg.client_id, 
+                status: msg.status || 'sent',
+                id: msg.id,
+                reply_to: msg.reply_to
+              } as any;
+              this.chatLog.push(newMsg);
+              console.log('➕ Added new message:', newMsg);
+            }
+          }
+        } else {
+          const newMsg = { 
+            from: msg.sender_name, 
+            body: msg.body, 
+            timestamp: new Date(msg.created_at || Date.now()),
+            id: msg.id,
+            reply_to: msg.reply_to
+          };
+          this.chatLog.push(newMsg);
+          console.log('➕ Added new message (no client_id):', newMsg);
+        }
+        Promise.resolve().then(() => this.scrollToBottom());
         this.isSending = false;
+        this.cdr.detectChanges();
       });
 
       // Presence events (join/leave/snapshot)
       this.chat.presence$.subscribe((evt: any) => {
         if (evt.type === 'snapshot') {
           this.onlineUserIds = new Set(evt.users.map((u: any) => u.id));
+          this.cdr.detectChanges();
           return;
         }
         if (evt.type === 'presence') {
           if (evt.action === 'join') this.onlineUserIds.add(evt.user.id);
           if (evt.action === 'leave') this.onlineUserIds.delete(evt.user.id);
+          this.cdr.detectChanges();
         }
       });
 
       // Typing events
       this.chat.typing$.subscribe((evt: any) => {
+        console.log('📝 Typing event received in study group:', {
+          user: evt.user,
+          isTyping: evt.is_typing,
+          typingUsers: Array.from(this.typingUsers.entries())
+        });
+        
         if (evt.is_typing) {
           this.typingUsers.set(evt.user.id, evt.user.name);
+          console.log('➕ Added typing user:', evt.user.name, 'Total typing:', this.typingUsers.size);
           // Clear typing after 4s if no further events
           if (this.typingClearTimeout) clearTimeout(this.typingClearTimeout);
           this.typingClearTimeout = setTimeout(() => {
             this.typingUsers.delete(evt.user.id);
+            console.log('⏰ Cleared typing for:', evt.user.name, 'Remaining:', this.typingUsers.size);
+            this.cdr.detectChanges();
           }, 4000);
         } else {
           this.typingUsers.delete(evt.user.id);
+          console.log('➖ Removed typing user:', evt.user.name, 'Remaining:', this.typingUsers.size);
         }
+        this.cdr.detectChanges();
       });
 
       // Load persisted messages
       this.api.listMessages(gid, 50).subscribe({
         next: (msgs) => {
+          console.log('📥 Loaded messages from API:', msgs);
           this.chatLog = msgs.map(m => ({ 
             from: m.sender_name, 
             body: m.body, 
-            timestamp: new Date(m.created_at || Date.now())
+            timestamp: new Date(m.created_at || Date.now()),
+            id: m.id,
+            reply_to: m.reply_to
           }));
+          console.log('📝 Processed chat log:', this.chatLog);
+          this.cdr.detectChanges();
         },
         error: (err) => console.warn('Failed to load messages', err)
       });
@@ -467,10 +633,29 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   sendChat() {
     if (!this.chatMessage.trim()) return;
     this.isSending = true;
-    this.chat.sendMessage(this.chatMessage.trim());
+    
+    const replyData = this.replyingTo ? {
+      id: this.replyingTo.id,
+      sender_name: this.replyingTo.from,
+      body: this.replyingTo.body,
+      created_at: this.replyingTo.timestamp?.toISOString() || new Date().toISOString()
+    } : undefined;
+    
+    console.log('📤 Sending message with reply data:', {
+      message: this.chatMessage.trim(),
+      replyData,
+      replyingTo: this.replyingTo
+    });
+    
+    this.chat.sendMessage(this.chatMessage.trim(), replyData);
     this.chatMessage = '';
+    
+    // Clear reply state
+    this.cancelReply();
+    
     // Stop typing when message sent
     this.chat.sendTyping(false);
+    this.cdr.detectChanges();
   }
 
   goBack() {
@@ -546,17 +731,23 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
 
   onMessageInput() {
     // Debounced typing notifications
+    console.log('⌨️ Message input detected, sending typing notification');
     if (this.typingNotifyTimeout) clearTimeout(this.typingNotifyTimeout);
     this.chat.sendTyping(true);
-    this.typingNotifyTimeout = setTimeout(() => this.chat.sendTyping(false), 1500);
+    this.typingNotifyTimeout = setTimeout(() => {
+      console.log('⏰ Stopping typing notification after 1.5s');
+      this.chat.sendTyping(false);
+    }, 1500);
   }
 
   scrollToBottom() {
-    // This will be handled by the template reference
-    const chatContainer = document.querySelector('#chatContainer');
-    if (chatContainer) {
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-    }
+    // Scroll the messages container to bottom
+    setTimeout(() => {
+      const messagesContainer = document.getElementById('messagesContainer');
+      if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
+    }, 100);
   }
 
   trackByMessage(index: number, message: any): string {
@@ -594,6 +785,45 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
     if (days < 7) return `${days}d ago`;
     
     return timestamp.toLocaleDateString();
+  }
+
+  // Reply functionality
+  replyToMessage(message: any) {
+    // Only allow replies to messages that have real database IDs
+    if (!message.id || typeof message.id !== 'number') {
+      console.warn('Cannot reply to message without valid ID:', message);
+      return;
+    }
+    
+    this.replyingTo = {
+      id: message.id,
+      from: message.from,
+      body: message.body,
+      timestamp: message.timestamp
+    };
+    this.showReplyPreview = true;
+    this.cdr.detectChanges();
+    
+    console.log('💬 Started replying to message:', this.replyingTo);
+    
+    // Focus on input after animation
+    setTimeout(() => {
+      const input = document.querySelector('input[placeholder="Type a message..."]') as HTMLInputElement;
+      if (input) {
+        input.focus();
+      }
+    }, 100);
+  }
+
+  cancelReply() {
+    this.replyingTo = null;
+    this.showReplyPreview = false;
+    this.cdr.detectChanges();
+  }
+
+  truncateText(text: string, maxLength: number = 50): string {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
   }
 }
 

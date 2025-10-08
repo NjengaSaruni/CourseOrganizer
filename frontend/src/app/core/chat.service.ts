@@ -8,6 +8,14 @@ export interface ChatMessage {
   sender_name: string;
   body: string;
   created_at: string;
+  client_id?: string;
+  status?: 'pending' | 'sent' | 'failed';
+  reply_to?: {
+    id: number;
+    sender_name: string;
+    body: string;
+    created_at: string;
+  };
 }
 
 export interface PresenceEvent {
@@ -37,6 +45,7 @@ export class ChatService {
   connected$ = new Subject<boolean>();
   presence$ = new Subject<PresenceEvent | SnapshotEvent>();
   typing$ = new Subject<TypingEvent>();
+  private myUserId: number | null = null;
 
   connect(groupId: number): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
@@ -84,11 +93,40 @@ export class ChatService {
         console.log('Chat: Connected successfully');
         this.reconnectAttempts = 0;
         this.connected$.next(true);
+        
+        // Fallback: Set user ID from localStorage if not already set
+        if (!this.myUserId) {
+          const fallbackUserId = this.getCurrentUserIdFromStorage();
+          if (fallbackUserId) {
+            this.myUserId = fallbackUserId;
+            console.log('🔧 Set fallback myUserId from localStorage:', fallbackUserId);
+          }
+        }
       };
 
       this.ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          if (data.type === 'whoami' && data.user) {
+            this.myUserId = Number(data.user.id) || null;
+            console.log('Whoami event received - Setting myUserId:', {
+              receivedUserId: data.user.id,
+              parsedUserId: this.myUserId,
+              userName: data.user.name,
+              localStorageUserId: localStorage.getItem('userId'),
+              currentUserId: (() => {
+                try {
+                  const currentUser = localStorage.getItem('currentUser');
+                  if (currentUser) {
+                    const user = JSON.parse(currentUser);
+                    return user.id;
+                  }
+                } catch (e) {}
+                return null;
+              })()
+            });
+            return;
+          }
           // If it has type, it's a control event (presence/typing/snapshot)
           if (data && typeof data === 'object' && 'type' in data) {
             if (data.type === 'presence' || data.type === 'snapshot') {
@@ -96,12 +134,71 @@ export class ChatService {
               return;
             }
             if (data.type === 'typing') {
-              this.typing$.next(data);
+              // Do not show typing banner for myself
+              // Use the improved user ID detection method
+              let myId = this.myUserId || this.getCurrentUserIdFromStorage();
+              
+              const senderId = Number(data.user?.id) ?? -1;
+              myId = myId ?? -1;
+              
+              console.log('Typing event received:', {
+                myUserId: this.myUserId,
+                localStorageUserId: localStorage.getItem('userId'),
+                currentUserId: (() => {
+                  try {
+                    const currentUser = localStorage.getItem('currentUser');
+                    if (currentUser) {
+                      const user = JSON.parse(currentUser);
+                      return user.id;
+                    }
+                  } catch (e) {}
+                  return null;
+                })(),
+                tokenUserId: (() => {
+                  try {
+                    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                    if (token) {
+                      const payload = JSON.parse(atob(token.split('.')[1]));
+                      return payload.user_id || payload.sub || null;
+                    }
+                  } catch (e) {}
+                  return null;
+                })(),
+                finalMyId: myId,
+                senderId,
+                userName: data.user?.name,
+                isTyping: data.is_typing,
+                shouldShow: senderId !== myId,
+                comparison: `${senderId} !== ${myId} = ${senderId !== myId}`
+              });
+              
+              if (senderId !== myId) {
+                console.log('✅ Showing typing indicator for:', data.user?.name);
+                this.typing$.next(data);
+              } else {
+                console.log('❌ Filtering out typing indicator for self:', data.user?.name);
+              }
               return;
             }
           }
           // Otherwise it's a chat message (legacy/plain)
           const message: ChatMessage = data;
+          
+          // Check if this message is from the current user and convert to "You"
+          const currentUserId = this.myUserId ?? this.getCurrentUserIdFromStorage();
+          if (currentUserId && Number(message.sender) === currentUserId) {
+            message.sender_name = 'You';
+          }
+          
+          console.log('📤 Emitting message from chat service:', {
+            id: message.id,
+            sender: message.sender,
+            sender_name: message.sender_name,
+            body: message.body,
+            reply_to: message.reply_to,
+            client_id: message.client_id
+          });
+          
           this.messages$.next(message);
         } catch (e) {
           console.error('Chat: Failed to parse message', e);
@@ -132,17 +229,54 @@ export class ChatService {
     }
   }
 
-  sendMessage(body: string): void {
+  sendMessage(body: string, replyTo?: { id: number; sender_name: string; body: string; created_at: string }): void {
+    const trimmed = body.trim();
+    if (!trimmed) return;
+    const clientId = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+    // Optimistic local emit
+    const optimistic: ChatMessage = {
+      id: undefined,
+      sender: 0,
+      sender_name: 'You',
+      body: trimmed,
+      created_at: new Date().toISOString(),
+      client_id: clientId,
+      status: 'pending',
+      reply_to: replyTo
+    };
+    
+    console.log('📤 Creating optimistic message:', {
+      body: trimmed,
+      client_id: clientId,
+      reply_to: replyTo,
+      optimistic: optimistic
+    });
+    
+    this.messages$.next(optimistic);
+
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ body }));
+      const messageData = { 
+        body: trimmed, 
+        client_id: clientId,
+        reply_to: replyTo 
+      };
+      console.log('📡 Sending WebSocket message:', messageData);
+      this.ws.send(JSON.stringify(messageData));
     } else {
       console.warn('Chat: Not connected, cannot send message');
+      const failed: ChatMessage = { ...optimistic, status: 'failed' };
+      this.messages$.next(failed);
     }
   }
 
   sendTyping(isTyping: boolean): void {
+    console.log('📤 Sending typing event:', { isTyping, wsReady: this.ws?.readyState === WebSocket.OPEN });
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type: 'typing', is_typing: isTyping }));
+      console.log('✅ Typing event sent successfully');
+    } else {
+      console.log('❌ WebSocket not ready, cannot send typing event');
     }
   }
 
@@ -151,6 +285,51 @@ export class ChatService {
       this.ws.close();
       this.ws = null;
     }
+  }
+
+  private getCurrentUserIdFromStorage(): number | null {
+    // Try localStorage first
+    const storedUserId = localStorage.getItem('userId');
+    if (storedUserId) {
+      const userId = Number(storedUserId);
+      if (!isNaN(userId)) {
+        console.log('✅ Got user ID from localStorage.userId:', userId);
+        return userId;
+      }
+    }
+    
+    // Try currentUser from localStorage (primary source)
+    const currentUser = localStorage.getItem('currentUser');
+    if (currentUser) {
+      try {
+        const user = JSON.parse(currentUser);
+        if (user.id) {
+          console.log('✅ Got user ID from localStorage.currentUser:', user.id);
+          return user.id;
+        }
+      } catch (e) {
+        console.warn('Could not parse currentUser from localStorage');
+      }
+    }
+    
+    // Try to get from auth token as last resort
+    const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+    if (token) {
+      try {
+        // Decode JWT token to get user ID (basic decode, no verification)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        const userId = payload.user_id || payload.sub;
+        if (userId) {
+          console.log('✅ Got user ID from token:', userId);
+          return userId;
+        }
+      } catch (e) {
+        console.warn('Could not decode token for user ID');
+      }
+    }
+    
+    console.warn('❌ Could not get user ID from any source');
+    return null;
   }
 }
 

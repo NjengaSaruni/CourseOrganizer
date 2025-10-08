@@ -13,9 +13,9 @@ import { AuthService, User } from '../../core/auth.service';
       <div class="flex flex-col h-screen bg-white overflow-y-auto border-r border-gray-200">
         <!-- Header -->
         <div class="flex items-center flex-shrink-0 px-6 py-6 space-x-3">
-          <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-            <span class="text-white font-bold text-sm">CO</span>
-          </div>
+          <img src="/courseorganizerlogo.png" 
+               alt="Course Organizer Logo" 
+               class="h-8 w-auto">
           <h2 class="text-lg font-semibold text-gray-900">Course Organizer</h2>
         </div>
         
@@ -251,9 +251,9 @@ import { AuthService, User } from '../../core/auth.service';
         <div class="flex-1 pt-6 pb-4 overflow-y-auto max-h-screen">
           <!-- Header -->
           <div class="flex-shrink-0 flex items-center px-6 space-x-3 mb-8">
-            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span class="text-white font-bold text-sm">CO</span>
-            </div>
+            <img src="/courseorganizerlogo.png" 
+                 alt="Course Organizer Logo" 
+                 class="h-8 w-auto">
             <h2 class="text-lg font-semibold text-gray-900">Course Organizer</h2>
           </div>
           

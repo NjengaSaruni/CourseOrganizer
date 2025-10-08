@@ -55,6 +55,19 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+        # Identify current user to the client
+        try:
+            user_display = await self._get_user_display()
+            user_data = {'id': int(self.user.id), 'name': user_display}
+            logger.info(f"Whoami event - Sending user identity: user_id={user_data['id']}, name={user_data['name']}")
+            await self.send(text_data=json.dumps({
+                'type': 'whoami',
+                'user': user_data
+            }))
+        except Exception as e:
+            logger.error(f"Error sending whoami event: {e}")
+            pass
+
         # Track presence and notify
         user_display = await self._get_user_display()
         ROOM_ONLINE_USERS[self.room_group_name].add((self.user.id, user_display))
@@ -63,7 +76,7 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'type': 'snapshot',
             'users': [
-                {'id': uid, 'name': uname}
+                {'id': int(uid), 'name': uname}
                 for uid, uname in ROOM_ONLINE_USERS[self.room_group_name]
             ]
         }))
@@ -74,7 +87,7 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             {
                 'type': 'presence_event',
                 'action': 'join',
-                'user': {'id': self.user.id, 'name': user_display},
+                'user': {'id': int(self.user.id), 'name': user_display},
             }
         )
 
@@ -99,7 +112,7 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
                     {
                         'type': 'presence_event',
                         'action': 'leave',
-                        'user': {'id': self.user.id, 'name': user_display},
+                        'user': {'id': int(self.user.id), 'name': user_display},
                     }
                 )
             except Exception:
@@ -122,7 +135,7 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_name,
                 {
                     'type': 'typing_event',
-                    'user': {'id': self.user.id, 'name': user_display},
+                    'user': {'id': int(self.user.id), 'name': user_display},
                     'is_typing': is_typing,
                 }
             )
@@ -132,22 +145,32 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
         message_body = data.get('body', '').strip()
         if not message_body:
             return
+        client_id = data.get('client_id')
+        reply_to = data.get('reply_to')
+        
+        logger.info(f"Received message data: body='{message_body}', client_id='{client_id}', reply_to={reply_to}")
 
         # Save message to database
-        message = await self.save_message(message_body)
+        message = await self.save_message(message_body, reply_to)
 
         # Broadcast message to room group
+        broadcast_message = {
+            'id': message['id'],
+            'sender': message['sender'],
+            'sender_name': message['sender_name'],
+            'body': message['body'],
+            'created_at': message['created_at'],
+            'client_id': client_id,
+            'reply_to': message.get('reply_to'),
+        }
+        
+        logger.info(f"Broadcasting message: {broadcast_message}")
+        
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'chat_message',
-                'message': {
-                    'id': message['id'],
-                    'sender': message['sender'],
-                    'sender_name': message['sender_name'],
-                    'body': message['body'],
-                    'created_at': message['created_at']
-                }
+                'message': broadcast_message
             }
         )
 
@@ -156,9 +179,18 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(event['message']))
 
     async def typing_event(self, event):
+        # Ensure user ID is properly serialized as integer
+        user_data = {
+            'id': int(event['user']['id']),
+            'name': event['user']['name']
+        }
+        
+        # Debug logging
+        logger.info(f"Typing event - Sending typing indicator: user_id={user_data['id']}, name={user_data['name']}, is_typing={event['is_typing']}")
+        
         await self.send(text_data=json.dumps({
             'type': 'typing',
-            'user': event['user'],
+            'user': user_data,
             'is_typing': event['is_typing'],
         }))
 
@@ -180,19 +212,43 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def save_message(self, body):
+    def save_message(self, body, reply_to=None):
+        # Get the replied-to message if reply_to is provided
+        replied_message = None
+        if reply_to and reply_to.get('id'):
+            try:
+                replied_message = GroupMessage.objects.get(id=reply_to['id'], group_id=self.group_id)
+            except GroupMessage.DoesNotExist:
+                pass  # Reply to message not found, ignore reply
+        
         msg = GroupMessage.objects.create(
             group_id=self.group_id,
             sender=self.user,
-            body=body
+            body=body,
+            reply_to=replied_message
         )
-        return {
+        
+        result = {
             'id': msg.id,
             'sender': msg.sender.id,
             'sender_name': msg.sender.get_full_name(),
             'body': msg.body,
             'created_at': msg.created_at.isoformat()
         }
+        
+        # Add reply information if this is a reply
+        if replied_message:
+            result['reply_to'] = {
+                'id': replied_message.id,
+                'sender_name': replied_message.sender.get_full_name(),
+                'body': replied_message.body,
+                'created_at': replied_message.created_at.isoformat()
+            }
+            logger.info(f"Message {msg.id} is a reply to message {replied_message.id}")
+        else:
+            logger.info(f"Message {msg.id} is not a reply")
+        
+        return result
 
     @database_sync_to_async
     def _get_user_display(self):

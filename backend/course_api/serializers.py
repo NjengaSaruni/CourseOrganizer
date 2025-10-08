@@ -488,8 +488,19 @@ class StudyGroupJoinRequestSerializer(serializers.ModelSerializer):
 
 class GroupMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
+    reply_to = serializers.SerializerMethodField()
 
     class Meta:
         model = GroupMessage
-        fields = ('id', 'group', 'sender', 'sender_name', 'body', 'created_at')
+        fields = ('id', 'group', 'sender', 'sender_name', 'body', 'created_at', 'reply_to')
         read_only_fields = ('id', 'created_at', 'sender_name', 'sender')
+
+    def get_reply_to(self, obj):
+        if obj.reply_to:
+            return {
+                'id': obj.reply_to.id,
+                'sender_name': obj.reply_to.sender.get_full_name(),
+                'body': obj.reply_to.body,
+                'created_at': obj.reply_to.created_at.isoformat()
+            }
+        return None

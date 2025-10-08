@@ -702,6 +702,7 @@ class GroupMessage(models.Model):
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_messages_sent')
     body = models.TextField()
+    reply_to = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
