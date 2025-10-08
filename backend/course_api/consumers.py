@@ -228,11 +228,20 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             reply_to=replied_message
         )
         
+        # Build absolute URL for profile picture
+        def get_profile_picture_url(user):
+            if user.profile_picture:
+                from django.conf import settings
+                # Build the media URL - in Docker/production this will be the correct domain
+                # For local development, the frontend proxy will handle this
+                return user.profile_picture.url
+            return None
+        
         result = {
             'id': msg.id,
             'sender': msg.sender.id,
             'sender_name': msg.sender.get_full_name(),
-            'sender_profile_picture': msg.sender.profile_picture.url if msg.sender.profile_picture else None,
+            'sender_profile_picture': get_profile_picture_url(msg.sender),
             'body': msg.body,
             'created_at': msg.created_at.isoformat()
         }
@@ -242,7 +251,7 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             result['reply_to'] = {
                 'id': replied_message.id,
                 'sender_name': replied_message.sender.get_full_name(),
-                'sender_profile_picture': replied_message.sender.profile_picture.url if replied_message.sender.profile_picture else None,
+                'sender_profile_picture': get_profile_picture_url(replied_message.sender),
                 'body': replied_message.body,
                 'created_at': replied_message.created_at.isoformat()
             }

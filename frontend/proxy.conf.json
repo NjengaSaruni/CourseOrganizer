@@ -11,5 +11,17 @@
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
+  },
+  "/media": {
+    "target": "http://backend:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/static": {
+    "target": "http://backend:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
   }
 }
