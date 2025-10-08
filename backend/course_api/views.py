@@ -31,7 +31,7 @@ def group_messages(request, group_id: int):
     if request.method == 'GET':
         limit = int(request.query_params.get('limit', 50))
         msgs = GroupMessage.objects.filter(group=group, deleted=False).order_by('-created_at')[:limit]
-        data = GroupMessageSerializer(reversed(list(msgs)), many=True).data
+        data = GroupMessageSerializer(reversed(list(msgs)), many=True, context={'request': request}).data
         return Response(data)
 
     # POST
