@@ -609,6 +609,30 @@ Storage: GCS bucket
 
 ---
 
+## Scaling Considerations
+
+### Current Capacity
+
+The current single-VM architecture can comfortably handle:
+- **0-500 concurrent users**
+- **~2,000 total registered users**
+- **~50 requests/second**
+- **~300 WebSocket connections**
+- **~50 concurrent video calls**
+
+### When to Scale
+
+| User Threshold | Required Action | Estimated Cost |
+|----------------|----------------|----------------|
+| **400+ concurrent** | Add database indexes + Redis caching | +$0 |
+| **500-2K concurrent** | Cloud Storage + CDN + VM upgrade | +$200/month |
+| **2K-10K concurrent** | Load balancer + Cloud SQL + Auto-scaling | +$1,500/month |
+| **10K-50K concurrent** | Kubernetes + Multi-region + Sharding | +$5,000/month |
+
+**📊 For detailed scaling strategies, see [SCALING_GUIDE.md](./SCALING_GUIDE.md)**
+
+---
+
 ## Future Enhancements
 
 1. **CDN Integration** - CloudFlare or Google CDN for static assets
