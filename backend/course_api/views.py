@@ -30,7 +30,7 @@ def group_messages(request, group_id: int):
 
     if request.method == 'GET':
         limit = int(request.query_params.get('limit', 50))
-        msgs = GroupMessage.objects.filter(group=group).order_by('-created_at')[:limit]
+        msgs = GroupMessage.objects.filter(group=group, deleted=False).order_by('-created_at')[:limit]
         data = GroupMessageSerializer(reversed(list(msgs)), many=True).data
         return Response(data)
 
@@ -40,6 +40,39 @@ def group_messages(request, group_id: int):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     GroupMessage.objects.create(group=group, sender=request.user, body=serializer.validated_data['body'])
     return Response({'status': 'ok'})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_message(request, group_id: int, message_id: int):
+    """Soft delete a message. Only the sender or group admin can delete messages."""
+    try:
+        group = StudyGroup.objects.get(pk=group_id)
+        message = GroupMessage.objects.get(pk=message_id, group=group)
+    except (StudyGroup.DoesNotExist, GroupMessage.DoesNotExist):
+        return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Only members can access
+    if not StudyGroupMembership.objects.filter(group=group, user=request.user).exists():
+        return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+    # Check if user can delete this message (sender or admin)
+    is_sender = message.sender == request.user
+    is_admin = StudyGroupMembership.objects.filter(
+        group=group, user=request.user, role='admin'
+    ).exists()
+
+    if not (is_sender or is_admin):
+        return Response({'detail': 'You can only delete your own messages or be an admin'}, status=status.HTTP_403_FORBIDDEN)
+
+    # Soft delete the message
+    from django.utils import timezone
+    message.deleted = True
+    message.deleted_at = timezone.now()
+    message.deleted_by = request.user
+    message.save()
+
+    return Response({'status': 'deleted'})
 from .jitsi_auth import jitsi_auth
 from .email_service import notify_admin_of_student_registration
 

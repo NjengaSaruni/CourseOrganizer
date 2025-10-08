@@ -408,8 +408,8 @@ class StudyGroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StudyGroup
-        fields = ('id', 'name', 'description', 'student_class', 'course', 'course_name', 'created_by', 'is_private', 'max_members', 'xmpp_room_name', 'xmpp_room_jid', 'created_at', 'updated_at', 'members_count', 'pending_requests')
-        read_only_fields = ('id', 'created_by', 'xmpp_room_name', 'xmpp_room_jid', 'created_at', 'updated_at', 'members_count', 'pending_requests')
+        fields = ('id', 'name', 'description', 'student_class', 'course', 'course_name', 'created_by', 'is_private', 'max_members', 'created_at', 'updated_at', 'members_count', 'pending_requests')
+        read_only_fields = ('id', 'created_by', 'created_at', 'updated_at', 'members_count', 'pending_requests')
 
 
 class StudyGroupCreateSerializer(serializers.ModelSerializer):
@@ -438,21 +438,6 @@ class StudyGroupCreateSerializer(serializers.ModelSerializer):
         )
         # creator becomes admin member
         StudyGroupMembership.objects.create(group=group, user=user, role='admin')
-        # set XMPP room mapping
-        try:
-            muc_domain = 'conference.jitsi.riverlearn.co.ke'
-            room_name = f"sg-{group.id}"
-            group.xmpp_room_name = room_name
-            group.xmpp_room_jid = f"{room_name}@{muc_domain}"
-            group.save(update_fields=['xmpp_room_name', 'xmpp_room_jid'])
-            # fire-and-forget room provisioning
-            try:
-                from .xmpp_provisioner import provision_room
-                provision_room(group.xmpp_room_jid)
-            except Exception:
-                pass
-        except Exception:
-            pass
         return group
 
 
@@ -489,11 +474,14 @@ class StudyGroupJoinRequestSerializer(serializers.ModelSerializer):
 class GroupMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
     reply_to = serializers.SerializerMethodField()
+    deleted = serializers.BooleanField(read_only=True)
+    deleted_at = serializers.DateTimeField(read_only=True)
+    deleted_by_name = serializers.CharField(source='deleted_by.get_full_name', read_only=True)
 
     class Meta:
         model = GroupMessage
-        fields = ('id', 'group', 'sender', 'sender_name', 'body', 'created_at', 'reply_to')
-        read_only_fields = ('id', 'created_at', 'sender_name', 'sender')
+        fields = ('id', 'group', 'sender', 'sender_name', 'body', 'created_at', 'reply_to', 'deleted', 'deleted_at', 'deleted_by_name')
+        read_only_fields = ('id', 'created_at', 'sender_name', 'sender', 'deleted', 'deleted_at', 'deleted_by_name')
 
     def get_reply_to(self, obj):
         if obj.reply_to:

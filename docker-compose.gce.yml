@@ -89,9 +89,6 @@ services:
       - ./ssl:/etc/nginx/ssl:ro
       - certbot-webroot:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
-    environment:
-      - XMPP_WEBSOCKET_UPSTREAM=${XMPP_WEBSOCKET_UPSTREAM:-https://jitsi.riverlearn.co.ke/xmpp-websocket}
-      - XMPP_BOSH_UPSTREAM=${XMPP_BOSH_UPSTREAM:-https://jitsi.riverlearn.co.ke/http-bind}
     depends_on:
       - backend
     healthcheck:

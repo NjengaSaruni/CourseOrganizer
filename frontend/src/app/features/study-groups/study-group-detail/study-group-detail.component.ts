@@ -271,10 +271,12 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
     <div class="absolute inset-0 md:inset-y-6 md:inset-x-6">
       <div class="h-full bg-white rounded-none md:rounded-2xl shadow-xl border border-gray-200 flex flex-col">
         <!-- Header -->
-        <div class="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <h3 class="text-xl font-semibold text-gray-900">Group Chat</h3>
-            <div class="flex items-center gap-2 text-xs text-gray-600">
+        <div class="px-4 sm:px-6 py-4 border-b border-gray-200 flex items-start justify-between min-h-0">
+          <div class="flex-1 min-w-0">
+            <h3 class="text-xl font-semibold text-gray-900 break-words leading-tight max-h-16 overflow-hidden">
+              {{ group()?.name || 'Group Chat' }}
+            </h3>
+            <div class="flex items-center gap-2 text-xs text-gray-600 mt-1">
               <span class="w-2 h-2 rounded-full" [class]="chatConnected ? 'bg-green-500' : 'bg-red-500'"></span>
               <span>{{ chatConnected ? 'Connected' : 'Connecting...' }}</span>
               <span class="ml-3">Online: {{ onlineCount() }}</span>
@@ -321,15 +323,30 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                   <p class="text-sm text-gray-800 break-words">{{ m.body }}</p>
                 </div>
                 
-                <!-- Hover Reply Button (Apple-style) - Only show for messages with valid IDs -->
-                <button 
-                  *ngIf="m.id && typeof m.id === 'number'"
-                  (click)="replyToMessage(m)"
-                  class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-gray-50 hover:scale-110 active:scale-95">
-                  <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
-                  </svg>
-                </button>
+                <!-- Hover Action Buttons (Apple-style) -->
+                <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 flex gap-1">
+                  <!-- Reply Button - Only show for messages with valid IDs -->
+                  <button 
+                    *ngIf="m.id && typeof m.id === 'number'"
+                    (click)="replyToMessage(m)"
+                    class="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-gray-50 hover:scale-110 active:scale-95"
+                    title="Reply to message">
+                    <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                    </svg>
+                  </button>
+                  
+                  <!-- Delete Button - Only show for user's own messages or if user is admin -->
+                  <button 
+                    *ngIf="canDeleteMessage(m)"
+                    (click)="deleteMessage(m)"
+                    class="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-red-50 hover:scale-110 active:scale-95"
+                    title="Delete message">
+                    <svg class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
             <div *ngIf="chatLog.length === 0" class="text-center py-12 text-gray-500">No messages yet. Start the conversation!</div>
@@ -824,6 +841,40 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   truncateText(text: string, maxLength: number = 50): string {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + '...';
+  }
+
+  // Message deletion functionality
+  canDeleteMessage(message: any): boolean {
+    if (!message.id || typeof message.id !== 'number') return false;
+    
+    // User can delete their own messages
+    if (message.from === 'You') return true;
+    
+    // Check if current user is admin (you can implement this based on your user role system)
+    // For now, we'll allow deletion of own messages only
+    return false;
+  }
+
+  deleteMessage(message: any) {
+    if (!message.id || !this.group()) return;
+    
+    if (confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+      this.api.deleteMessage(this.group()!.id, message.id).subscribe({
+        next: () => {
+          // Remove message from chat log
+          const index = this.chatLog.findIndex(m => m.id === message.id);
+          if (index > -1) {
+            this.chatLog.splice(index, 1);
+            this.cdr.detectChanges();
+          }
+          console.log('Message deleted successfully');
+        },
+        error: (error) => {
+          console.error('Failed to delete message:', error);
+          alert('Failed to delete message. Please try again.');
+        }
+      });
+    }
   }
 }
 

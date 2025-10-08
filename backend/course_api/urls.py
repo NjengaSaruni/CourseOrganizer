@@ -32,6 +32,7 @@ urlpatterns = [
     path('courses/class/<int:class_id>/', views.get_class_courses, name='class_courses'),
     # Study group messages
     path('study-groups/<int:group_id>/messages/', views.group_messages, name='group_messages'),
+    path('study-groups/<int:group_id>/messages/<int:message_id>/', views.delete_message, name='delete_message'),
     
     # Timetable endpoints
     path('timetable/', views.TimetableEntryListView.as_view(), name='timetable_list'),

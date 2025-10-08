@@ -614,8 +614,6 @@ class StudyGroup(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='study_groups_created')
     is_private = models.BooleanField(default=False, help_text="If true, members must be invited or approved")
     max_members = models.PositiveIntegerField(default=8, help_text="Maximum members allowed in this group")
-    xmpp_room_name = models.CharField(max_length=120, blank=True, help_text="Local room name for XMPP MUC (e.g., sg-123)")
-    xmpp_room_jid = models.CharField(max_length=255, blank=True, help_text="Full room JID for XMPP MUC (e.g., sg-123@conference.example.com)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -703,6 +701,9 @@ class GroupMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_messages_sent')
     body = models.TextField()
     reply_to = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='replies')
+    deleted = models.BooleanField(default=False, help_text="Soft delete flag")
+    deleted_at = models.DateTimeField(null=True, blank=True, help_text="When the message was deleted")
+    deleted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='group_messages_deleted', help_text="User who deleted the message")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
