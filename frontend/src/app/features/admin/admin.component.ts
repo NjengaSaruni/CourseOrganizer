@@ -11,7 +11,7 @@ import { AuthService, User } from '../../core/auth.service';
   template: `
     <app-page-layout 
       pageTitle="Admin Panel" 
-      pageSubtitle="University of Nairobi - Manage pending registrations"
+      pageSubtitle="University of Nairobi - Administration hub"
       [isSidebarOpen]="isSidebarOpen"
       (sidebarToggle)="onSidebarToggle($event)">
       
@@ -20,7 +20,7 @@ import { AuthService, User } from '../../core/auth.service';
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
-            <p class="text-lg text-gray-600">Manage student registrations and approvals</p>
+            <p class="text-lg text-gray-600">Manage registrations, login tracking, representatives, and courses</p>
           </div>
           <div class="text-right">
             <div class="text-sm text-gray-500 mb-1">Logged in as</div>
@@ -29,8 +29,26 @@ import { AuthService, User } from '../../core/auth.service';
         </div>
       </div>
 
+      <!-- Primary Tabs -->
+      <div class="mb-6">
+        <div class="inline-flex bg-gray-100 p-1 rounded-xl">
+          <button
+            (click)="primaryTab = 'overview'"
+            [class]="primaryTab === 'overview' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors">
+            Overview
+          </button>
+          <button
+            (click)="primaryTab = 'registrations'"
+            [class]="primaryTab === 'registrations' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'"
+            class="px-4 py-2 text-sm font-medium rounded-lg transition-colors">
+            Registrations
+          </button>
+        </div>
+      </div>
+
       <!-- Main Content Card -->
-      <div class="bg-white border border-gray-200 rounded-3xl overflow-hidden">
+      <div *ngIf="primaryTab === 'registrations'" class="bg-white border border-gray-200 rounded-3xl overflow-hidden">
         <!-- Card Header with Tabs -->
         <div class="px-8 py-6 border-b border-gray-100">
           <div class="flex items-center justify-between mb-4">
@@ -283,7 +301,7 @@ import { AuthService, User } from '../../core/auth.service';
       </div>
 
       <!-- Management Sections Grid -->
-      <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div *ngIf="primaryTab === 'overview'" class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Login Tracking Section -->
         <div class="bg-white border border-gray-200 rounded-3xl overflow-hidden">
           <div class="px-8 py-6 border-b border-gray-100">
@@ -351,30 +369,21 @@ import { AuthService, User } from '../../core/auth.service';
           
           <div class="p-8">
             <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100">
-              <div class="flex items-start justify-between">
+              <div class="flex flex-col">
                 <div class="flex-1">
                   <h3 class="text-lg font-semibold text-gray-900 mb-2">Manage Class Reps</h3>
                   <p class="text-gray-700 mb-4">
                     Assign students as Class Representatives with specific permissions for announcements, polls, and message moderation.
                   </p>
-                  <div class="flex items-center space-x-4 text-sm text-gray-600">
-                    <div class="flex items-center">
-                      <span class="mr-2">📢</span>
-                      <span>Send Announcements</span>
-                    </div>
-                    <div class="flex items-center">
-                      <span class="mr-2">📊</span>
-                      <span>Create Polls</span>
-                    </div>
-                    <div class="flex items-center">
-                      <span class="mr-2">🛡️</span>
-                      <span>Moderate Messages</span>
-                    </div>
+                  <div class="grid grid-cols-2 gap-3 text-sm text-gray-600">
+                    <div class="flex items-center"><span class="mr-2">📢</span><span>Send Announcements</span></div>
+                    <div class="flex items-center"><span class="mr-2">📊</span><span>Create Polls</span></div>
+                    <div class="flex items-center"><span class="mr-2">🛡️</span><span>Moderate Messages</span></div>
                   </div>
                 </div>
-                <div class="ml-6">
+                <div class="mt-4 w-full">
                   <a routerLink="/admin/class-rep-management"
-                     class="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors">
+                     class="inline-flex items-center px-6 py-3 bg-purple-600 text-white font-medium rounded-xl hover:bg-purple-700 transition-colors w-full justify-center">
                     <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
@@ -400,30 +409,21 @@ import { AuthService, User } from '../../core/auth.service';
           
           <div class="p-8">
             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
-              <div class="flex items-start justify-between">
+              <div class="flex flex-col">
                 <div class="flex-1">
                   <h3 class="text-lg font-semibold text-gray-900 mb-2">Manage Course Content</h3>
                   <p class="text-gray-700 mb-4">
                     Upload recordings from Zoom, Google Meet, or other platforms. Add course materials organized by topics or specific lessons.
                   </p>
-                  <div class="flex items-center space-x-4 text-sm text-gray-600">
-                    <div class="flex items-center">
-                      <span class="mr-2">🎥</span>
-                      <span>Upload Recordings</span>
-                    </div>
-                    <div class="flex items-center">
-                      <span class="mr-2">📚</span>
-                      <span>Add Materials</span>
-                    </div>
-                    <div class="flex items-center">
-                      <span class="mr-2">📖</span>
-                      <span>Organize by Topics</span>
-                    </div>
+                  <div class="grid grid-cols-2 gap-3 text-sm text-gray-600">
+                    <div class="flex items-center"><span class="mr-2">🎥</span><span>Upload Recordings</span></div>
+                    <div class="flex items-center"><span class="mr-2">📚</span><span>Add Materials</span></div>
+                    <div class="flex items-center"><span class="mr-2">📖</span><span>Organize by Topics</span></div>
                   </div>
                 </div>
-                <div class="ml-6">
-                  <a routerLink="/admin/course-management"
-                     class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors">
+                <div class="mt-4 w-full">
+                  <a routerLink="/course-management"
+                     class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors w-full justify-center">
                     <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
@@ -443,6 +443,7 @@ export class AdminComponent implements OnInit {
   pendingRegistrations: User[] = [];
   confirmedRegistrations: User[] = [];
   isSidebarOpen = false;
+  primaryTab: 'overview' | 'registrations' = 'overview';
   activeTab: 'pending' | 'confirmed' = 'pending';
 
   constructor(private authService: AuthService, private cdr: ChangeDetectorRef) {}

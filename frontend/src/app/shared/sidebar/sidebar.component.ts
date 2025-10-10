@@ -184,7 +184,7 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
               
-              <a routerLink="/admin/course-management" 
+              <a routerLink="/course-management" 
                  routerLinkActive="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500" 
                  class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
                 <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
@@ -219,17 +219,17 @@ import { AuthService, User } from '../../core/auth.service';
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Class Rep</h3>
               </div>
               
-              <a routerLink="/content-manager" 
-                 routerLinkActive="bg-emerald-50 text-emerald-700 border-r-2 border-emerald-500" 
+              <a routerLink="/course-management" 
+                 routerLinkActive="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500" 
                  class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
                   <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium">Upload Content</div>
-                  <div class="text-xs text-gray-500">Add materials & recordings</div>
+                  <div class="font-medium">Course Management</div>
+                  <div class="text-xs text-gray-500">Upload recordings & materials</div>
                 </div>
               </a>
             </div>
@@ -451,7 +451,7 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
               
-              <a routerLink="/admin/course-management" 
+              <a routerLink="/course-management" 
                  routerLinkActive="bg-indigo-50 text-indigo-700" 
                  (click)="toggleSidebar()"
                  class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
@@ -488,18 +488,18 @@ import { AuthService, User } from '../../core/auth.service';
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Class Rep</h3>
               </div>
               
-              <a routerLink="/content-manager" 
-                 routerLinkActive="bg-emerald-50 text-emerald-700" 
+              <a routerLink="/course-management" 
+                 routerLinkActive="bg-indigo-50 text-indigo-700" 
                  (click)="toggleSidebar()"
                  class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
                   <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium">Upload Content</div>
-                  <div class="text-xs text-gray-500">Add materials & recordings</div>
+                  <div class="font-medium">Course Management</div>
+                  <div class="text-xs text-gray-500">Upload recordings & materials</div>
                 </div>
               </a>
             </div>

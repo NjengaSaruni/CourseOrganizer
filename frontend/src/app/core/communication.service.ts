@@ -263,7 +263,8 @@ export class CommunicationService {
       'moderate_messages',
       'view_all_messages',
       'manage_polls',
-      'send_notifications'
+      'send_notifications',
+      'upload_content'
     ];
   }
 
@@ -273,7 +274,8 @@ export class CommunicationService {
       'moderate_messages': 'Moderate Messages',
       'view_all_messages': 'View All Messages',
       'manage_polls': 'Manage Polls',
-      'send_notifications': 'Send Notifications'
+      'send_notifications': 'Send Notifications',
+      'upload_content': 'Upload Course Content'
     };
     return permissionNames[permission] || permission;
   }

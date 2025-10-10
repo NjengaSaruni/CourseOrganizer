@@ -30,10 +30,10 @@ import { throwError } from 'rxjs';
             </div>
             <div class="ml-4 flex-1">
               <h3 class="text-lg font-semibold text-gray-900">
-                {{ classRepRole ? 'Class Representative - ' + classRepRole.student_class_name : 'Student Access' }}
+                {{ classRepRole && classRepRole.permissions.includes('send_announcements') ? 'Class Representative - ' + classRepRole.student_class_name : 'Class Announcements' }}
               </h3>
               <p class="text-sm text-gray-600">
-                {{ classRepRole ? 'You have permission to send announcements to your class' : 'You can access announcements (testing mode)' }}
+                {{ classRepRole && classRepRole.permissions.includes('send_announcements') ? 'You have permission to send announcements to your class' : 'View important announcements from your class representatives' }}
               </p>
             </div>
             <div class="flex items-center space-x-4">

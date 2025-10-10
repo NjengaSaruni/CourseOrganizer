@@ -102,8 +102,8 @@ export class CourseManagementComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (!this.authService.isAuthenticated() || !this.authService.isAdmin()) {
-      this.router.navigate(['/admin']);
+    if (!this.authService.isAuthenticated() || !this.authService.isAdminOrClassRep()) {
+      this.router.navigate(['/dashboard']);
       return;
     }
     

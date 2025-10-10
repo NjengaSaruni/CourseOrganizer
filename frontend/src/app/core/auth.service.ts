@@ -174,6 +174,20 @@ export class AuthService {
     return user !== null && user.is_admin === true;
   }
 
+  isClassRep(): boolean {
+    const user = this.getCurrentUser();
+    return user !== null && user.class_rep_role?.is_active === true;
+  }
+
+  canUploadContent(): boolean {
+    const user = this.getCurrentUser();
+    return user !== null && user.can_upload_content === true;
+  }
+
+  isAdminOrClassRep(): boolean {
+    return this.isAdmin() || this.canUploadContent();
+  }
+
   refreshUserData(): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/directory/auth/profile/`).pipe(
       map(user => {

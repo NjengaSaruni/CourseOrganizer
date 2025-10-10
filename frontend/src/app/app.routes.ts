@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/auth.guard';
 import { AdminGuard } from './core/admin.guard';
+import { AdminOrClassRepGuard } from './core/admin-or-classrep.guard';
 
 export const routes: Routes = [
   { path: '', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent) },
@@ -49,14 +50,19 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   { 
+    path: 'course-management', 
+    loadComponent: () => import('./features/course-management/course-management.component').then(m => m.CourseManagementComponent),
+    canActivate: [AdminOrClassRepGuard]
+  },
+  { 
     path: 'admin', 
     loadComponent: () => import('./features/admin/admin.component').then(m => m.AdminComponent),
     canActivate: [AdminGuard]
   },
   { 
     path: 'admin/course-management', 
-    loadComponent: () => import('./features/course-management/course-management.component').then(m => m.CourseManagementComponent),
-    canActivate: [AdminGuard]
+    redirectTo: 'course-management',
+    pathMatch: 'full'
   },
   { 
     path: 'admin/class-rep-management', 
