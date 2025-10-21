@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 import { AuthService } from '../../core/auth.service';
+import { ActiveUsersChartComponent } from './active-users-chart.component';
 
 interface LoginStats {
   overview: {
@@ -59,12 +60,22 @@ interface LoginStats {
     browser: string;
     is_active: boolean;
   }>;
+  time_series: {
+    daily_active_users: Array<{
+      date: string;
+      active_users: number;
+    }>;
+    hourly_active_users: Array<{
+      datetime: string;
+      active_users: number;
+    }>;
+  };
 }
 
 @Component({
   selector: 'app-login-tracking',
   standalone: true,
-  imports: [CommonModule, PageLayoutComponent],
+  imports: [CommonModule, PageLayoutComponent, ActiveUsersChartComponent],
   template: `
     <app-page-layout 
       pageTitle="Login Tracking" 
@@ -164,6 +175,14 @@ interface LoginStats {
             <p class="text-sm text-gray-600">Failed Logins</p>
             <p class="text-xs text-red-600 mt-2">{{stats.today.failed}} today</p>
           </div>
+        </div>
+
+        <!-- Active Users Chart -->
+        <div class="mb-8">
+          <app-active-users-chart 
+            *ngIf="stats.time_series"
+            [timeSeriesData]="stats.time_series">
+          </app-active-users-chart>
         </div>
 
         <!-- Charts Row -->

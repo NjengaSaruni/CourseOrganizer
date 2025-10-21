@@ -475,6 +475,7 @@ def login_stats(request):
     from django.utils import timezone
     from datetime import timedelta
     from django.db.models import Count
+    from django.db.models.functions import TruncHour, TruncDay
     
     if not request.user.is_admin:
         return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
@@ -559,6 +560,37 @@ def login_stats(request):
         for login in recent_logins
     ]
     
+    # Get active users over time (last 30 days)
+    daily_active_users = LoginHistory.objects.filter(
+        login_time__gte=month_ago,
+        success=True
+    ).annotate(
+        day=TruncDay('login_time')
+    ).values('day').annotate(
+        active_users=Count('user', distinct=True)
+    ).order_by('day')
+    
+    # Get hourly active users (last 24 hours)
+    hourly_active_users = LoginHistory.objects.filter(
+        login_time__gte=now - timedelta(hours=24),
+        success=True
+    ).annotate(
+        hour=TruncHour('login_time')
+    ).values('hour').annotate(
+        active_users=Count('user', distinct=True)
+    ).order_by('hour')
+
+    # Format time series data
+    daily_active_data = [{
+        'date': entry['day'].isoformat(),
+        'active_users': entry['active_users']
+    } for entry in daily_active_users]
+
+    hourly_active_data = [{
+        'datetime': entry['hour'].isoformat(),
+        'active_users': entry['active_users']
+    } for entry in hourly_active_users]
+
     return Response({
         'overview': {
             'total_logins': total_logins,
@@ -585,4 +617,8 @@ def login_stats(request):
         'browser_breakdown': list(browser_breakdown),
         'suspicious_ips': list(suspicious_ips),
         'recent_logins': recent_logins_data,
+        'time_series': {
+            'daily_active_users': daily_active_data,
+            'hourly_active_users': hourly_active_data
+        }
     })

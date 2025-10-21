@@ -128,7 +128,7 @@ commands.md
 *.pem
 
 # Environment files with secrets
-docker-compose.gce.env
+docker-compose.gce.envgcluo
 .env
 backend/.env
 
@@ -137,3 +137,7 @@ backend/.env
 *.key
 jitsi_*.pem
 jitsi_*.key
+
+scratch.md
+course-organizer.code-workspace
+docker-compose.gce.env
