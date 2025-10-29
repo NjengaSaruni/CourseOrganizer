@@ -45,13 +45,13 @@
           
           <div class="flex bg-gray-100 rounded-lg p-1">
             <button 
-              (click)="viewMode = 'grid'" 
+              (click)="changeViewMode('grid')" 
               [class]="viewMode === 'grid' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'"
               class="px-3 py-1 rounded-md text-sm font-medium transition-colors">
               Grid View
             </button>
             <button 
-              (click)="viewMode = 'calendar'" 
+              (click)="changeViewMode('calendar')" 
               [class]="viewMode === 'calendar' ? 'bg-white text-primary-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'"
               class="px-3 py-1 rounded-md text-sm font-medium transition-colors">
               Calendar View

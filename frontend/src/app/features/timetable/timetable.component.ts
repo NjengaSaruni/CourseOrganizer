@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -43,6 +43,7 @@ export class TimetableComponent implements OnInit {
   isAdmin = false;
   editingEvent: CalendarEvent | null = null;
   showEditModal = false;
+  private userChangedView = false; // Track if user manually changed the view
 
   days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   timeSlots = ['08:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00'];
@@ -67,12 +68,35 @@ export class TimetableComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // Set default view mode based on screen width
+    this.setDefaultViewMode();
+    
     if (this.authService.isAuthenticated()) {
       this.isAdmin = this.authService.isAdmin();
       this.loadTimetable();
     } else {
       this.isLoading = false;
     }
+  }
+
+  private setDefaultViewMode(): void {
+    // Use calendar view as default for smaller screens (< 768px) to avoid horizontal scrolling
+    // Only set default if user hasn't manually changed the view
+    if (!this.userChangedView) {
+      const screenWidth = window.innerWidth;
+      this.viewMode = screenWidth < 768 ? 'calendar' : 'grid';
+    }
+  }
+
+  @HostListener('window:resize', ['$event'])
+  onResize(event: any): void {
+    // Update view mode on resize (e.g., device rotation) if user hasn't manually changed it
+    this.setDefaultViewMode();
+  }
+
+  changeViewMode(mode: 'grid' | 'calendar'): void {
+    this.viewMode = mode;
+    this.userChangedView = true; // Mark that user manually changed the view
   }
 
   onSidebarToggle(isOpen: boolean): void {
