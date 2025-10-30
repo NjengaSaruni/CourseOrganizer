@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CourseContentService, MaterialCreate, FileUploadResponse } from '../../../core/course-content.service';
 import { environment } from '../../../../environments/environment';
+import { ButtonComponent } from '../../../shared/button/button.component';
 
 @Component({
   selector: 'app-materials-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ButtonComponent],
   template: `
     <div class="bg-white/90 backdrop-blur rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-gray-200 p-6 sm:p-8">
       <div class="flex items-center mb-5">
@@ -178,18 +179,15 @@ import { environment } from '../../../../environments/environment';
 
         <!-- Submit Button -->
         <div class="pt-4">
-          <button type="submit" 
-                  [disabled]="!materialsForm.form.valid || uploading"
-                  class="w-full flex justify-center h-12 px-6 rounded-xl shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-black transition disabled:opacity-50 disabled:cursor-not-allowed">
-            <span *ngIf="!uploading">Add Material</span>
-            <span *ngIf="uploading" class="flex items-center">
-              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Processing...
-            </span>
-          </button>
+          <app-button 
+            type="submit"
+            size="lg"
+            [disabled]="!materialsForm.form.valid || (!selectedFile && !content.file_url)"
+            [loading]="uploading"
+            loadingText="Processing..."
+            [fullWidth]="true">
+            Add Material
+          </app-button>
         </div>
       </form>
     </div>

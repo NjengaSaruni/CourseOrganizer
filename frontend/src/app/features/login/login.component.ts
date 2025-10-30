@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { ButtonComponent } from '../../shared/button/button.component';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, ButtonComponent],
   template: `
     <div class="min-h-screen flex items-center justify-center bg-white py-12 px-6">
       <div class="max-w-md w-full space-y-8">
@@ -87,18 +88,15 @@ import { AuthService } from '../../core/auth.service';
           </div>
 
           <div>
-            <button type="submit" 
-                    [disabled]="isLoading || !loginForm.form.valid"
-                    class="w-full bg-gray-900 hover:bg-gray-800 text-white py-3 px-4 rounded-xl font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              <span *ngIf="!isLoading">Sign in</span>
-              <span *ngIf="isLoading" class="flex items-center justify-center">
-                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Signing in...
-              </span>
-            </button>
+            <app-button 
+              type="submit"
+              size="lg"
+              [disabled]="!loginForm.form.valid"
+              [loading]="isLoading"
+              loadingText="Signing in..."
+              [fullWidth]="true">
+              Sign in
+            </app-button>
           </div>
 
           <div class="text-center space-y-3">

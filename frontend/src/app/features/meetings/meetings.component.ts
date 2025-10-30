@@ -6,11 +6,12 @@ import { AuthService } from '../../core/auth.service';
 import { VideoCallService, VideoCallResponse } from '../../core/video-call.service';
 import { LoaderComponent } from '../../shared/loader/loader.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { ButtonComponent } from '../../shared/button/button.component';
 
 @Component({
   selector: 'app-meetings',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageLayoutComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent],
   template: `
     <app-page-layout 
       pageTitle="Online Meetings" 
@@ -143,12 +144,14 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
               </div>
               
               <div class="flex justify-end">
-                <button type="submit" 
-                        [disabled]="isCreatingMeeting"
-                        class="bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-md font-medium transition-colors">
-                  <span *ngIf="isCreatingMeeting">Creating...</span>
-                  <span *ngIf="!isCreatingMeeting">Create Jitsi Meeting</span>
-                </button>
+                <app-button 
+                  type="submit" 
+                  size="lg"
+                  [disabled]="isCreatingMeeting"
+                  [loading]="isCreatingMeeting"
+                  loadingText="Creating...">
+                  Create Jitsi Meeting
+                </app-button>
               </div>
             </form>
           </div>
@@ -215,23 +218,22 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
                     <span class="font-medium">{{ meeting.created_by_name }}</span>
                   </div>
                   <div class="flex space-x-2">
-                    <button (click)="joinMeeting(meeting)" 
-                            [disabled]="!meeting.can_join"
-                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
-                      <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
+                    <app-button 
+                      variant="success"
+                      size="sm"
+                      (clicked)="joinMeeting(meeting)" 
+                      [disabled]="!meeting.can_join"
+                      iconLeft='<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>'>
                       {{ meeting.can_join ? 'Join Meeting' : 'Not Available' }}
-                    </button>
-                    <button *ngIf="authService.isAdmin() || meeting.created_by === authService.getCurrentUser()?.id" 
-                            (click)="manageMeeting(meeting)"
-                            class="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
-                      <svg class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+                    </app-button>
+                    <app-button 
+                      *ngIf="authService.isAdmin() || meeting.created_by === authService.getCurrentUser()?.id"
+                      variant="secondary"
+                      size="sm"
+                      (clicked)="manageMeeting(meeting)"
+                      iconLeft='<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>'>
                       Manage
-                    </button>
+                    </app-button>
                   </div>
                 </div>
               </div>

@@ -6,11 +6,12 @@ import { Subscription } from 'rxjs';
 import { GroupworkService, StudyGroup, StudyGroupMembership, GroupMeeting } from '../../../core/groupwork.service';
 import { ChatService } from '../../../core/chat.service';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
+import { ButtonComponent } from '../../../shared/button/button.component';
 
 @Component({
   selector: 'app-study-group-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageLayoutComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent],
   template: `
     <app-page-layout [pageTitle]="group()?.name || 'Study Group'" [pageSubtitle]="group()?.description || ''">
     <div class="min-h-screen bg-gray-50">
@@ -20,15 +21,14 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
           <div class="py-6">
             <div class="flex items-center justify-between">
               <div>
-                <button 
-                  (click)="goBack()" 
-                  class="flex items-center text-gray-600 hover:text-gray-900 mb-2">
-                  <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                  </svg>
+                <app-button 
+                  variant="ghost"
+                  size="sm"
+                  (clicked)="goBack()"
+                  iconLeft='<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>'>
                   Back to Study Groups
-                </button>
-                <h1 class="text-3xl font-bold text-gray-900">{{ group()?.name || 'Loading...' }}</h1>
+                </app-button>
+                <h1 class="text-3xl font-bold text-gray-900 mt-2">{{ group()?.name || 'Loading...' }}</h1>
                 <p class="text-gray-600 mt-2">{{ group()?.description || '' }}</p>
               </div>
               <div class="flex items-center space-x-3">
@@ -40,12 +40,14 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                 </span>
 
                 <!-- Top App Bar Chat Toggle -->
-                <button 
-                  (click)="openChatPanel()"
-                  class="ml-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors">
-                  <span class="w-2 h-2 rounded-full" [class]="chatConnected ? 'bg-green-300' : 'bg-red-300'"></span>
-                  Chat
-                </button>
+                <div class="ml-4 inline-flex items-center">
+                  <app-button 
+                    variant="primary"
+                    (clicked)="openChatPanel()">
+                    <span class="w-2 h-2 rounded-full mr-2" [class]="chatConnected ? 'bg-green-300' : 'bg-red-300'"></span>
+                    Chat
+                  </app-button>
+                </div>
               </div>
             </div>
           </div>
@@ -106,11 +108,10 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
             <div class="bg-white rounded-2xl border border-gray-200 p-6">
               <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold text-gray-900">Meetings</h2>
-                <button 
-                  (click)="showCreateMeeting = !showCreateMeeting"
-                  class="px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-colors">
+                <app-button 
+                  (clicked)="showCreateMeeting = !showCreateMeeting">
                   Schedule Meeting
-                </button>
+                </app-button>
               </div>
 
               <!-- Create Meeting Form -->
@@ -152,24 +153,20 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                   />
                 </div>
                 <div class="flex gap-3">
-                  <button 
-                    (click)="createMeeting()"
+                  <app-button 
+                    size="lg"
+                    (clicked)="createMeeting()"
                     [disabled]="!newMeeting.title.trim() || creatingMeeting()"
-                    class="px-6 py-3 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors">
-                    <span *ngIf="!creatingMeeting()">Create Meeting</span>
-                    <span *ngIf="creatingMeeting()" class="flex items-center">
-                      <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Creating...
-                    </span>
-                  </button>
-                  <button 
-                    (click)="showCreateMeeting = false"
-                    class="px-6 py-3 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-medium transition-colors">
+                    [loading]="creatingMeeting()"
+                    loadingText="Creating...">
+                    Create Meeting
+                  </app-button>
+                  <app-button 
+                    variant="secondary"
+                    size="lg"
+                    (clicked)="showCreateMeeting = false">
                     Cancel
-                  </button>
+                  </app-button>
                 </div>
               </div>
 
@@ -212,12 +209,12 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                       </div>
                     </div>
                     <div class="ml-4">
-                      <button 
+                      <app-button 
                         *ngIf="meeting.platform === 'jitsi' && meeting.video_join_url"
-                        (click)="joinMeeting(meeting)"
-                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors">
+                        variant="primary"
+                        (clicked)="joinMeeting(meeting)">
                         Join Meeting
-                      </button>
+                      </app-button>
                     </div>
                   </div>
                 </div>
@@ -289,7 +286,12 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
               <button class="px-3 py-1.5 text-sm rounded-md bg-white shadow">Chat</button>
               <button class="px-3 py-1.5 text-sm rounded-md text-gray-400" disabled>Materials (soon)</button>
             </div>
-            <button (click)="closeChatPanel()" class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+            <app-button 
+              variant="secondary"
+              size="sm"
+              (clicked)="closeChatPanel()">
+              Close
+            </app-button>
           </div>
         </div>
 
@@ -335,7 +337,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                   <button 
                     *ngIf="m.id && typeof m.id === 'number'"
                     (click)="replyToMessage(m)"
-                    class="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-gray-50 hover:scale-110 active:scale-95"
+                    class="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-gray-50 hover:scale-110 active:scale-95 transition-all"
                     title="Reply to message">
                     <svg class="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
@@ -346,7 +348,7 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                   <button 
                     *ngIf="canDeleteMessage(m)"
                     (click)="deleteMessage(m)"
-                    class="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-red-50 hover:scale-110 active:scale-95"
+                    class="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-red-50 hover:scale-110 active:scale-95 transition-all"
                     title="Delete message">
                     <svg class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -373,13 +375,12 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
                   <p class="text-sm text-gray-700 line-clamp-2">{{ truncateText(replyingTo.body, 80) }}</p>
                 </div>
               </div>
-              <button 
-                (click)="cancelReply()"
-                class="p-2 hover:bg-white/50 rounded-full transition-colors group">
-                <svg class="w-4 h-4 text-gray-500 group-hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
+              <app-button 
+                variant="ghost"
+                size="sm"
+                (clicked)="cancelReply()"
+                iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'>
+              </app-button>
             </div>
           </div>
 
@@ -398,19 +399,16 @@ import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.com
               [placeholder]="replyingTo ? 'Reply to ' + replyingTo.from + '...' : 'Type a message...'" 
               class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               [disabled]="!chatConnected" />
-            <button 
-              (click)="sendChat()"
+            <app-button 
+              variant="primary"
+              size="lg"
+              (clicked)="sendChat()"
               [disabled]="!chatMessage.trim() || !chatConnected || isSending"
-              class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center gap-2">
-              <svg *ngIf="!isSending" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-              </svg>
-              <svg *ngIf="isSending" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-              </svg>
-              <span>{{ isSending ? 'Sending' : 'Send' }}</span>
-            </button>
+              [loading]="isSending"
+              loadingText="Sending"
+              iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>'>
+              Send
+            </app-button>
           </div>
         </div>
       </div>

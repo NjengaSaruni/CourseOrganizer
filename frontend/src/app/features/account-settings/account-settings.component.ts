@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { AuthService, User } from '../../core/auth.service';
 import { SettingsService, PasswordChangeRequest, NotificationSettings } from '../../core/settings.service';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { ButtonComponent } from '../../shared/button/button.component';
 
 @Component({
   selector: 'app-account-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageLayoutComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent],
   template: `
     <app-page-layout 
       pageTitle="Account Settings" 
@@ -158,16 +159,14 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
 
             <!-- Change Password Button -->
             <div class="flex justify-end">
-              <button 
+              <app-button 
                 type="submit"
+                size="lg"
                 [disabled]="isChangingPassword"
-                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl transition-colors font-medium flex items-center">
-                <svg *ngIf="isChangingPassword" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                {{ isChangingPassword ? 'Changing...' : 'Change Password' }}
-              </button>
+                [loading]="isChangingPassword"
+                loadingText="Changing...">
+                Change Password
+              </app-button>
             </div>
           </form>
         </div>
@@ -261,16 +260,14 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
 
           <!-- Save Notification Settings -->
           <div class="flex justify-end pt-6 border-t border-gray-200 mt-6">
-            <button 
-              (click)="saveNotificationSettings()"
+            <app-button 
+              size="lg"
+              (clicked)="saveNotificationSettings()"
               [disabled]="isSavingNotifications"
-              class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl transition-colors font-medium flex items-center">
-              <svg *ngIf="isSavingNotifications" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              {{ isSavingNotifications ? 'Saving...' : 'Save Preferences' }}
-            </button>
+              [loading]="isSavingNotifications"
+              loadingText="Saving...">
+              Save Preferences
+            </app-button>
           </div>
         </div>
 
@@ -288,11 +285,11 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
                 <h4 class="text-sm font-medium text-gray-900">Export Account Data</h4>
                 <p class="text-sm text-gray-500">Download a copy of your account data and course information</p>
               </div>
-              <button 
-                (click)="exportData()"
-                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium">
+              <app-button 
+                variant="secondary"
+                (clicked)="exportData()">
                 Export
-              </button>
+              </app-button>
             </div>
 
             <!-- Delete Account -->
@@ -301,11 +298,11 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
                 <h4 class="text-sm font-medium text-red-900">Delete Account</h4>
                 <p class="text-sm text-red-600">Permanently delete your account and all associated data</p>
               </div>
-              <button 
-                (click)="showDeleteConfirmation = true"
-                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium">
+              <app-button 
+                variant="danger"
+                (clicked)="showDeleteConfirmation = true">
                 Delete
-              </button>
+              </app-button>
             </div>
           </div>
         </div>
@@ -355,16 +352,18 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
             </div>
             <div class="items-center px-4 py-3">
               <div class="flex space-x-3">
-                <button 
-                  (click)="showDeleteConfirmation = false"
-                  class="px-4 py-2 bg-gray-300 text-gray-800 text-base font-medium rounded-lg shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <app-button 
+                  variant="secondary"
+                  size="lg"
+                  (clicked)="showDeleteConfirmation = false">
                   Cancel
-                </button>
-                <button 
-                  (click)="deleteAccount()"
-                  class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-lg shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                </app-button>
+                <app-button 
+                  variant="danger"
+                  size="lg"
+                  (clicked)="deleteAccount()">
                   Delete Account
-                </button>
+                </app-button>
               </div>
             </div>
           </div>

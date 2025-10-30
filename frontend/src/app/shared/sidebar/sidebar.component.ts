@@ -63,31 +63,17 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
               
-              <a routerLink="/materials" 
-                 routerLinkActive="bg-purple-50 text-purple-700 border-r-2 border-purple-500" 
+              <a routerLink="/learning-hub" 
+                 routerLinkActive="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500" 
                  class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
                   <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium">Materials</div>
-                  <div class="text-xs text-gray-500">Course resources</div>
-                </div>
-              </a>
-              
-              <a routerLink="/recordings" 
-                 routerLinkActive="bg-orange-50 text-orange-700 border-r-2 border-orange-500" 
-                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <div class="font-medium">Recordings</div>
-                  <div class="text-xs text-gray-500">Lecture videos</div>
+                  <div class="font-medium">Learning Hub</div>
+                  <div class="text-xs text-gray-500">Materials, recordings & content</div>
                 </div>
               </a>
               
@@ -133,21 +119,6 @@ import { AuthService, User } from '../../core/auth.service';
                   <div class="text-xs text-gray-500">{{ isClassRep() ? 'Send class announcements' : 'View class announcements' }}</div>
                 </div>
               </a>
-              
-              <!-- Course Timeline (for all users) -->
-              <a routerLink="/course-timeline" 
-                 routerLinkActive="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500" 
-                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <div class="font-medium">Course Timeline</div>
-                  <div class="text-xs text-gray-500">Browse content chronologically</div>
-                </div>
-              </a>
             </div>
 
             <!-- Administration Section -->
@@ -184,31 +155,17 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
               
-              <a routerLink="/course-management" 
-                 routerLinkActive="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500" 
-                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div>
-                  <div class="font-medium">Course Management</div>
-                  <div class="text-xs text-gray-500">Upload recordings & materials</div>
-                </div>
-              </a>
-              
-              <a routerLink="/content-manager" 
+              <a routerLink="/content-management" 
                  routerLinkActive="bg-emerald-50 text-emerald-700 border-r-2 border-emerald-500" 
                  class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
                 <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
                   <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium">Content Manager</div>
-                  <div class="text-xs text-gray-500">Add course content & timeline</div>
+                  <div class="font-medium">Content Management</div>
+                  <div class="text-xs text-gray-500">Upload & manage all content</div>
                 </div>
               </a>
             </div>
@@ -219,16 +176,16 @@ import { AuthService, User } from '../../core/auth.service';
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Class Rep</h3>
               </div>
               
-              <a routerLink="/course-management" 
-                 routerLinkActive="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500" 
+              <a routerLink="/content-management" 
+                 routerLinkActive="bg-emerald-50 text-emerald-700 border-r-2 border-emerald-500" 
                  class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
                   <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium">Course Management</div>
+                  <div class="font-medium">Content Management</div>
                   <div class="text-xs text-gray-500">Upload recordings & materials</div>
                 </div>
               </a>
@@ -322,33 +279,18 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
               
-              <a routerLink="/materials" 
-                 routerLinkActive="bg-purple-50 text-purple-700" 
+              <a routerLink="/learning-hub" 
+                 routerLinkActive="bg-indigo-50 text-indigo-700" 
                  (click)="toggleSidebar()"
                  class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mr-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
                   <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium">Materials</div>
-                  <div class="text-xs text-gray-500">Course resources</div>
-                </div>
-              </a>
-              
-              <a routerLink="/recordings" 
-                 routerLinkActive="bg-orange-50 text-orange-700" 
-                 (click)="toggleSidebar()"
-                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <div class="font-medium">Recordings</div>
-                  <div class="text-xs text-gray-500">Lecture videos</div>
+                  <div class="font-medium">Learning Hub</div>
+                  <div class="text-xs text-gray-500">Materials, recordings & content</div>
                 </div>
               </a>
               
@@ -397,22 +339,6 @@ import { AuthService, User } from '../../core/auth.service';
                   <div class="text-xs text-gray-500">{{ isClassRep() ? 'Send class announcements' : 'View class announcements' }}</div>
                 </div>
               </a>
-              
-              <!-- Course Timeline (for all users) -->
-              <a routerLink="/course-timeline" 
-                 routerLinkActive="bg-indigo-50 text-indigo-700" 
-                 (click)="toggleSidebar()"
-                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <div class="font-medium">Course Timeline</div>
-                  <div class="text-xs text-gray-500">Browse content chronologically</div>
-                </div>
-              </a>
             </div>
 
             <!-- Administration Section -->
@@ -451,33 +377,18 @@ import { AuthService, User } from '../../core/auth.service';
                 </div>
               </a>
               
-              <a routerLink="/course-management" 
-                 routerLinkActive="bg-indigo-50 text-indigo-700" 
-                 (click)="toggleSidebar()"
-                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
-                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div>
-                  <div class="font-medium">Course Management</div>
-                  <div class="text-xs text-gray-500">Upload recordings & materials</div>
-                </div>
-              </a>
-              
-              <a routerLink="/content-manager" 
+              <a routerLink="/content-management" 
                  routerLinkActive="bg-emerald-50 text-emerald-700" 
                  (click)="toggleSidebar()"
                  class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
                 <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
                   <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium">Content Manager</div>
-                  <div class="text-xs text-gray-500">Add course content & timeline</div>
+                  <div class="font-medium">Content Management</div>
+                  <div class="text-xs text-gray-500">Upload & manage all content</div>
                 </div>
               </a>
             </div>
@@ -488,17 +399,17 @@ import { AuthService, User } from '../../core/auth.service';
                 <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Class Rep</h3>
               </div>
               
-              <a routerLink="/course-management" 
-                 routerLinkActive="bg-indigo-50 text-indigo-700" 
+              <a routerLink="/content-management" 
+                 routerLinkActive="bg-emerald-50 text-emerald-700" 
                  (click)="toggleSidebar()"
                  class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
-                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
                   <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </div>
                 <div>
-                  <div class="font-medium">Course Management</div>
+                  <div class="font-medium">Content Management</div>
                   <div class="text-xs text-gray-500">Upload recordings & materials</div>
                 </div>
               </a>

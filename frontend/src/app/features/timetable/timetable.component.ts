@@ -8,6 +8,7 @@ import { CalendarService, CalendarEvent as CalendarEventType } from '../../core/
 import { VideoCallService, VideoCallResponse } from '../../core/video-call.service';
 import { LoaderComponent } from '../../shared/loader/loader.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { ButtonComponent } from '../../shared/button/button.component';
 
 interface CalendarEvent {
   id: string;
@@ -28,7 +29,7 @@ interface CalendarEvent {
 @Component({
   selector: 'app-timetable',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageLayoutComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent],
   templateUrl: './timetable.component.html',
   styles: []
 })

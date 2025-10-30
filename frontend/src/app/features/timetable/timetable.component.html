@@ -245,11 +245,12 @@
         <div class="mt-3">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-medium text-gray-900">{{ selectedEvent.course }}</h3>
-            <button (click)="closeEventDetails()" class="text-gray-400 hover:text-gray-600">
-              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <app-button 
+              variant="ghost"
+              size="sm"
+              (clicked)="closeEventDetails()"
+              iconLeft='<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>'>
+            </app-button>
           </div>
           
           <div class="space-y-3">
@@ -279,12 +280,18 @@
           <div class="mt-6 flex justify-between">
             <!-- Admin Actions -->
             <div *ngIf="isAdmin" class="flex space-x-2">
-              <button (click)="editEvent()" class="px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200">
+              <app-button 
+                variant="secondary"
+                size="sm"
+                (clicked)="editEvent()">
                 Edit
-              </button>
-              <button (click)="deleteEvent()" class="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200">
+              </app-button>
+              <app-button 
+                variant="danger"
+                size="sm"
+                (clicked)="deleteEvent()">
                 Delete
-              </button>
+              </app-button>
             </div>
             
             <!-- Video Call Actions -->
@@ -316,9 +323,11 @@
             
             <!-- Calendar Actions -->
             <div class="flex space-x-3">
-              <button (click)="closeEventDetails()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+              <app-button 
+                variant="secondary"
+                (clicked)="closeEventDetails()">
                 Close
-              </button>
+              </app-button>
               <div class="relative">
                 <button (click)="toggleCalendarOptions()" class="px-4 py-2 text-sm font-medium text-white rounded-md hover:opacity-90" 
                         [style.background-color]="selectedEvent.color">
@@ -358,11 +367,12 @@
         <div class="mt-3">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-medium text-gray-900">Edit Lesson Time</h3>
-            <button (click)="closeEditModal()" class="text-gray-400 hover:text-gray-600">
-              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <app-button 
+              variant="ghost"
+              size="sm"
+              (clicked)="closeEditModal()"
+              iconLeft='<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>'>
+            </app-button>
           </div>
           
           <form (ngSubmit)="saveEventChanges()" class="space-y-4">
@@ -392,12 +402,16 @@
             </div>
             
             <div class="flex justify-end space-x-3 pt-4">
-              <button type="button" (click)="closeEditModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+              <app-button 
+                variant="secondary"
+                (clicked)="closeEditModal()">
                 Cancel
-              </button>
-              <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700">
+              </app-button>
+              <app-button 
+                type="submit"
+                variant="primary">
                 Save Changes
-              </button>
+              </app-button>
             </div>
           </form>
         </div>

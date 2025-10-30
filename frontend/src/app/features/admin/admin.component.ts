@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 import { AuthService, User } from '../../core/auth.service';
+import { ButtonComponent } from '../../shared/button/button.component';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, RouterModule, PageLayoutComponent],
+  imports: [CommonModule, RouterModule, PageLayoutComponent, ButtonComponent],
   template: `
     <app-page-layout 
       pageTitle="Admin Panel" 
@@ -182,21 +183,23 @@ import { AuthService, User } from '../../core/auth.service';
               
               <!-- Action Buttons -->
               <div class="flex flex-col sm:flex-row gap-3">
-                <button (click)="approveRegistration(registration.id)" 
-                        class="flex-1 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center space-x-2">
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>Approve Registration</span>
-                </button>
+                <app-button 
+                  variant="success"
+                  size="lg"
+                  [fullWidth]="true"
+                  (clicked)="approveRegistration(registration.id)"
+                  iconLeft='<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>'>
+                  Approve Registration
+                </app-button>
                 
-                <button (click)="rejectRegistration(registration.id)" 
-                        class="flex-1 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center space-x-2">
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                  <span>Reject Registration</span>
-                </button>
+                <app-button 
+                  variant="danger"
+                  size="lg"
+                  [fullWidth]="true"
+                  (clicked)="rejectRegistration(registration.id)"
+                  iconLeft='<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>'>
+                  Reject Registration
+                </app-button>
               </div>
             </div>
           </div>

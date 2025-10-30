@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { GroupworkService, StudyGroup } from '../../core/groupwork.service';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { ButtonComponent } from '../../shared/button/button.component';
 
 @Component({
   selector: 'app-study-groups',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageLayoutComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent],
   template: `
     <app-page-layout 
       [pageTitle]="'Study Groups'" 
@@ -30,19 +31,18 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
               />
             </div>
             <div class="flex gap-3">
-              <button 
-                (click)="refresh()" 
-                class="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-xl font-medium transition-colors">
+              <app-button 
+                size="lg"
+                (clicked)="refresh()">
                 Search
-              </button>
-              <button 
-                (click)="toggleCreateForm()" 
-                class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-xl font-medium transition-colors flex items-center">
-                <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                </svg>
+              </app-button>
+              <app-button 
+                variant="secondary"
+                size="lg"
+                (clicked)="toggleCreateForm()"
+                iconLeft='<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>'>
                 Create Group
-              </button>
+              </app-button>
             </div>
           </div>
         </div>

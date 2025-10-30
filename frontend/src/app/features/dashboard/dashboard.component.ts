@@ -9,11 +9,12 @@ import { AuthService } from '../../core/auth.service';
 import { CourseContentService } from '../../core/course-content.service';
 import { LoaderComponent } from '../../shared/loader/loader.component';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
+import { ButtonComponent } from '../../shared/button/button.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, PageLayoutComponent],
+  imports: [CommonModule, RouterModule, PageLayoutComponent, ButtonComponent],
   template: `
     <app-page-layout 
       pageTitle="University of Nairobi - Dashboard" 
@@ -231,13 +232,13 @@ import { PageLayoutComponent } from '../../shared/page-layout/page-layout.compon
                       </div>
                     </div>
                   </div>
-                  <button (click)="markAnnouncementAsRead(announcement)" 
-                          *ngIf="!announcement.is_read"
-                          class="ml-4 text-blue-600 hover:text-blue-800 p-1 rounded-lg hover:bg-blue-100 transition-colors">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                  </button>
+                  <app-button 
+                    *ngIf="!announcement.is_read"
+                    variant="ghost"
+                    size="sm"
+                    (clicked)="markAnnouncementAsRead(announcement)"
+                    iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'>
+                  </app-button>
                 </div>
                 <div *ngIf="(announcements || []).length === 0" class="text-center py-8">
                   <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

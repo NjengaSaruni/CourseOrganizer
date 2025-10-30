@@ -1,0 +1,386 @@
+<app-page-layout 
+  pageTitle="Learning Hub" 
+  pageSubtitle="Access all your course materials, recordings, and content in one place"
+  [isSidebarOpen]="isSidebarOpen"
+  (sidebarToggle)="onSidebarToggle($event)">
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="flex flex-col items-center justify-center py-20">
+    <div class="relative">
+      <div class="w-16 h-16 bg-indigo-100 rounded-lg flex items-center justify-center">
+        <svg class="w-8 h-8 text-indigo-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      </div>
+      <div class="absolute -inset-2 w-20 h-20 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+    </div>
+    <div class="mt-6 text-center">
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Loading Learning Hub</h3>
+      <p class="text-sm text-gray-500">Preparing your content...</p>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !isLoading" class="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
+    <div class="flex items-center">
+      <svg class="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <p class="text-red-800">{{ error }}</p>
+    </div>
+  </div>
+
+  <!-- Course Selection -->
+  <div *ngIf="!selectedCourse && !isLoading" class="mb-8">
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-2xl font-semibold text-gray-900 mb-2">Select a Course</h2>
+        <p class="text-gray-600">Choose a course to access its content and materials</p>
+      </div>
+      
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div *ngFor="let course of courses" 
+               (click)="selectCourse(course)"
+               class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-6 cursor-pointer hover:shadow-md transition-all duration-200 border border-indigo-200 hover:border-indigo-300">
+            <div class="flex items-start justify-between mb-3">
+              <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">{{ course.name }}</h3>
+                <p class="text-sm text-gray-600 mb-2">{{ course.code }}</p>
+                <p class="text-xs text-gray-500">Year {{ course.year }} • Semester {{ course.semester }}</p>
+              </div>
+              <div class="ml-4">
+                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs text-gray-500">{{ course.credits }} credits</span>
+              <span class="text-xs text-indigo-600 font-medium">View Content →</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="courses.length === 0" class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No courses available</h3>
+          <p class="mt-1 text-sm text-gray-500">You don't have access to any courses yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div *ngIf="selectedCourse && !isLoading" class="space-y-6">
+    
+    <!-- Course Header with Selector -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div class="flex items-center space-x-3">
+          <button (click)="clearCourseSelection()" 
+                  class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+              <div>
+                <h2 class="text-xl font-semibold text-gray-900">{{ selectedCourse.name }}</h2>
+                <p class="text-sm text-gray-600">{{ selectedCourse.code }} • Year {{ selectedCourse.year }} • Semester {{ selectedCourse.semester }}</p>
+              </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+          <!-- View Mode Toggle -->
+          <button (click)="toggleViewMode()" 
+                  class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  [title]="viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'">
+            <svg *ngIf="viewMode === 'grid'" class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+            <svg *ngIf="viewMode === 'list'" class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabbed Navigation -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div class="border-b border-gray-200">
+        <nav class="flex overflow-x-auto" aria-label="Tabs">
+          <button (click)="switchTab('all')" 
+                  [class]="activeTab === 'all' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors">
+            <div class="flex items-center space-x-2">
+              <span>All Content</span>
+              <span *ngIf="filteredContent.length > 0" class="ml-2 py-0.5 px-2 rounded-full text-xs font-semibold bg-gray-100 text-gray-800">
+                {{ activeTab === 'all' ? filteredContent.length : allContent.length }}
+              </span>
+            </div>
+          </button>
+          
+          <button (click)="switchTab('materials')" 
+                  [class]="activeTab === 'materials' ? 'border-purple-500 text-purple-600 bg-purple-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors">
+            <div class="flex items-center space-x-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <span>Materials</span>
+            </div>
+          </button>
+          
+          <button (click)="switchTab('recordings')" 
+                  [class]="activeTab === 'recordings' ? 'border-green-500 text-green-600 bg-green-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors">
+            <div class="flex items-center space-x-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              <span>Recordings</span>
+            </div>
+          </button>
+          
+          <button (click)="switchTab('timeline')" 
+                  [class]="activeTab === 'timeline' ? 'border-indigo-500 text-indigo-600 bg-indigo-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors">
+            <div class="flex items-center space-x-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>Timeline</span>
+            </div>
+          </button>
+          
+          <button (click)="switchTab('assignments')" 
+                  [class]="activeTab === 'assignments' ? 'border-orange-500 text-orange-600 bg-orange-50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm transition-colors">
+            <div class="flex items-center space-x-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+              <span>Assignments</span>
+            </div>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Search and Filters -->
+      <div class="p-4 bg-gray-50 border-b border-gray-200">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <!-- Search -->
+          <div class="flex-1">
+            <div class="relative">
+              <input type="text" 
+                     [(ngModel)]="searchQuery"
+                     (input)="onSearch()"
+                     placeholder="Search content..."
+                     class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Sort By -->
+          <div class="flex items-center space-x-2">
+            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Sort by:</label>
+            <select [(ngModel)]="sortBy" 
+                    (change)="filterContent()"
+                    class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="date">Date Added</option>
+              <option value="title">Title</option>
+              <option value="views">Most Viewed</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="p-6">
+        <!-- Recently Viewed Section (Only on 'all' tab) -->
+        <div *ngIf="activeTab === 'all' && recentlyViewed.length > 0" class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Recently Viewed</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div *ngFor="let item of recentlyViewed" 
+                 class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                 (click)="viewContent(item)">
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-2xl">{{ getContentIcon(item) }}</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="getContentTypeBadgeClass(item)">
+                  {{ getContentTypeDisplay(item) }}
+                </span>
+              </div>
+              <h4 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2">{{ item.title }}</h4>
+              <p class="text-xs text-gray-500 line-clamp-1">{{ item.description }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Content Section (Only on 'all' tab) -->
+        <div *ngIf="activeTab === 'all' && newContent.length > 0" class="mb-8">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">New This Week</h3>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div *ngFor="let item of newContent" 
+                 class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer relative"
+                 (click)="viewContent(item)">
+              <span class="absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                New
+              </span>
+              <div class="flex items-start justify-between mb-2">
+                <span class="text-2xl">{{ getContentIcon(item) }}</span>
+              </div>
+              <h4 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2">{{ item.title }}</h4>
+              <p class="text-xs text-gray-500 line-clamp-1">{{ item.uploaded_by_name }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content List/Grid -->
+        <div *ngIf="filteredContent.length > 0">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            {{ activeTab === 'all' ? 'All Content' : activeTab === 'materials' ? 'Materials' : activeTab === 'recordings' ? 'Recordings' : activeTab === 'timeline' ? 'Timeline' : 'Assignments' }}
+          </h3>
+
+          <!-- Grid View -->
+          <div *ngIf="viewMode === 'grid'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div *ngFor="let item of filteredContent" 
+                 class="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all duration-200 cursor-pointer">
+              <div class="flex items-start justify-between mb-3">
+                <span class="text-3xl">{{ getContentIcon(item) }}</span>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      [ngClass]="getContentTypeBadgeClass(item)">
+                  {{ getContentTypeDisplay(item) }}
+                </span>
+              </div>
+
+              <h4 class="text-base font-semibold text-gray-900 mb-2 line-clamp-2">{{ item.title }}</h4>
+              <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ item.description }}</p>
+
+              <div class="flex items-center text-xs text-gray-500 mb-3">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                </svg>
+                <span class="mr-3">{{ item.uploaded_by_name }}</span>
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                <span>{{ item.created_at | date:'MMM d, y' }}</span>
+              </div>
+
+              <div *ngIf="item.view_count !== undefined || item.download_count !== undefined" class="flex items-center text-xs text-gray-500 mb-4">
+                <span *ngIf="item.view_count !== undefined" class="flex items-center mr-3">
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                  {{ item.view_count }}
+                </span>
+                <span *ngIf="item.download_count !== undefined" class="flex items-center">
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  {{ item.download_count }}
+                </span>
+              </div>
+
+              <div class="flex items-center space-x-2">
+                <button (click)="viewContent(item); $event.stopPropagation()" 
+                        class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
+                  View
+                </button>
+                <button *ngIf="item.file_url" 
+                        (click)="downloadContent(item); $event.stopPropagation()" 
+                        class="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition-colors">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- List View -->
+          <div *ngIf="viewMode === 'list'" class="space-y-3">
+            <div *ngFor="let item of filteredContent" 
+                 class="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                 (click)="viewContent(item)">
+              <div class="flex items-start space-x-4">
+                <span class="text-2xl flex-shrink-0">{{ getContentIcon(item) }}</span>
+                
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start justify-between mb-1">
+                    <h4 class="text-base font-semibold text-gray-900">{{ item.title }}</h4>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ml-3 flex-shrink-0"
+                          [ngClass]="getContentTypeBadgeClass(item)">
+                      {{ getContentTypeDisplay(item) }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2 line-clamp-1">{{ item.description }}</p>
+                  
+                  <div class="flex items-center text-xs text-gray-500 flex-wrap gap-x-4 gap-y-1">
+                    <span class="flex items-center">
+                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      </svg>
+                      {{ item.uploaded_by_name }}
+                    </span>
+                    <span class="flex items-center">
+                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                      </svg>
+                      {{ item.created_at | date:'MMM d, y' }}
+                    </span>
+                    <span *ngIf="item.view_count !== undefined" class="flex items-center">
+                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                      </svg>
+                      {{ item.view_count }} views
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center space-x-2 flex-shrink-0">
+                  <button (click)="viewContent(item); $event.stopPropagation()" 
+                          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors">
+                    View
+                  </button>
+                  <button *ngIf="item.file_url" 
+                          (click)="downloadContent(item); $event.stopPropagation()" 
+                          class="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="filteredContent.length === 0" class="text-center py-12">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No content found</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            {{ searchQuery ? 'Try adjusting your search terms' : 'Content will appear here once it\'s uploaded.' }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</app-page-layout>
+

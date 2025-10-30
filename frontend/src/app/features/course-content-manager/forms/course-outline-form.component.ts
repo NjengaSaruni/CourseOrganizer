@@ -2,13 +2,14 @@ import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CourseContentService, CourseOutlineCreate, FileUploadResponse } from '../../../core/course-content.service';
+import { ButtonComponent } from '../../../shared/button/button.component';
 import { CourseService } from '../../../core/course.service';
 import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-course-outline-form',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ButtonComponent],
   template: `
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <div class="flex items-center mb-4">
@@ -121,18 +122,15 @@ import { environment } from '../../../../environments/environment';
 
         <!-- Submit Button -->
         <div class="pt-4">
-          <button type="submit" 
-                  [disabled]="!outlineForm.form.valid || uploading"
-                  class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
-            <span *ngIf="!uploading">Upload Course Outline</span>
-            <span *ngIf="uploading" class="flex items-center">
-              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Uploading...
-            </span>
-          </button>
+          <app-button 
+            type="submit"
+            size="lg"
+            [disabled]="!outlineForm.form.valid || !selectedFile"
+            [loading]="uploading"
+            loadingText="Uploading..."
+            [fullWidth]="true">
+            Upload Course Outline
+          </app-button>
         </div>
       </form>
     </div>
@@ -140,8 +138,8 @@ import { environment } from '../../../../environments/environment';
 })
 export class CourseOutlineFormComponent implements OnInit {
   @Input() courses: any[] = [];
-  @Output() contentCreated = new EventEmitter<any>();
-  @Output() error = new EventEmitter<string>();
+  @Output() contentUploaded = new EventEmitter<any>();
+  @Output() uploadError = new EventEmitter<string>();
 
   content: CourseOutlineCreate = {
     title: 'Course Outline',
@@ -213,22 +211,22 @@ export class CourseOutlineFormComponent implements OnInit {
 
   onSubmit(): void {
     if (!this.selectedFile) {
-      this.error.emit('Please select a file to upload.');
+      this.uploadError.emit('Please select a file to upload.');
       return;
     }
 
     if (!this.content.course || this.content.course === 0) {
-      this.error.emit('Please select a course.');
+      this.uploadError.emit('Please select a course.');
       return;
     }
 
     if (!this.content.academic_year || this.content.academic_year === 0) {
-      this.error.emit('Please select an academic year.');
+      this.uploadError.emit('Please select an academic year.');
       return;
     }
 
     if (!this.content.semester || this.content.semester === 0) {
-      this.error.emit('Please select a semester.');
+      this.uploadError.emit('Please select a semester.');
       return;
     }
 
@@ -248,12 +246,12 @@ export class CourseOutlineFormComponent implements OnInit {
           this.createContent();
         } else {
           this.uploading = false;
-          this.error.emit('File upload failed: No file URL returned from server.');
+          this.uploadError.emit('File upload failed: No file URL returned from server.');
         }
       },
       error: (error) => {
         this.uploading = false;
-        this.error.emit('Failed to upload file. Please try again.');
+        this.uploadError.emit('Failed to upload file. Please try again.');
         console.error('File upload error:', error);
       }
     });
@@ -272,12 +270,17 @@ export class CourseOutlineFormComponent implements OnInit {
     this.courseContentService.createCourseOutline(contentData).subscribe({
       next: (content) => {
         this.uploading = false;
-        this.contentCreated.emit(content);
+        // Emit with course name for better feedback
+        const uploadedContent = {
+          ...content,
+          course_name: this.courses.find(c => c.id === content.course)?.name || 'Unknown Course'
+        };
+        this.contentUploaded.emit(uploadedContent);
         this.resetForm();
       },
       error: (error) => {
         this.uploading = false;
-        this.error.emit('Failed to create course outline. Please try again.');
+        this.uploadError.emit('Failed to create course outline. Please try again.');
         console.error('Content creation error:', error);
       }
     });

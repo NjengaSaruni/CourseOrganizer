@@ -30,14 +30,19 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   { 
-    path: 'materials', 
-    loadComponent: () => import('./features/materials/materials.component').then(m => m.MaterialsComponent),
+    path: 'learning-hub', 
+    loadComponent: () => import('./features/learning-hub/learning-hub.component').then(m => m.LearningHubComponent),
     canActivate: [AuthGuard]
   },
   { 
-    path: 'recordings', 
-    loadComponent: () => import('./features/recordings/recordings.component').then(m => m.RecordingsComponent),
-    canActivate: [AuthGuard]
+    path: 'materials',
+    redirectTo: 'learning-hub?tab=materials',
+    pathMatch: 'full'
+  },
+  { 
+    path: 'recordings',
+    redirectTo: 'learning-hub?tab=recordings',
+    pathMatch: 'full'
   },
   { 
     path: 'meetings', 
@@ -50,9 +55,14 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   { 
-    path: 'course-management', 
-    loadComponent: () => import('./features/course-management/course-management.component').then(m => m.CourseManagementComponent),
+    path: 'content-management', 
+    loadComponent: () => import('./features/content-management-hub/content-management-hub.component').then(m => m.ContentManagementHubComponent),
     canActivate: [AdminOrClassRepGuard]
+  },
+  { 
+    path: 'course-management',
+    redirectTo: 'content-management?tab=materials',
+    pathMatch: 'full'
   },
   { 
     path: 'admin', 
@@ -90,29 +100,29 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   { 
-    path: 'course-timeline', 
-    loadComponent: () => import('./features/course-timeline/course-timeline.component').then(m => m.CourseTimelineComponent),
-    canActivate: [AuthGuard]
+    path: 'course-timeline',
+    redirectTo: 'learning-hub?tab=timeline',
+    pathMatch: 'full'
   },
   { 
-    path: 'course-timeline/:id', 
-    loadComponent: () => import('./features/course-timeline/course-timeline.component').then(m => m.CourseTimelineComponent),
-    canActivate: [AuthGuard]
+    path: 'course-timeline/:id',
+    redirectTo: 'learning-hub?tab=timeline',
+    pathMatch: 'full'
   },
   { 
-    path: 'content-manager', 
-    loadComponent: () => import('./features/course-content-manager/course-content-manager-new.component').then(m => m.CourseContentManagerNewComponent),
-    canActivate: [AuthGuard]
+    path: 'content-manager',
+    redirectTo: 'content-management',
+    pathMatch: 'full'
   },
   { 
     path: 'course-materials', 
-    loadComponent: () => import('./features/course-materials/course-materials.component').then(m => m.CourseMaterialsComponent),
-    canActivate: [AuthGuard]
+    redirectTo: 'learning-hub?tab=materials',
+    pathMatch: 'full'
   },
   { 
     path: 'course-materials/:id', 
-    loadComponent: () => import('./features/course-materials/course-materials.component').then(m => m.CourseMaterialsComponent),
-    canActivate: [AuthGuard]
+    redirectTo: 'learning-hub?tab=materials',
+    pathMatch: 'full'
   },
   { 
     path: 'pdf', 

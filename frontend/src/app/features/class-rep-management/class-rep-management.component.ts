@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PageLayoutComponent } from '../../shared/page-layout/page-layout.component';
 import { CommunicationService, ClassRepRole, User, Class } from '../../core/communication.service';
+import { ButtonComponent } from '../../shared/button/button.component';
 
 @Component({
   selector: 'app-class-rep-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageLayoutComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent],
   template: `
     <app-page-layout 
       pageTitle="Class Representative Management" 

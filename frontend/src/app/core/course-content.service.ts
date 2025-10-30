@@ -239,6 +239,62 @@ export class CourseContentService {
   }
 
   /**
+   * Delete course outline
+   */
+  deleteCourseOutline(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/course-content/outlines/${id}/`);
+  }
+
+  /**
+   * Update course outline
+   */
+  updateCourseOutline(id: number, data: Partial<CourseOutlineCreate>): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/course-content/outlines/${id}/`, data);
+  }
+
+  /**
+   * Delete past paper
+   */
+  deletePastPaper(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/course-content/past-papers/${id}/`);
+  }
+
+  /**
+   * Update past paper
+   */
+  updatePastPaper(id: number, data: Partial<PastPaperCreate>): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/course-content/past-papers/${id}/`, data);
+  }
+
+  /**
+   * Delete material
+   */
+  deleteMaterial(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/course-content/materials/${id}/`);
+  }
+
+  /**
+   * Update material
+   */
+  updateMaterial(id: number, data: Partial<MaterialCreate>): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/course-content/materials/${id}/`, data);
+  }
+
+  /**
+   * Delete assignment
+   */
+  deleteAssignment(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/course-content/assignments/${id}/`);
+  }
+
+  /**
+   * Update assignment
+   */
+  updateAssignment(id: number, data: Partial<AssignmentCreate>): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/course-content/assignments/${id}/`, data);
+  }
+
+  /**
    * Upload file for course content
    */
   uploadFile(file: File): Observable<FileUploadResponse> {
