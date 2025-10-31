@@ -343,7 +343,7 @@ import { AuthService } from '../../core/auth.service';
         -->
 
         <!-- Future Plans -->
-        <div class="bg-white border border-gray-200 rounded-2xl p-12">
+        <div class="bg-white border border-gray-200 rounded-2xl p-12 mb-16">
           <div class="text-center mb-8">
             <h2 class="text-3xl font-semibold text-gray-900 mb-4">Expansion Roadmap</h2>
             <p class="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -386,6 +386,99 @@ import { AuthService } from '../../core/auth.service';
                 <div class="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
                 Future Plans
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AI-Powered Learning Innovation -->
+        <div class="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-12 border-2 border-indigo-200">
+          <div class="text-center mb-8">
+            <div class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full text-sm font-semibold mb-4">
+              <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+              </svg>
+              Coming Soon: AI-Powered Learning
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">Intelligent Concept Mastery System</h2>
+            <p class="text-lg text-gray-700 max-w-3xl mx-auto">
+              Revolutionary AI technology that personalizes your learning journey by tracking your understanding, building knowledge graphs, and providing adaptive guidance.
+            </p>
+          </div>
+
+          <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- AI Learning Assistant -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+              <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-4">
+                <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+                </svg>
+              </div>
+              <h4 class="text-lg font-bold text-gray-900 mb-2">AI Learning Assistant</h4>
+              <p class="text-sm text-gray-600">GPT-powered tutor that answers questions, explains concepts, and guides you through complex topics 24/7.</p>
+            </div>
+
+            <!-- Concept Mastery Tracking -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+              <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl mb-4">
+                <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+              </div>
+              <h4 class="text-lg font-bold text-gray-900 mb-2">Mastery Analytics</h4>
+              <p class="text-sm text-gray-600">Track your understanding of each concept with detailed analytics that identify strengths and knowledge gaps.</p>
+            </div>
+
+            <!-- Knowledge Graph -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+              <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl mb-4">
+                <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"/>
+                </svg>
+              </div>
+              <h4 class="text-lg font-bold text-gray-900 mb-2">Knowledge Graphs</h4>
+              <p class="text-sm text-gray-600">Visualize concept relationships and dependencies with interactive knowledge graphs for each course.</p>
+            </div>
+
+            <!-- Personalized Recommendations -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-200">
+              <div class="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl mb-4">
+                <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+              </div>
+              <h4 class="text-lg font-bold text-gray-900 mb-2">Smart Recommendations</h4>
+              <p class="text-sm text-gray-600">Receive personalized study paths and practice suggestions based on your learning patterns and progress.</p>
+            </div>
+          </div>
+
+          <!-- Key Benefits -->
+          <div class="bg-white/60 backdrop-blur-sm rounded-2xl p-8">
+            <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">How It Works</h3>
+            <div class="grid md:grid-cols-3 gap-8">
+              <div class="text-center">
+                <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">1</div>
+                <h4 class="font-semibold text-gray-900 mb-2">Learn & Interact</h4>
+                <p class="text-sm text-gray-600">Chat with your AI tutor, ask questions, and explore course concepts at your own pace.</p>
+              </div>
+              <div class="text-center">
+                <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">2</div>
+                <h4 class="font-semibold text-gray-900 mb-2">Track Progress</h4>
+                <p class="text-sm text-gray-600">The system builds your personal knowledge graph, mapping what you've mastered and areas needing focus.</p>
+              </div>
+              <div class="text-center">
+                <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">3</div>
+                <h4 class="font-semibold text-gray-900 mb-2">Get Personalized Guidance</h4>
+                <p class="text-sm text-gray-600">Receive tailored recommendations, practice exercises, and study materials to fill knowledge gaps.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Development Status -->
+          <div class="mt-8 text-center">
+            <div class="inline-flex items-center px-6 py-3 bg-white rounded-full shadow-sm">
+              <div class="w-3 h-3 bg-indigo-500 rounded-full mr-3 animate-pulse"></div>
+              <span class="text-sm font-semibold text-gray-900">In Development • Expected Launch: 2025</span>
             </div>
           </div>
         </div>
