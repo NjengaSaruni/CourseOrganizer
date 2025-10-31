@@ -213,6 +213,10 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def save_message(self, body, reply_to=None):
+        import re
+        from directory.models import User
+        from course_content.models import Material
+        
         # Get the replied-to message if reply_to is provided
         replied_message = None
         if reply_to and reply_to.get('id'):
@@ -227,6 +231,51 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             body=body,
             reply_to=replied_message
         )
+        
+        # Parse and store @mentions (format: @userId or @[userId:UserName])
+        mention_pattern = r'@\[(\d+):([^\]]+)\]|@(\d+)'
+        mention_matches = re.finditer(mention_pattern, body)
+        mentioned_user_ids = set()
+        for match in mention_matches:
+            user_id = match.group(1) or match.group(3)
+            if user_id:
+                mentioned_user_ids.add(int(user_id))
+        
+        # Add mentioned users to the message
+        if mentioned_user_ids:
+            mentioned_users = User.objects.filter(id__in=mentioned_user_ids)
+            msg.mentioned_users.set(mentioned_users)
+            logger.info(f"Message {msg.id} mentions {len(mentioned_user_ids)} users: {list(mentioned_user_ids)}")
+        
+        # Parse and store [[material]] references (format: [[materialId]] or [[materialId:MaterialTitle]])
+        material_pattern = r'\[\[(\d+):([^\]]+)\]\]|\[\[(\d+)\]\]'
+        material_matches = re.finditer(material_pattern, body)
+        material_ids = set()
+        for match in material_matches:
+            material_id = match.group(1) or match.group(3)
+            if material_id:
+                material_ids.add(int(material_id))
+        
+        # Add referenced materials to the message
+        if material_ids:
+            materials = Material.objects.filter(id__in=material_ids)
+            msg.referenced_materials.set(materials)
+            logger.info(f"Message {msg.id} references {len(material_ids)} materials: {list(material_ids)}")
+        
+        # Parse and store #topics (format: #topicname)
+        topic_pattern = r'#(\w+)'
+        topic_matches = re.finditer(topic_pattern, body)
+        topics = set()
+        for match in topic_matches:
+            topic = match.group(1)
+            if topic:
+                topics.add(topic)
+        
+        # Store topics as JSON list
+        if topics:
+            msg.topics = list(topics)
+            msg.save()
+            logger.info(f"Message {msg.id} has topics: {list(topics)}")
         
         # Build absolute URL for profile picture
         def get_profile_picture_url(user):
@@ -243,7 +292,10 @@ class StudyGroupChatConsumer(AsyncWebsocketConsumer):
             'sender_name': msg.sender.get_full_name(),
             'sender_profile_picture': get_profile_picture_url(msg.sender),
             'body': msg.body,
-            'created_at': msg.created_at.isoformat()
+            'created_at': msg.created_at.isoformat(),
+            'mentioned_users': [{'id': u.id, 'name': u.get_full_name()} for u in msg.mentioned_users.all()],
+            'referenced_materials': [{'id': m.id, 'title': m.title} for m in msg.referenced_materials.all()],
+            'topics': msg.topics
         }
         
         # Add reply information if this is a reply

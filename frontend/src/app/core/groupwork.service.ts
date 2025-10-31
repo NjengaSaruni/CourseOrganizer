@@ -43,6 +43,20 @@ export interface GroupMeeting {
   video_join_url?: string;
 }
 
+export interface GroupMaterial {
+  id: number;
+  group: number;
+  title: string;
+  description?: string;
+  file?: File | null;
+  file_url?: string;
+  file_url_full?: string;
+  material_type: 'notes' | 'assignment' | 'video' | 'other' | 'pdf' | 'doc' | 'ppt' | 'image';
+  uploaded_by: number;
+  uploaded_by_name: string;
+  created_at: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class GroupworkService {
   private http = inject(HttpClient);
@@ -118,5 +132,18 @@ export class GroupworkService {
 
   listMyCourses() {
     return this.http.get<{ courses: any[] }>(`${this.baseUrl}/courses/my-courses/`);
+  }
+
+  // Group Materials
+  listMaterials(groupId: number): Observable<GroupMaterial[]> {
+    return this.http.get<GroupMaterial[]>(`${this.baseUrl}/study-groups/${groupId}/materials/`);
+  }
+
+  uploadMaterial(groupId: number, formData: FormData): Observable<GroupMaterial> {
+    return this.http.post<GroupMaterial>(`${this.baseUrl}/study-groups/${groupId}/materials/`, formData);
+  }
+
+  deleteMaterial(groupId: number, materialId: number): Observable<{ status: string }> {
+    return this.http.delete<{ status: string }>(`${this.baseUrl}/study-groups/${groupId}/materials/${materialId}/`);
   }
 }

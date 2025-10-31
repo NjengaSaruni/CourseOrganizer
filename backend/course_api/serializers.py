@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from directory.models import User
-from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent, StudyGroup, StudyGroupMembership, GroupMeeting, StudyGroupJoinRequest, GroupMessage
+from .models import Course, TimetableEntry, CourseMaterial, Recording, Meeting, JitsiRecording, CourseContent, StudyGroup, StudyGroupMembership, GroupMeeting, StudyGroupJoinRequest, GroupMessage, GroupMaterial
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -478,11 +478,16 @@ class GroupMessageSerializer(serializers.ModelSerializer):
     deleted = serializers.BooleanField(read_only=True)
     deleted_at = serializers.DateTimeField(read_only=True)
     deleted_by_name = serializers.CharField(source='deleted_by.get_full_name', read_only=True)
+    
+    # Reference fields
+    mentioned_users = serializers.SerializerMethodField()
+    referenced_materials = serializers.SerializerMethodField()
+    topics = serializers.JSONField(read_only=True)
 
     class Meta:
         model = GroupMessage
-        fields = ('id', 'group', 'sender', 'sender_name', 'sender_profile_picture', 'body', 'created_at', 'reply_to', 'deleted', 'deleted_at', 'deleted_by_name')
-        read_only_fields = ('id', 'created_at', 'sender_name', 'sender_profile_picture', 'sender', 'deleted', 'deleted_at', 'deleted_by_name')
+        fields = ('id', 'group', 'sender', 'sender_name', 'sender_profile_picture', 'body', 'created_at', 'reply_to', 'deleted', 'deleted_at', 'deleted_by_name', 'mentioned_users', 'referenced_materials', 'topics')
+        read_only_fields = ('id', 'created_at', 'sender_name', 'sender_profile_picture', 'sender', 'deleted', 'deleted_at', 'deleted_by_name', 'mentioned_users', 'referenced_materials', 'topics')
 
     def get_sender_profile_picture(self, obj):
         if obj.sender.profile_picture:
@@ -510,3 +515,81 @@ class GroupMessageSerializer(serializers.ModelSerializer):
                 'created_at': obj.reply_to.created_at.isoformat()
             }
         return None
+    
+    def get_mentioned_users(self, obj):
+        """Return simplified user data for mentions"""
+        return [{
+            'id': user.id,
+            'name': user.get_full_name(),
+            'registration_number': user.registration_number,
+        } for user in obj.mentioned_users.all()]
+    
+    def get_referenced_materials(self, obj):
+        """Return simplified material data for references"""
+        # Combine both course and group materials
+        course_materials = [{
+            'id': f'course_{m.id}',
+            'title': m.title,
+            'topic': m.topic,
+            'material_type': m.material_type,
+            'file_url': m.file_url,
+            'source': 'course'
+        } for m in obj.referenced_course_materials.all()]
+        
+        group_materials = [{
+            'id': f'group_{m.id}',
+            'title': m.title,
+            'topic': '',
+            'material_type': m.material_type,
+            'file_url': m.file_url or (m.file.url if m.file else ''),
+            'source': 'group'
+        } for m in obj.referenced_group_materials.all()]
+        
+        return course_materials + group_materials
+
+
+class GroupMaterialSerializer(serializers.ModelSerializer):
+    """Serializer for group-specific materials"""
+    uploaded_by_name = serializers.CharField(source='uploaded_by.get_full_name', read_only=True)
+    file_url_full = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = GroupMaterial
+        fields = ('id', 'group', 'title', 'description', 'file', 'file_url', 'file_url_full', 
+                  'material_type', 'uploaded_by', 'uploaded_by_name', 'created_at')
+        read_only_fields = ('id', 'group', 'uploaded_by', 'uploaded_by_name', 'created_at', 'file_url_full')
+    
+    def get_file_url_full(self, obj):
+        """
+        Return full URL for file or external URL.
+        
+        In Docker/development, ensures URLs use the external-facing host (localhost:8000)
+        rather than internal Docker hostnames (backend:8000).
+        In production, uses the actual domain from the request.
+        """
+        if obj.file:
+            request = self.context.get('request')
+            if request:
+                # Build absolute URI using the request's host
+                file_url = request.build_absolute_uri(obj.file.url)
+                
+                # Debug logging to help identify URL issues
+                import logging
+                from django.conf import settings
+                logger = logging.getLogger(__name__)
+                logger.info(f"Generated file URL: {file_url} for file: {obj.file.name}")
+                logger.info(f"Request host: {request.get_host()}, scheme: {request.scheme}")
+                
+                # In Docker development, if the request came through the internal network
+                # (e.g., from another container using 'backend' hostname), the URL might
+                # use the internal hostname. We want to ensure the frontend gets localhost.
+                if settings.DEBUG and 'backend' in request.get_host():
+                    # Replace internal Docker hostname with localhost
+                    file_url = file_url.replace('http://backend:8000', 'http://localhost:8000')
+                    file_url = file_url.replace('http://backend:8080', 'http://localhost:8080')
+                    logger.info(f"Adjusted file URL for development: {file_url}")
+                
+                return file_url
+            # Fallback to relative URL if no request context
+            return obj.file.url
+        return obj.file_url or None

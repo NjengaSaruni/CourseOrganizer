@@ -63,7 +63,7 @@ services:
       - JITSI_PUBLIC_KEY=${JITSI_PUBLIC_KEY}
     volumes:
       - static_files:/app/static
-      - media_files:/app/media
+      - /opt/course-organizer-data/media:/app/media
       - db_data:/app/db
     depends_on:
       - postgres
@@ -85,7 +85,7 @@ services:
     volumes:
       - ./nginx.gce.conf:/etc/nginx/nginx.conf:ro
       - static_files:/var/www/static:ro
-      - media_files:/var/www/media:ro
+      - /opt/course-organizer-data/media:/var/www/media:ro
       - ./ssl:/etc/nginx/ssl:ro
       - certbot-webroot:/var/www/certbot
       - letsencrypt:/etc/letsencrypt
@@ -112,7 +112,6 @@ services:
 
 volumes:
   static_files:
-  media_files:
   db_data:
   certbot-webroot:
   letsencrypt:

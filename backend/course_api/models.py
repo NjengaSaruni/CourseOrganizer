@@ -695,6 +695,40 @@ class GroupMeeting(models.Model):
         return f"{self.title} - {self.scheduled_time}"
 
 
+class GroupMaterial(models.Model):
+    """Materials uploaded specifically to a study group"""
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='materials')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    file = models.FileField(upload_to='group_materials/', blank=True, null=True)
+    file_url = models.URLField(blank=True, help_text="External link to material")
+    material_type = models.CharField(
+        max_length=20,
+        choices=[
+            ('pdf', 'PDF Document'),
+            ('doc', 'Word Document'),
+            ('ppt', 'PowerPoint'),
+            ('video', 'Video File'),
+            ('audio', 'Audio File'),
+            ('image', 'Image'),
+            ('link', 'External Link'),
+            ('other', 'Other'),
+        ],
+        default='other',
+        help_text="Type of material"
+    )
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_materials_uploaded')
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Group Material"
+        verbose_name_plural = "Group Materials"
+    
+    def __str__(self):
+        return f"{self.group.name} - {self.title}"
+
+
 class GroupMessage(models.Model):
     """Persistent messages for study group chat."""
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='messages')
@@ -704,6 +738,13 @@ class GroupMessage(models.Model):
     deleted = models.BooleanField(default=False, help_text="Soft delete flag")
     deleted_at = models.DateTimeField(null=True, blank=True, help_text="When the message was deleted")
     deleted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='group_messages_deleted', help_text="User who deleted the message")
+    
+    # Reference fields for @mentions, [[materials]], #topics
+    mentioned_users = models.ManyToManyField(User, related_name='mentioned_in_messages', blank=True, help_text="Users mentioned with @")
+    referenced_course_materials = models.ManyToManyField('course_content.Material', related_name='referenced_in_messages', blank=True, help_text="Course materials referenced with [[]]")
+    referenced_group_materials = models.ManyToManyField('GroupMaterial', related_name='referenced_in_messages', blank=True, help_text="Group materials referenced with [[]]")
+    topics = models.JSONField(default=list, blank=True, help_text="Topics/hashtags mentioned with #")
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

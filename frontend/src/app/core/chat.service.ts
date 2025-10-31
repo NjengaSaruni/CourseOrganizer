@@ -18,6 +18,9 @@ export interface ChatMessage {
     body: string;
     created_at: string;
   };
+  mentioned_users?: Array<{ id: number; name: string; registration_number?: string }>;
+  referenced_materials?: Array<{ id: number; title: string; topic?: string; material_type?: string; file_url?: string }>;
+  topics?: string[];
 }
 
 export interface PresenceEvent {

@@ -30,6 +30,28 @@ fi
 
 echo "✅ Prerequisites check passed"
 
+MEDIA_DIR="backend/media"
+LEGACY_MEDIA_VOLUME="course-organizer_backend_media"
+
+# Ensure media directory exists locally
+mkdir -p "$MEDIA_DIR"
+
+# Migrate media files from legacy Docker volume to host bind mount if needed
+if docker volume inspect "$LEGACY_MEDIA_VOLUME" >/dev/null 2>&1; then
+    if [ -z "$(ls -A "$MEDIA_DIR" 2>/dev/null)" ]; then
+        echo "📦 Migrating media files from legacy Docker volume to host directory..."
+        docker run --rm \
+            -v "$LEGACY_MEDIA_VOLUME":/source \
+            -v "$(pwd)/$MEDIA_DIR":/target \
+            busybox sh -c "cp -a /source/. /target/" && \
+            echo "✅ Media files copied to $MEDIA_DIR"
+    else
+        echo "ℹ️  Media directory already populated; skipping volume migration."
+    fi
+    echo "🧹 Removing legacy media volume $LEGACY_MEDIA_VOLUME"
+    docker volume rm "$LEGACY_MEDIA_VOLUME" >/dev/null 2>&1 || true
+fi
+
 # Set admin password if provided
 if [ -n "${ADMIN_PASSWORD:-}" ]; then
     echo "🔐 Using provided ADMIN_PASSWORD"

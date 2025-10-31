@@ -1,6 +1,7 @@
 import logging
 from rest_framework import status, generics, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -73,6 +74,217 @@ def delete_message(request, group_id: int, message_id: int):
     message.save()
 
     return Response({'status': 'deleted'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chat_autocomplete(request, group_id: int):
+    """
+    Autocomplete endpoint for chat references:
+    - ?type=users: Get users in the study group for @mentions
+    - ?type=materials: Get course materials for // references
+    - ?type=topics: Get existing topics/hashtags from messages for # references
+    - ?q=<query>: Filter results by query string
+    """
+    try:
+        group = StudyGroup.objects.get(pk=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Only members can access
+    if not StudyGroupMembership.objects.filter(group=group, user=request.user).exists():
+        return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+    autocomplete_type = request.query_params.get('type', 'user')
+    query = request.query_params.get('q', '').strip().lower()
+
+    if autocomplete_type in ['user', 'users']:
+        # Get all users in the study group except the current user
+        memberships = StudyGroupMembership.objects.filter(group=group).select_related('user')
+        users = [m.user for m in memberships if m.user.id != request.user.id]
+        
+        # Filter by query if provided
+        if query:
+            users = [u for u in users if query in u.get_full_name().lower() or query in (u.registration_number or '').lower()]
+        
+        data = [{
+            'id': u.id,
+            'name': u.get_full_name(),
+            'registration_number': u.registration_number,
+            'profile_picture': u.profile_picture.url if u.profile_picture else None,
+        } for u in users[:10]]  # Limit to 10 results
+        
+        return Response(data)
+
+    elif autocomplete_type in ['material', 'materials']:
+        # Get both group-specific materials and course-wide materials
+        from course_content.models import Material
+        from course_api.models import GroupMaterial
+        
+        # Group materials (uploaded via chat)
+        group_materials = GroupMaterial.objects.filter(group=group).order_by('-created_at')
+        
+        # Course materials (uploaded by class rep/admin)
+        course_materials = Material.objects.filter(
+            course=group.course,
+            is_published=True
+        ).order_by('-created_at')
+        
+        # Filter by query if provided
+        if query:
+            group_materials = group_materials.filter(
+                models.Q(title__icontains=query) |
+                models.Q(description__icontains=query)
+            )
+            course_materials = course_materials.filter(
+                models.Q(title__icontains=query) | 
+                models.Q(topic__icontains=query) |
+                models.Q(description__icontains=query)
+            )
+        
+        # Combine and format results
+        data = []
+        
+        # Add group materials (marked as 'group' source)
+        for m in group_materials[:5]:  # Limit to 5 group materials
+            data.append({
+                'id': f'group_{m.id}',  # Prefix to distinguish from course materials
+                'title': m.title,
+                'topic': '',
+                'material_type': m.material_type,
+                'lesson_date': None,
+                'file_url': m.file_url or (m.file.url if m.file else ''),
+                'source': 'group',  # Indicates this is a group material
+                'uploaded_by': m.uploaded_by.get_full_name()
+            })
+        
+        # Add course materials (marked as 'course' source)
+        for m in course_materials[:5]:  # Limit to 5 course materials
+            data.append({
+                'id': f'course_{m.id}',  # Prefix to distinguish from group materials
+                'title': m.title,
+                'topic': m.topic,
+                'material_type': m.material_type,
+                'lesson_date': m.lesson_date.isoformat() if m.lesson_date else None,
+                'file_url': m.file_url,
+                'source': 'course'  # Indicates this is a course material
+            })
+        
+        # Sort by title and limit to 10 total
+        data = sorted(data, key=lambda x: x['title'].lower())[:10]
+        
+        return Response(data)
+
+    elif autocomplete_type in ['topic', 'topics']:
+        # Get unique topics from all messages in the group
+        messages = GroupMessage.objects.filter(group=group, deleted=False)
+        all_topics = []
+        for msg in messages:
+            if msg.topics and isinstance(msg.topics, list):
+                all_topics.extend(msg.topics)
+        
+        # Get unique topics and filter by query
+        unique_topics = list(set(all_topics))
+        if query:
+            unique_topics = [t for t in unique_topics if query in t.lower()]
+        
+        unique_topics = sorted(unique_topics)[:10]  # Limit to 10 results
+        
+        data = [{'topic': t} for t in unique_topics]
+        
+        return Response(data)
+
+    return Response({'detail': 'Invalid type parameter'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([TokenAuthentication])
+def group_materials(request, group_id: int):
+    """
+    List or upload materials for a study group.
+    GET: List all materials in the group
+    POST: Upload a new material to the group
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        group = StudyGroup.objects.get(pk=group_id)
+    except StudyGroup.DoesNotExist:
+        return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Only members can access
+    is_member = StudyGroupMembership.objects.filter(group=group, user=request.user).exists()
+    logger.info(f"User {request.user.id} membership check for group {group_id}: {is_member}")
+    
+    if not is_member:
+        logger.warning(f"User {request.user.id} is not a member of group {group_id}")
+        return Response({'detail': 'You must be a member of this group to upload materials'}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == 'GET':
+        # List all materials in the group
+        from course_api.models import GroupMaterial
+        from course_api.serializers import GroupMaterialSerializer
+        
+        materials = GroupMaterial.objects.filter(group=group).order_by('-created_at')
+        serializer = GroupMaterialSerializer(materials, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        # Upload a new material
+        from course_api.models import GroupMaterial
+        from course_api.serializers import GroupMaterialSerializer
+        
+        logger.info(f"Uploading material for group {group_id} by user {request.user.id}")
+        logger.info(f"Request data: {request.data}")
+        logger.info(f"Request FILES: {request.FILES}")
+        
+        serializer = GroupMaterialSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            logger.error(f"Serializer validation failed: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Save with the current user as uploader and the group
+        try:
+            material = serializer.save(uploaded_by=request.user, group=group)
+            logger.info(f"Material {material.id} created successfully")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            logger.error(f"Error saving material: {str(e)}")
+            return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_group_material(request, group_id: int, material_id: int):
+    """Delete a group material. Only the uploader or group admin can delete."""
+    try:
+        group = StudyGroup.objects.get(pk=group_id)
+        from course_api.models import GroupMaterial
+        material = GroupMaterial.objects.get(pk=material_id, group=group)
+    except (StudyGroup.DoesNotExist, GroupMaterial.DoesNotExist):
+        return Response({'detail': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Only members can access
+    if not StudyGroupMembership.objects.filter(group=group, user=request.user).exists():
+        return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+    # Check if user can delete this material (uploader or admin)
+    is_uploader = material.uploaded_by == request.user
+    is_admin = StudyGroupMembership.objects.filter(
+        group=group, user=request.user, role='admin'
+    ).exists()
+
+    if not (is_uploader or is_admin):
+        return Response({'detail': 'You can only delete your own materials or be an admin'}, status=status.HTTP_403_FORBIDDEN)
+
+    # Delete the material (hard delete)
+    material.delete()
+    
+    return Response({'status': 'deleted'})
+
+
 from .jitsi_auth import jitsi_auth
 from .email_service import notify_admin_of_student_registration
 

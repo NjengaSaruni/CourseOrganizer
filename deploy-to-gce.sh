@@ -53,12 +53,22 @@ gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command "
     sudo mkdir -p course-organizer
     sudo tar -xzf /tmp/course-organizer-update.tar.gz -C course-organizer --strip-components=0
     sudo chown -R ubuntu:ubuntu course-organizer
+    sudo mkdir -p /opt/course-organizer-data/media
+    sudo chown -R ubuntu:ubuntu /opt/course-organizer-data
     cd course-organizer
     
     echo '🛑 Stopping existing services...'
     docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml down || true
 
-    echo '🧹 Clearing old static files volume to avoid stale assets...'
+    if docker volume ls --format '{{.Name}}' | grep -q '^course-organizer_media_files$'; then
+        echo '🗃️  Migrating existing media files volume to host bind mount...'
+        docker run --rm \
+            -v course-organizer_media_files:/source \
+            -v /opt/course-organizer-data/media:/target \
+            busybox sh -c "cp -a /source/. /target/" || echo 'Warning: Media files migration failed'
+    fi
+
+    echo '🧹 Clearing old static files volume to avoid stale assets (media files are preserved separately)...'
     # Remove persisted static volume so new image assets are not masked
     docker volume ls --format '{{.Name}}' | grep -q '^course-organizer_static_files$' && docker volume rm course-organizer_static_files || true
     

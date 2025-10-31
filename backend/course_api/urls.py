@@ -33,6 +33,9 @@ urlpatterns = [
     # Study group messages
     path('study-groups/<int:group_id>/messages/', views.group_messages, name='group_messages'),
     path('study-groups/<int:group_id>/messages/<int:message_id>/', views.delete_message, name='delete_message'),
+    path('study-groups/<int:group_id>/chat/autocomplete/', views.chat_autocomplete, name='chat_autocomplete'),
+    path('study-groups/<int:group_id>/materials/', views.group_materials, name='group_materials'),
+    path('study-groups/<int:group_id>/materials/<int:material_id>/', views.delete_group_material, name='delete_group_material'),
     
     # Timetable endpoints
     path('timetable/', views.TimetableEntryListView.as_view(), name='timetable_list'),

@@ -13,7 +13,6 @@ services:
     volumes:
       - ../backend:/app
       - backend_static:/app/static
-      - backend_media:/app/media
     depends_on:
       - db
     networks:
@@ -54,7 +53,6 @@ services:
 volumes:
   postgres_data:
   backend_static:
-  backend_media:
 
 networks:
   course_organizer_network:

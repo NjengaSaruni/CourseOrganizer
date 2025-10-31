@@ -1,17 +1,20 @@
-import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { GroupworkService, StudyGroup, StudyGroupMembership, GroupMeeting } from '../../../core/groupwork.service';
+import { GroupworkService, StudyGroup, StudyGroupMembership, GroupMeeting, GroupMaterial } from '../../../core/groupwork.service';
 import { ChatService } from '../../../core/chat.service';
 import { PageLayoutComponent } from '../../../shared/page-layout/page-layout.component';
 import { ButtonComponent } from '../../../shared/button/button.component';
+import { ChatAutocompleteComponent, AutocompleteItem } from '../../../shared/chat-autocomplete/chat-autocomplete.component';
+import { ChatMessageRendererComponent } from '../../../shared/chat-message-renderer/chat-message-renderer.component';
+import { getActiveReference, insertReference } from '../../../core/message-parser.util';
 
 @Component({
   selector: 'app-study-group-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent, ChatAutocompleteComponent, ChatMessageRendererComponent],
   template: `
     <app-page-layout [pageTitle]="group()?.name || 'Study Group'" [pageSubtitle]="group()?.description || ''">
     <div class="min-h-screen bg-gray-50">
@@ -281,10 +284,18 @@ import { ButtonComponent } from '../../../shared/button/button.component';
             </div>
           </div>
           <div class="flex items-center gap-2">
-            <!-- Future tabs stub -->
+            <!-- Tab Switcher -->
             <div class="hidden md:flex rounded-lg bg-gray-100 p-1 mr-3">
-              <button class="px-3 py-1.5 text-sm rounded-md bg-white shadow">Chat</button>
-              <button class="px-3 py-1.5 text-sm rounded-md text-gray-400" disabled>Materials (soon)</button>
+              <button 
+                (click)="switchTab('chat')"
+                [class]="currentTab === 'chat' ? 'px-3 py-1.5 text-sm rounded-md bg-white shadow font-medium text-gray-900' : 'px-3 py-1.5 text-sm rounded-md text-gray-600 hover:text-gray-900'">
+                Chat
+              </button>
+              <button 
+                (click)="switchTab('materials')"
+                [class]="currentTab === 'materials' ? 'px-3 py-1.5 text-sm rounded-md bg-white shadow font-medium text-gray-900' : 'px-3 py-1.5 text-sm rounded-md text-gray-600 hover:text-gray-900'">
+                Materials
+              </button>
             </div>
             <app-button 
               variant="secondary"
@@ -297,8 +308,10 @@ import { ButtonComponent } from '../../../shared/button/button.component';
 
         <!-- Body -->
         <div class="flex-1 flex flex-col min-h-0">
-          <!-- Messages Container -->
-          <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3 min-h-0">
+          <!-- CHAT TAB -->
+          <ng-container *ngIf="currentTab === 'chat'">
+            <!-- Messages Container -->
+            <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 bg-gray-50 space-y-3 min-h-0">
             <div *ngFor="let m of chatLog; trackBy: trackByMessage" 
                  class="group relative">
               <!-- Message with hover actions -->
@@ -328,7 +341,15 @@ import { ButtonComponent } from '../../../shared/button/button.component';
                     <p class="text-xs text-gray-600 line-clamp-2">{{ truncateText(m.reply_to.body, 60) }}</p>
                   </div>
                   
-                  <p class="text-sm text-gray-800 break-words">{{ m.body }}</p>
+                  <!-- Render message with references -->
+                  <div class="text-sm text-gray-800 break-words">
+                    <app-chat-message-renderer 
+                      [message]="m.body"
+                      (mentionClicked)="onMentionClicked($event)"
+                      (materialClicked)="onMaterialClicked($event)"
+                      (topicClicked)="onTopicClicked($event)">
+                    </app-chat-message-renderer>
+                  </div>
                 </div>
                 
                 <!-- Hover Action Buttons (Apple-style) -->
@@ -391,25 +412,234 @@ import { ButtonComponent } from '../../../shared/button/button.component';
           </div>
 
           <!-- Message Input (sticky at bottom) -->
-          <div class="flex-shrink-0 p-4 bg-white border-t border-gray-200 flex gap-2">
-            <input 
-              [(ngModel)]="chatMessage"
-              (input)="onMessageInput()"
-              (keydown.enter)="sendChat()"
-              [placeholder]="replyingTo ? 'Reply to ' + replyingTo.from + '...' : 'Type a message...'" 
-              class="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              [disabled]="!chatConnected" />
-            <app-button 
-              variant="primary"
-              size="lg"
-              (clicked)="sendChat()"
-              [disabled]="!chatMessage.trim() || !chatConnected || isSending"
-              [loading]="isSending"
-              loadingText="Sending"
-              iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>'>
-              Send
-            </app-button>
+          <div class="flex-shrink-0 p-4 bg-white border-t border-gray-200 relative">
+            <!-- Autocomplete -->
+            <app-chat-autocomplete
+              #autocomplete
+              [groupId]="currentGroupId!"
+              [show]="showAutocomplete"
+              [type]="autocompleteType"
+              [query]="autocompleteQuery"
+              (itemSelected)="onAutocompleteSelect($event)"
+              (cancel)="closeAutocomplete()">
+            </app-chat-autocomplete>
+            
+            <div class="flex gap-2">
+              <div class="flex-1 relative">
+                <input 
+                  #chatInput
+                  [(ngModel)]="chatMessage"
+                  (input)="onMessageInput()"
+                  (keydown)="onMessageKeydown($event)"
+                  (keydown.enter)="sendChat()"
+                  [placeholder]="replyingTo ? 'Reply to ' + replyingTo.from + '...' : 'Type @ for mentions, [[ for materials, # for topics...'" 
+                  class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  [disabled]="!chatConnected" />
+              </div>
+              <app-button 
+                variant="primary"
+                size="lg"
+                (clicked)="sendChat()"
+                [disabled]="!chatMessage.trim() || !chatConnected || isSending"
+                [loading]="isSending"
+                loadingText="Sending"
+                iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>'>
+                Send
+              </app-button>
+            </div>
           </div>
+          </ng-container>
+
+          <!-- MATERIALS TAB -->
+          <ng-container *ngIf="currentTab === 'materials'">
+            <div class="flex-1 flex flex-col min-h-0 relative">
+              <!-- Hidden File Input -->
+              <input 
+                #fileInput
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.avi,.mov,.wmv"
+                (change)="onFilesSelected($event)"
+                class="hidden" />
+
+              <!-- Materials List -->
+              <div class="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-semibold text-gray-900">Group Materials</h3>
+                  <span class="text-sm text-gray-600">{{ materials().length }} {{ materials().length === 1 ? 'file' : 'files' }}</span>
+                </div>
+                
+                <!-- Empty State -->
+                <div *ngIf="materials().length === 0" class="text-center py-16">
+                  <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-3xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-10 h-10 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                  </div>
+                  <h3 class="text-lg font-semibold text-gray-900 mb-2">No materials yet</h3>
+                  <p class="text-gray-600 mb-6">Upload files, documents, images, or videos to share with your group</p>
+                  <button 
+                    (click)="triggerFileInput()"
+                    class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-xl hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                    </svg>
+                    Upload Files
+                  </button>
+                </div>
+
+                <!-- Materials Grid -->
+                <div *ngIf="materials().length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  <div *ngFor="let material of materials()" 
+                       class="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
+                    <!-- Material Icon & Title -->
+                    <div class="flex items-start space-x-3 mb-3">
+                      <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" [innerHTML]="getMaterialIcon(material.material_type)"></svg>
+                      </div>
+                      <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-semibold text-gray-900 truncate">{{ material.title }}</h4>
+                        <p class="text-xs text-gray-600">{{ getMaterialTypeLabel(material.material_type) }}</p>
+                      </div>
+                    </div>
+
+                    <!-- Description -->
+                    <p *ngIf="material.description" class="text-sm text-gray-600 mb-3 line-clamp-2">{{ material.description }}</p>
+
+                    <!-- Metadata -->
+                    <div class="flex items-center text-xs text-gray-500 mb-3">
+                      <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                      </svg>
+                      <span>{{ material.uploaded_by_name }}</span>
+                      <span class="mx-2">•</span>
+                      <span>{{ material.created_at | date:'short' }}</span>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                      <app-button 
+                        variant="primary"
+                        size="sm"
+                        (clicked)="downloadMaterial(material)"
+                        iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>'>
+                        View
+                      </app-button>
+                      <app-button 
+                        variant="ghost"
+                        size="sm"
+                        (clicked)="deleteMaterial(material.id)"
+                        iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'>
+                        Delete
+                      </app-button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Floating Action Button (FAB) for Upload -->
+              <button 
+                *ngIf="materials().length > 0"
+                (click)="triggerFileInput()"
+                class="absolute bottom-8 right-8 w-16 h-16 bg-blue-600 text-white rounded-full shadow-2xl hover:bg-blue-700 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center z-10"
+                title="Upload files">
+                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                </svg>
+              </button>
+
+              <!-- Upload Dialog Modal -->
+              <div *ngIf="showUploadDialog" 
+                   class="absolute inset-0 bg-black/50 flex items-center justify-center z-20 p-4"
+                   (click)="cancelUpload()">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+                     (click)="$event.stopPropagation()">
+                  <!-- Modal Header -->
+                  <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-900">Upload Files</h3>
+                    <button 
+                      (click)="cancelUpload()"
+                      class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                      <svg class="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                  <!-- Modal Body -->
+                  <div class="p-6 overflow-y-auto max-h-[calc(80vh-180px)]">
+                    <!-- Selected Files Preview -->
+                    <div class="mb-6">
+                      <h4 class="text-sm font-medium text-gray-700 mb-3">Selected Files ({{ selectedFiles.length }})</h4>
+                      <div class="space-y-2">
+                        <div *ngFor="let file of selectedFiles; let i = index" 
+                             class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                          <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <svg class="w-5 h-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                              </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                              <p class="text-sm font-medium text-gray-900 truncate">{{ file.name }}</p>
+                              <p class="text-xs text-gray-600">{{ formatFileSize(file.size) }}</p>
+                            </div>
+                          </div>
+                          <button 
+                            (click)="removeSelectedFile(i)"
+                            class="p-2 hover:bg-red-50 rounded-full transition-colors">
+                            <svg class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Upload Options (Optional) -->
+                    <div class="space-y-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Title (Optional)</label>
+                        <input 
+                          [(ngModel)]="newMaterial.title"
+                          type="text"
+                          placeholder="Add a title for these files"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        <p class="mt-1 text-xs text-gray-500">Leave empty to use file name</p>
+                      </div>
+
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+                        <textarea 
+                          [(ngModel)]="newMaterial.description"
+                          placeholder="Add a description"
+                          rows="2"
+                          class="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Modal Footer -->
+                  <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+                    <app-button 
+                      variant="secondary"
+                      (clicked)="cancelUpload()"
+                      [disabled]="uploadingMaterial">
+                      Cancel
+                    </app-button>
+                    <app-button 
+                      variant="primary"
+                      (clicked)="uploadSelectedFiles()"
+                      [disabled]="selectedFiles.length === 0 || uploadingMaterial"
+                      [loading]="uploadingMaterial"
+                      [loadingText]="uploadingText">
+                      Upload {{ selectedFiles.length }} {{ selectedFiles.length === 1 ? 'File' : 'Files' }}
+                    </app-button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ng-container>
         </div>
       </div>
     </div>
@@ -417,6 +647,9 @@ import { ButtonComponent } from '../../../shared/button/button.component';
   `
 })
 export class StudyGroupDetailComponent implements OnInit, OnDestroy {
+  @ViewChild('chatInput') chatInputElement!: ElementRef<HTMLInputElement>;
+  @ViewChild('autocomplete') autocompleteComponent!: ChatAutocompleteComponent;
+  
   private api = inject(GroupworkService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -426,11 +659,13 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   group = signal<StudyGroup | null>(null);
   members = signal<StudyGroupMembership[]>([]);
   meetings = signal<GroupMeeting[]>([]);
+  materials = signal<GroupMaterial[]>([]);
   loading = signal(true);
   creatingMeeting = signal(false);
   showCreateMeeting = false;
   showChat = true; // Start with chat visible by default
   chatPanelOpen = false;
+  currentTab: 'chat' | 'materials' = 'chat'; // Current tab in chat panel
   chatMessage = '';
   chatLog: { from: string; body: string; timestamp?: Date; id?: number; profile_picture?: string | null; reply_to?: { id: number; sender_name: string; sender_profile_picture?: string | null; body: string; created_at: string } }[] = [];
   chatConnected = false;
@@ -440,11 +675,18 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
   private typingNotifyTimeout: any = null;
   private typingClearTimeout: any = null;
   private subscriptions: Subscription[] = [];
-  private currentGroupId: number | null = null;
+  currentGroupId: number | null = null;
   
   // Reply functionality
   replyingTo: { id: number; from: string; body: string; timestamp?: Date; profile_picture?: string | null } | null = null;
   showReplyPreview = false;
+
+  // Autocomplete state
+  showAutocomplete = false;
+  autocompleteType: 'user' | 'material' | 'topic' | null = null;
+  autocompleteQuery = '';
+  private autocompleteStart = 0;
+  private autocompleteEnd = 0;
 
   newMeeting = {
     title: '',
@@ -452,6 +694,18 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
     platform: 'jitsi' as 'jitsi' | 'physical',
     location: ''
   };
+
+  // Materials upload state
+  uploadingMaterial = false;
+  uploadingText = 'Uploading...';
+  selectedFiles: File[] = [];
+  showUploadDialog = false;
+  newMaterial = {
+    title: '',
+    description: '',
+    material_type: 'pdf' as 'notes' | 'assignment' | 'video' | 'other' | 'pdf' | 'doc' | 'ppt' | 'image',
+  };
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   ngOnInit() {
     // Subscribe to route parameter changes to handle navigation between groups
@@ -818,6 +1072,119 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
       console.log('⏰ Stopping typing notification after 1.5s');
       this.chat.sendTyping(false);
     }, 1500);
+
+    // Check for autocomplete triggers
+    this.checkAutocomplete();
+  }
+
+  onMessageKeydown(event: KeyboardEvent) {
+    if (this.showAutocomplete) {
+      // Handle autocomplete navigation
+      if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        this.autocompleteComponent?.moveSelection('up');
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        this.autocompleteComponent?.moveSelection('down');
+      } else if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        this.autocompleteComponent?.selectCurrent();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        this.closeAutocomplete();
+      }
+    }
+  }
+
+  private checkAutocomplete() {
+    if (!this.chatInputElement) {
+      console.log('⚠️ No chatInputElement');
+      return;
+    }
+
+    const input = this.chatInputElement.nativeElement;
+    const cursorPosition = input.selectionStart || 0;
+    
+    console.log('🔍 Checking autocomplete:', {
+      message: this.chatMessage,
+      cursorPosition,
+      groupId: this.currentGroupId
+    });
+    
+    const activeRef = getActiveReference(this.chatMessage, cursorPosition);
+    
+    console.log('📋 Active reference:', activeRef);
+
+    if (activeRef) {
+      console.log('✅ Showing autocomplete:', activeRef);
+      this.showAutocomplete = true;
+      this.autocompleteType = activeRef.type;
+      this.autocompleteQuery = activeRef.query;
+      this.autocompleteStart = activeRef.start;
+      this.autocompleteEnd = activeRef.end;
+      this.cdr.detectChanges();
+    } else {
+      this.closeAutocomplete();
+    }
+  }
+
+  onAutocompleteSelect(item: AutocompleteItem) {
+    if (item.type === 'user' && item.id && item.name) {
+      this.chatMessage = insertReference(
+        this.chatMessage,
+        this.autocompleteStart,
+        this.autocompleteEnd,
+        { type: 'user', userId: item.id, userName: item.name }
+      );
+    } else if (item.type === 'material' && item.id && item.title) {
+      this.chatMessage = insertReference(
+        this.chatMessage,
+        this.autocompleteStart,
+        this.autocompleteEnd,
+        { type: 'material', materialId: item.id, materialTitle: item.title }
+      );
+    } else if (item.type === 'topic' && item.topic) {
+      this.chatMessage = insertReference(
+        this.chatMessage,
+        this.autocompleteStart,
+        this.autocompleteEnd,
+        { type: 'topic', topic: item.topic }
+      );
+    }
+
+    this.closeAutocomplete();
+    
+    // Focus back on input
+    setTimeout(() => {
+      this.chatInputElement?.nativeElement.focus();
+    }, 0);
+  }
+
+  closeAutocomplete() {
+    this.showAutocomplete = false;
+    this.autocompleteType = null;
+    this.autocompleteQuery = '';
+    this.cdr.detectChanges();
+  }
+
+  onMentionClicked(event: { userId: number; userName: string }) {
+    console.log('Mention clicked:', event);
+    // You can implement navigation to user profile or other actions here
+    // For now, we'll just log it
+  }
+
+  onMaterialClicked(event: { materialId: number; materialTitle: string }) {
+    console.log('Material clicked:', event);
+    // Navigate to the material or open it in a modal
+    // You can implement this based on your material viewing setup
+    alert(`Opening material: ${event.materialTitle}`);
+  }
+
+  onTopicClicked(event: { topic: string }) {
+    console.log('Topic clicked:', event);
+    // Filter messages by topic
+    alert(`Filtering by topic: #${event.topic}`);
+    // You can implement a filter feature here to show only messages with this topic
   }
 
   scrollToBottom() {
@@ -938,6 +1305,199 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
           alert('Failed to delete message. Please try again.');
         }
       });
+    }
+  }
+
+  // ==================== MATERIALS TAB METHODS ====================
+  
+  switchTab(tab: 'chat' | 'materials') {
+    this.currentTab = tab;
+    if (tab === 'materials') {
+      this.loadMaterials();
+    }
+    this.cdr.detectChanges();
+  }
+
+  loadMaterials() {
+    if (!this.group()) return;
+    
+    this.api.listMaterials(this.group()!.id).subscribe({
+      next: (materials) => {
+        this.materials.set(materials);
+        console.log('📚 Loaded materials:', materials);
+      },
+      error: (err) => console.error('Failed to load materials:', err)
+    });
+  }
+
+  onFilesSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFiles = Array.from(input.files);
+      this.showUploadDialog = true;
+      console.log('📎 Files selected:', this.selectedFiles.map(f => f.name));
+      this.cdr.detectChanges();
+    }
+  }
+
+  removeSelectedFile(index: number) {
+    this.selectedFiles.splice(index, 1);
+    if (this.selectedFiles.length === 0) {
+      this.cancelUpload();
+    }
+    this.cdr.detectChanges();
+  }
+
+  triggerFileInput() {
+    this.fileInput?.nativeElement.click();
+  }
+
+  cancelUpload() {
+    this.selectedFiles = [];
+    this.showUploadDialog = false;
+    this.resetMaterialForm();
+    if (this.fileInput) {
+      this.fileInput.nativeElement.value = '';
+    }
+    this.cdr.detectChanges();
+  }
+
+  uploadSelectedFiles() {
+    if (this.selectedFiles.length === 0 || this.uploadingMaterial) return;
+    
+    this.uploadingMaterial = true;
+    this.uploadingText = `Uploading ${this.selectedFiles.length} ${this.selectedFiles.length === 1 ? 'file' : 'files'}...`;
+    
+    // Upload files sequentially
+    const uploadPromises = this.selectedFiles.map((file, index) => {
+      return new Promise<void>((resolve, reject) => {
+        const formData = new FormData();
+        
+        // Use custom title if provided and only one file, otherwise use filename
+        const title = this.selectedFiles.length === 1 && this.newMaterial.title.trim()
+          ? this.newMaterial.title
+          : file.name.substring(0, file.name.lastIndexOf('.')) || file.name;
+        
+        formData.append('title', title);
+        
+        if (this.newMaterial.description) {
+          formData.append('description', this.newMaterial.description);
+        }
+        
+        // Auto-detect material type from file extension
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        let materialType: 'notes' | 'assignment' | 'video' | 'other' | 'pdf' | 'doc' | 'ppt' | 'image' = 'other';
+        
+        if (ext === 'pdf') materialType = 'pdf';
+        else if (['doc', 'docx'].includes(ext || '')) materialType = 'doc';
+        else if (['ppt', 'pptx'].includes(ext || '')) materialType = 'ppt';
+        else if (['mp4', 'avi', 'mov', 'wmv', 'webm'].includes(ext || '')) materialType = 'video';
+        else if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) materialType = 'image';
+        
+        formData.append('material_type', materialType);
+        formData.append('file', file);
+        
+        this.api.uploadMaterial(this.group()!.id, formData).subscribe({
+          next: (material) => {
+            console.log(`✅ Material ${index + 1}/${this.selectedFiles.length} uploaded:`, material);
+            this.materials.set([material, ...this.materials()]);
+            resolve();
+          },
+          error: (err) => {
+            console.error(`Failed to upload ${file.name}:`, err);
+            reject(err);
+          }
+        });
+      });
+    });
+    
+    // Wait for all uploads to complete
+    Promise.all(uploadPromises)
+      .then(() => {
+        console.log('✅ All materials uploaded successfully');
+        this.uploadingMaterial = false;
+        this.cancelUpload();
+        this.cdr.detectChanges();
+      })
+      .catch((err) => {
+        console.error('Some uploads failed:', err);
+        alert('Some files failed to upload. Please try again.');
+        this.uploadingMaterial = false;
+        this.cdr.detectChanges();
+      });
+  }
+
+  resetMaterialForm() {
+    this.newMaterial = {
+      title: '',
+      description: '',
+      material_type: 'pdf',
+    };
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  deleteMaterial(materialId: number | string) {
+    if (!confirm('Are you sure you want to delete this material?')) return;
+    
+    // Convert string ID to number if needed (material IDs in DB are always numbers)
+    const numericId = typeof materialId === 'string' ? parseInt(materialId) : materialId;
+    
+    this.api.deleteMaterial(this.group()!.id, numericId).subscribe({
+      next: () => {
+        console.log('🗑️ Material deleted');
+        this.materials.set(this.materials().filter(m => m.id !== materialId));
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Failed to delete material:', err);
+        alert('Failed to delete material. You may not have permission.');
+      }
+    });
+  }
+
+  getMaterialIcon(materialType: string): string {
+    switch (materialType) {
+      case 'pdf':
+        return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>';
+      case 'doc':
+        return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>';
+      case 'ppt':
+        return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>';
+      case 'video':
+        return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>';
+      case 'image':
+        return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>';
+      default:
+        return '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>';
+    }
+  }
+
+  getMaterialTypeLabel(materialType: string): string {
+    switch (materialType) {
+      case 'pdf': return 'PDF Document';
+      case 'doc': return 'Word Document';
+      case 'ppt': return 'Presentation';
+      case 'video': return 'Video';
+      case 'image': return 'Image';
+      case 'notes': return 'Notes';
+      case 'assignment': return 'Assignment';
+      default: return 'Other';
+    }
+  }
+
+  downloadMaterial(material: GroupMaterial) {
+    const url = material.file_url_full || material.file_url;
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      alert('No file available for download');
     }
   }
 }

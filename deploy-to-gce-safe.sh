@@ -78,19 +78,24 @@ gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command "
     sudo mkdir -p course-organizer
     sudo tar -xzf /tmp/course-organizer-update.tar.gz -C course-organizer
     sudo chown -R ubuntu:ubuntu course-organizer
+    
+    # Ensure media directory exists on host for bind mount
+    sudo mkdir -p /opt/course-organizer-data/media
+    sudo chown -R ubuntu:ubuntu /opt/course-organizer-data
+    
     cd course-organizer
     
-    echo '🛑 Stopping existing services (volumes will be preserved)...'
+    echo '🛑 Stopping existing services...'
     docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml down || true
     
-    echo '⚠️  CRITICAL: Verifying media_files volume still exists...'
-    if docker volume ls | grep -q 'course-organizer_media_files'; then
-        echo '✅ Media files volume confirmed safe'
-    else
-        echo '❌ ERROR: Media files volume missing!'
-        echo '🔄 This should not happen. Investigating...'
-        docker volume ls
-        exit 1
+    echo '📦 Migrating media files from volume to bind mount if needed...'
+    if docker volume ls --format '{{.Name}}' | grep -q '^course-organizer_media_files$'; then
+        echo '🔄 Migrating existing media files volume to host bind mount...'
+        docker run --rm \
+            -v course-organizer_media_files:/source \
+            -v /opt/course-organizer-data/media:/target \
+            busybox sh -c "cp -a /source/. /target/" || echo 'Warning: Media files migration failed'
+        echo '✅ Media files migrated to /opt/course-organizer-data/media'
     fi
     
     echo '🧹 Clearing ONLY static files volume (safe to regenerate)...'
@@ -122,6 +127,10 @@ gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command "
     NEW_MEDIA_COUNT=\$(docker exec course-organizer-backend find /app/media -type f 2>/dev/null | wc -l || echo '0')
     echo \"📁 Media files after deployment: \$NEW_MEDIA_COUNT\"
     
+    # Also verify on host bind mount
+    HOST_MEDIA_COUNT=\$(find /opt/course-organizer-data/media -type f 2>/dev/null | wc -l || echo '0')
+    echo \"📁 Media files on host bind mount: \$HOST_MEDIA_COUNT\"
+    
     if [ \"\$MEDIA_COUNT\" -gt 0 ] && [ \"\$NEW_MEDIA_COUNT\" -lt \"\$MEDIA_COUNT\" ]; then
         echo '⚠️  WARNING: Media file count decreased!'
         echo \"   Before: \$MEDIA_COUNT files\"
@@ -131,13 +140,10 @@ gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command "
         LATEST_BACKUP=\$(ls -t $BACKUP_DIR/media/media-backup-*.tar.gz 2>/dev/null | head -1)
         if [ -n \"\$LATEST_BACKUP\" ]; then
             echo \"📦 Restoring from: \$LATEST_BACKUP\"
-            docker run --rm \
-              -v course-organizer_media_files:/target \
-              -v $BACKUP_DIR/media:/backup:ro \
-              alpine \
-              tar xzf /backup/\$(basename \$LATEST_BACKUP) -C /target
+            sudo tar xzf \"\$LATEST_BACKUP\" -C /opt/course-organizer-data/media/
+            sudo chown -R ubuntu:ubuntu /opt/course-organizer-data/media/
             
-            echo '✅ Restored from backup'
+            echo '✅ Restored from backup to host bind mount'
             docker restart course-organizer-backend
         else
             echo '❌ No backup found to restore from!'
@@ -146,9 +152,10 @@ gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command "
         echo '✅ Media files preserved successfully'
     fi
     
-    # Verify volumes
-    echo '📋 Current Docker volumes:'
-    docker volume ls | grep course-organizer
+    # Verify bind mount
+    echo '📋 Media files location:'
+    echo \"   Host: /opt/course-organizer-data/media (bind mount)\"
+    ls -lh /opt/course-organizer-data/media/ | head -5 || echo 'No files yet'
     
     # Check service status
     echo '🔍 Service status:'
@@ -184,7 +191,7 @@ echo "💾 List backups:"
 echo "  gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command 'ls -lh $BACKUP_DIR/media/'"
 echo ""
 echo "🔄 Restore from backup (if needed):"
-echo "  gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command 'LATEST=\$(ls -t $BACKUP_DIR/media/*.tar.gz | head -1) && docker run --rm -v course-organizer_media_files:/target -v $BACKUP_DIR/media:/backup:ro alpine tar xzf /backup/\$(basename \$LATEST) -C /target && docker restart course-organizer-backend'"
+echo "  gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command 'LATEST=\$(ls -t $BACKUP_DIR/media/*.tar.gz | head -1) && sudo tar xzf \"\$LATEST\" -C /opt/course-organizer-data/media/ && sudo chown -R ubuntu:ubuntu /opt/course-organizer-data/media/ && docker restart course-organizer-backend'"
 echo ""
 echo "📊 Check service logs:"
 echo "  gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command 'cd $APP_DIR && docker compose --env-file docker-compose.gce.env -f docker-compose.gce.yml logs -f backend'"
