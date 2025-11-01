@@ -1,0 +1,137 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button></ion-back-button>
+    </ion-buttons>
+    <ion-title>Register</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="registration-container">
+    <!-- Header -->
+    <div class="header-section">
+      <h1>Create Account</h1>
+      <p class="subtitle">Join Course Organizer for University of Nairobi</p>
+    </div>
+
+    <!-- Registration Form -->
+    <form [formGroup]="registrationForm" (ngSubmit)="register()">
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">First Name</ion-label>
+        <ion-input 
+          type="text" 
+          formControlName="first_name" 
+          placeholder="Enter your first name">
+        </ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registrationForm.get('first_name')?.invalid && registrationForm.get('first_name')?.touched">
+        <small>First name is required</small>
+      </div>
+
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Last Name</ion-label>
+        <ion-input 
+          type="text" 
+          formControlName="last_name" 
+          placeholder="Enter your last name">
+        </ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registrationForm.get('last_name')?.invalid && registrationForm.get('last_name')?.touched">
+        <small>Last name is required</small>
+      </div>
+
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Email</ion-label>
+        <ion-input 
+          type="email" 
+          formControlName="email" 
+          placeholder="Enter your email">
+        </ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registrationForm.get('email')?.invalid && registrationForm.get('email')?.touched">
+        <small>Please enter a valid email address</small>
+      </div>
+
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Registration Number</ion-label>
+        <ion-input 
+          type="text" 
+          formControlName="registration_number" 
+          placeholder="GPR3/XXXXXX/2025">
+        </ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registrationForm.get('registration_number')?.invalid && registrationForm.get('registration_number')?.touched">
+        <small *ngIf="registrationForm.get('registration_number')?.errors?.['required']">Registration number is required</small>
+        <small *ngIf="registrationForm.get('registration_number')?.errors?.['invalidFormat']">Format: PREFIX/XXXXXX/YYYY (e.g., GPR3/123456/2025)</small>
+      </div>
+
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Phone Number</ion-label>
+        <ion-input 
+          type="tel" 
+          formControlName="phone_number" 
+          placeholder="+254XXXXXXXXX">
+        </ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="registrationForm.get('phone_number')?.invalid && registrationForm.get('phone_number')?.touched">
+        <small>Please enter a valid phone number with country code</small>
+      </div>
+
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Password</ion-label>
+        <ion-input 
+          [type]="showPassword ? 'text' : 'password'"
+          formControlName="password" 
+          placeholder="Enter password (min 6 characters)">
+        </ion-input>
+        <ion-button 
+          fill="clear" 
+          slot="end" 
+          (click)="togglePasswordVisibility()"
+          aria-label="Toggle password visibility">
+          <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+        </ion-button>
+      </ion-item>
+      <div class="error-message" *ngIf="registrationForm.get('password')?.invalid && registrationForm.get('password')?.touched">
+        <small>Password must be at least 6 characters</small>
+      </div>
+
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Confirm Password</ion-label>
+        <ion-input 
+          [type]="showConfirmPassword ? 'text' : 'password'"
+          formControlName="confirm_password" 
+          placeholder="Confirm your password">
+        </ion-input>
+        <ion-button 
+          fill="clear" 
+          slot="end" 
+          (click)="toggleConfirmPasswordVisibility()"
+          aria-label="Toggle confirm password visibility">
+          <ion-icon [name]="showConfirmPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+        </ion-button>
+      </ion-item>
+      <div class="error-message" *ngIf="(registrationForm.get('confirm_password')?.invalid || registrationForm.errors?.['passwordMismatch']) && registrationForm.get('confirm_password')?.touched">
+        <small>Passwords do not match</small>
+      </div>
+
+      <ion-button 
+        expand="block" 
+        type="submit" 
+        [disabled]="registrationForm.invalid"
+        class="register-button">
+        Register
+      </ion-button>
+    </form>
+
+    <!-- Login Link -->
+    <div class="login-section">
+      <p>Already have an account?</p>
+      <ion-button fill="clear" (click)="navigateToLogin()">
+        Sign In
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
+

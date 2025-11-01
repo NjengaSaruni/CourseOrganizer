@@ -1,0 +1,59 @@
+// For information on how to create your own theme, please see:
+// http://ionicframework.com/docs/theming/
+
+// University of Nairobi Theme Colors
+:root {
+  /** Primary - Cerulean Blue #2A68AF **/
+  --ion-color-primary: #2A68AF;
+  --ion-color-primary-rgb: 42, 104, 175;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #255d9a;
+  --ion-color-primary-tint: #3f77b7;
+
+  /** Navy - Elephant #122B40 **/
+  --ion-color-navy: #122B40;
+  --ion-color-navy-rgb: 18, 43, 64;
+  --ion-color-navy-contrast: #ffffff;
+  --ion-color-navy-contrast-rgb: 255, 255, 255;
+  --ion-color-navy-shade: #0f2336;
+  --ion-color-navy-tint: #2a4053;
+
+  /** Accent - Red Orange #FF492C **/
+  --ion-color-accent: #FF492C;
+  --ion-color-accent-rgb: 255, 73, 44;
+  --ion-color-accent-contrast: #ffffff;
+  --ion-color-accent-contrast-rgb: 255, 255, 255;
+  --ion-color-accent-shade: #e03f26;
+  --ion-color-accent-tint: #ff5b41;
+
+  /** Standard Ionic Colors **/
+  --ion-color-secondary: #3880ff;
+  --ion-color-tertiary: #7044ff;
+  --ion-color-success: #10dc60;
+  --ion-color-warning: #ffce00;
+  --ion-color-danger: #f04141;
+  --ion-color-dark: #222428;
+  --ion-color-medium: #92949c;
+  --ion-color-light: #f4f5f8;
+}
+
+/** Navy Color Utility Class **/
+.ion-color-navy {
+  --ion-color-base: var(--ion-color-navy);
+  --ion-color-base-rgb: var(--ion-color-navy-rgb);
+  --ion-color-contrast: var(--ion-color-navy-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-navy-contrast-rgb);
+  --ion-color-shade: var(--ion-color-navy-shade);
+  --ion-color-tint: var(--ion-color-navy-tint);
+}
+
+/** Accent Color Utility Class **/
+.ion-color-accent {
+  --ion-color-base: var(--ion-color-accent);
+  --ion-color-base-rgb: var(--ion-color-accent-rgb);
+  --ion-color-contrast: var(--ion-color-accent-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-accent-contrast-rgb);
+  --ion-color-shade: var(--ion-color-accent-shade);
+  --ion-color-tint: var(--ion-color-accent-tint);
+}

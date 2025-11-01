@@ -11,6 +11,7 @@ services:
       - DEBUG=True
       - SECRET_KEY=django-insecure-+-n0(ej=g!bt*opntm8u34m!&yud!wcth#**bgi8^ylg03rg(5
       - ALLOWED_HOSTS=localhost,127.0.0.1,backend
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-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}
     volumes:
       - ../backend:/app
       - backend_static:/app/static

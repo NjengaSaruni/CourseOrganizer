@@ -215,51 +215,7 @@ import { AuthService } from '../../core/auth.service';
             </div>
           </div>
 
-          <!-- Latest Features Highlight -->
-          <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-12 mb-16">
-            <div class="text-center mb-8">
-              <h3 class="text-2xl font-bold text-gray-900 mb-4">✨ Latest Features</h3>
-              <p class="text-lg text-gray-600">Recently added capabilities to enhance your academic experience</p>
-            </div>
-            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div class="text-center">
-                <div class="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl mb-4 shadow-sm">
-                  <svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h4 class="font-semibold text-gray-900 mb-2">Video Meetings</h4>
-                <p class="text-sm text-gray-600">Integrated Jitsi video calling</p>
-              </div>
-              <div class="text-center">
-                <div class="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl mb-4 shadow-sm">
-                  <svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h4 class="font-semibold text-gray-900 mb-2">Email Templates</h4>
-                <p class="text-sm text-gray-600">Beautiful HTML email notifications</p>
-              </div>
-              <div class="text-center">
-                <div class="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl mb-4 shadow-sm">
-                  <svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <h4 class="font-semibold text-gray-900 mb-2">Secure Auth</h4>
-                <p class="text-sm text-gray-600">SMS-based verification system</p>
-              </div>
-              <div class="text-center">
-                <div class="inline-flex items-center justify-center w-12 h-12 bg-white rounded-xl mb-4 shadow-sm">
-                  <svg class="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h4 class="font-semibold text-gray-900 mb-2">Fast & Reliable</h4>
-                <p class="text-sm text-gray-600">Optimized performance</p>
-              </div>
-            </div>
-          </div>
+    
         </div>
 
         <!-- Student Success Stories - Commented out until we have actual reviews -->
@@ -400,9 +356,12 @@ import { AuthService } from '../../core/auth.service';
               </svg>
               Coming Soon: AI-Powered Learning
             </div>
-            <h2 class="text-3xl font-bold text-gray-900 mb-4">Intelligent Concept Mastery System</h2>
-            <p class="text-lg text-gray-700 max-w-3xl mx-auto">
-              Revolutionary AI technology that personalizes your learning journey by tracking your understanding, building knowledge graphs, and providing adaptive guidance.
+            <h2 class="text-3xl font-bold text-gray-900 mb-4">AI Learning Copilot</h2>
+            <p class="text-lg text-gray-700 max-w-3xl mx-auto mb-3">
+              Your intelligent learning companion that tracks concept mastery based on your course outlines. The system builds knowledge graphs from concepts provided by your lecturers, identifies your learning gaps, and guides you to mastery.
+            </p>
+            <p class="text-base text-gray-600 max-w-3xl mx-auto">
+              <strong>How it works:</strong> Concepts are extracted from course outlines uploaded by lecturers, creating a structured knowledge framework. As you interact with the AI assistant, your understanding of each concept is tracked and visualized, helping you see exactly where to focus your studies.
             </p>
           </div>
 
@@ -414,8 +373,8 @@ import { AuthService } from '../../core/auth.service';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
                 </svg>
               </div>
-              <h4 class="text-lg font-bold text-gray-900 mb-2">AI Learning Assistant</h4>
-              <p class="text-sm text-gray-600">GPT-powered tutor that answers questions, explains concepts, and guides you through complex topics 24/7.</p>
+              <h4 class="text-lg font-bold text-gray-900 mb-2">AI Learning Copilot</h4>
+              <p class="text-sm text-gray-600">Your 24/7 learning companion powered by GPT. Ask questions about concepts from your course outlines, get explanations, and receive personalized guidance.</p>
             </div>
 
             <!-- Concept Mastery Tracking -->
@@ -425,8 +384,8 @@ import { AuthService } from '../../core/auth.service';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                 </svg>
               </div>
-              <h4 class="text-lg font-bold text-gray-900 mb-2">Mastery Analytics</h4>
-              <p class="text-sm text-gray-600">Track your understanding of each concept with detailed analytics that identify strengths and knowledge gaps.</p>
+              <h4 class="text-lg font-bold text-gray-900 mb-2">Gap Identification</h4>
+              <p class="text-sm text-gray-600">Automatically identifies knowledge gaps by comparing your understanding against course outline concepts. See exactly which topics need more focus.</p>
             </div>
 
             <!-- Knowledge Graph -->
@@ -436,8 +395,8 @@ import { AuthService } from '../../core/auth.service';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z"/>
                 </svg>
               </div>
-              <h4 class="text-lg font-bold text-gray-900 mb-2">Knowledge Graphs</h4>
-              <p class="text-sm text-gray-600">Visualize concept relationships and dependencies with interactive knowledge graphs for each course.</p>
+              <h4 class="text-lg font-bold text-gray-900 mb-2">Course-Based Knowledge Maps</h4>
+              <p class="text-sm text-gray-600">Interactive knowledge graphs built from your course outlines, showing concept relationships, dependencies, and your personal mastery progress.</p>
             </div>
 
             <!-- Personalized Recommendations -->
@@ -447,8 +406,8 @@ import { AuthService } from '../../core/auth.service';
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
               </div>
-              <h4 class="text-lg font-bold text-gray-900 mb-2">Smart Recommendations</h4>
-              <p class="text-sm text-gray-600">Receive personalized study paths and practice suggestions based on your learning patterns and progress.</p>
+              <h4 class="text-lg font-bold text-gray-900 mb-2">Gap-Focused Study Path</h4>
+              <p class="text-sm text-gray-600">Your copilot recommends specific concepts to review based on identified gaps, creating a personalized path to mastery of all course outline topics.</p>
             </div>
           </div>
 
@@ -458,18 +417,18 @@ import { AuthService } from '../../core/auth.service';
             <div class="grid md:grid-cols-3 gap-8">
               <div class="text-center">
                 <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">1</div>
-                <h4 class="font-semibold text-gray-900 mb-2">Learn & Interact</h4>
-                <p class="text-sm text-gray-600">Chat with your AI tutor, ask questions, and explore course concepts at your own pace.</p>
+                <h4 class="font-semibold text-gray-900 mb-2">Course Outline Analysis</h4>
+                <p class="text-sm text-gray-600">Lecturers upload course outlines; the system extracts and structures concepts into a knowledge framework for your course.</p>
               </div>
               <div class="text-center">
                 <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">2</div>
-                <h4 class="font-semibold text-gray-900 mb-2">Track Progress</h4>
-                <p class="text-sm text-gray-600">The system builds your personal knowledge graph, mapping what you've mastered and areas needing focus.</p>
+                <h4 class="font-semibold text-gray-900 mb-2">Interactive Learning with Copilot</h4>
+                <p class="text-sm text-gray-600">Chat with your AI learning copilot about course concepts. It tracks your understanding and identifies gaps in real-time.</p>
               </div>
               <div class="text-center">
                 <div class="w-12 h-12 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">3</div>
-                <h4 class="font-semibold text-gray-900 mb-2">Get Personalized Guidance</h4>
-                <p class="text-sm text-gray-600">Receive tailored recommendations, practice exercises, and study materials to fill knowledge gaps.</p>
+                <h4 class="font-semibold text-gray-900 mb-2">Gap-Based Recommendations</h4>
+                <p class="text-sm text-gray-600">Your copilot provides targeted guidance on concepts you haven't mastered yet, helping you focus on what matters most.</p>
               </div>
             </div>
           </div>
@@ -478,7 +437,7 @@ import { AuthService } from '../../core/auth.service';
           <div class="mt-8 text-center">
             <div class="inline-flex items-center px-6 py-3 bg-white rounded-full shadow-sm">
               <div class="w-3 h-3 bg-indigo-500 rounded-full mr-3 animate-pulse"></div>
-              <span class="text-sm font-semibold text-gray-900">In Development • Expected Launch: 2025</span>
+              <span class="text-sm font-semibold text-gray-900">In Development • Expected Launch: Q1 2026</span>
             </div>
           </div>
         </div>

@@ -1,0 +1,119 @@
+.dashboard-container {
+  padding: 1rem;
+}
+
+.welcome-card {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, var(--ion-color-primary) 0%, var(--ion-color-primary-shade) 100%);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: white;
+
+  .user-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+
+  .welcome-text {
+    flex: 1;
+
+    h2 {
+      margin: 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0.25rem 0 0;
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
+  }
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  margin: 0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  ion-card-content {
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--ion-color-primary);
+    margin: 0.25rem 0;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.actions-section {
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    color: var(--ion-color-dark);
+  }
+
+  ion-list {
+    background: transparent;
+    padding: 0;
+  }
+
+  ion-item {
+    --border-radius: 12px;
+    --padding-start: 1rem;
+    --padding-end: 1rem;
+    margin-bottom: 0.75rem;
+    border: 1px solid var(--ion-color-light);
+
+    ion-icon {
+      font-size: 1.5rem;
+      color: var(--ion-color-primary);
+    }
+
+    h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    p {
+      font-size: 0.85rem;
+      color: var(--ion-color-medium);
+      margin: 0;
+    }
+  }
+}
+

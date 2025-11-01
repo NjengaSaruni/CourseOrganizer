@@ -62,10 +62,7 @@ gcloud compute ssh ubuntu@$VM_NAME --zone=$ZONE --command "
 
     if docker volume ls --format '{{.Name}}' | grep -q '^course-organizer_media_files$'; then
         echo '🗃️  Migrating existing media files volume to host bind mount...'
-        docker run --rm \
-            -v course-organizer_media_files:/source \
-            -v /opt/course-organizer-data/media:/target \
-            busybox sh -c "cp -a /source/. /target/" || echo 'Warning: Media files migration failed'
+        docker run --rm -v course-organizer_media_files:/source -v /opt/course-organizer-data/media:/target busybox sh -c 'cp -a /source/. /target/' || echo 'Warning: Media files migration failed'
     fi
 
     echo '🧹 Clearing old static files volume to avoid stale assets (media files are preserved separately)...'

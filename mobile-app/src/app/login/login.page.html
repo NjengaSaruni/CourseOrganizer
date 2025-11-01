@@ -1,0 +1,68 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Login</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="ion-padding">
+  <div class="login-container">
+    <!-- Logo and App Name -->
+    <div class="logo-section">
+      <ion-img src="/assets/icon/favicon.png" alt="Course Organizer"></ion-img>
+      <h1>Course Organizer</h1>
+      <p class="subtitle">University of Nairobi</p>
+    </div>
+
+    <!-- Login Form -->
+    <form [formGroup]="loginForm" (ngSubmit)="login()">
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Email</ion-label>
+        <ion-input 
+          type="email" 
+          formControlName="email" 
+          placeholder="Enter your email"
+          [clearOnEdit]="true">
+        </ion-input>
+      </ion-item>
+      <div class="error-message" *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+        <small>Please enter a valid email address</small>
+      </div>
+
+      <ion-item lines="full" class="form-item">
+        <ion-label position="stacked">Password</ion-label>
+        <ion-input 
+          [type]="showPassword ? 'text' : 'password'"
+          formControlName="password" 
+          placeholder="Enter your password">
+        </ion-input>
+        <ion-button 
+          fill="clear" 
+          slot="end" 
+          (click)="togglePasswordVisibility()"
+          aria-label="Toggle password visibility">
+          <ion-icon [name]="showPassword ? 'eye-off-outline' : 'eye-outline'"></ion-icon>
+        </ion-button>
+      </ion-item>
+      <div class="error-message" *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+        <small>Password must be at least 6 characters</small>
+      </div>
+
+      <ion-button 
+        expand="block" 
+        type="submit" 
+        [disabled]="loginForm.invalid"
+        class="login-button">
+        Sign In
+      </ion-button>
+    </form>
+
+    <!-- Registration Link -->
+    <div class="register-section">
+      <p>Don't have an account?</p>
+      <ion-button fill="clear" (click)="navigateToRegister()">
+        Register Now
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
+

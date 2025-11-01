@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'course_content',
     'communication',
     'school',
+    'ai_chat',
 ]
 
 MIDDLEWARE = [

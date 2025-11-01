@@ -33,9 +33,11 @@
     "@angular/router": "^20.2.0",
     "@daily-co/daily-js": "^0.84.0",
     "@tailwindcss/postcss": "^4.1.13",
+    "@types/marked": "^5.0.2",
     "chart.js": "^4.4.1",
     "chartjs-adapter-date-fns": "^3.0.0",
     "lib-jitsi-meet": "github:jitsi/lib-jitsi-meet",
+    "marked": "^16.4.1",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },

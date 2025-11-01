@@ -129,5 +129,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/pdf-viewer/pdf-viewer.component').then(m => m.PdfViewerComponent),
     canActivate: [AuthGuard]
   },
+  { 
+    path: 'ai-chat', 
+    loadComponent: () => import('./features/ai-chat/ai-chat.component').then(m => m.AiChatComponent),
+    canActivate: [AuthGuard]
+  },
   { path: '**', redirectTo: '/dashboard' }
 ];

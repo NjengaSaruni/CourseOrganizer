@@ -119,6 +119,21 @@ import { AuthService, User } from '../../core/auth.service';
                   <div class="text-xs text-gray-500">{{ isClassRep() ? 'Send class announcements' : 'View class announcements' }}</div>
                 </div>
               </a>
+
+              <!-- AI Chat -->
+              <a routerLink="/ai-chat" 
+                 routerLinkActive="bg-violet-50 text-violet-700 border-r-2 border-violet-500" 
+                 class="group flex items-center px-3 py-3 text-sm font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">AI Chat</div>
+                  <div class="text-xs text-gray-500">Ask questions about course topics</div>
+                </div>
+              </a>
             </div>
 
             <!-- Administration Section -->
@@ -337,6 +352,22 @@ import { AuthService, User } from '../../core/auth.service';
                 <div>
                   <div class="font-medium">Announcements</div>
                   <div class="text-xs text-gray-500">{{ isClassRep() ? 'Send class announcements' : 'View class announcements' }}</div>
+                </div>
+              </a>
+
+              <!-- AI Chat -->
+              <a routerLink="/ai-chat" 
+                 routerLinkActive="bg-violet-50 text-violet-700" 
+                 (click)="toggleSidebar()"
+                 class="group flex items-center px-3 py-3 text-base font-medium rounded-xl text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200">
+                <div class="w-8 h-8 bg-gradient-to-br from-violet-500 to-violet-600 rounded-lg flex items-center justify-center mr-3">
+                  <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="font-medium">AI Chat</div>
+                  <div class="text-xs text-gray-500">Ask questions about course topics</div>
                 </div>
               </a>
             </div>

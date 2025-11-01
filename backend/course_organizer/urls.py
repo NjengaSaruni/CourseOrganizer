@@ -52,6 +52,7 @@ urlpatterns = [
     path('api/course-content/', include('course_content.urls')),
     path('api/communication/', include('communication.urls')),
     path('api/school/', include('school.urls')),
+    path('api/ai-chat/', include('ai_chat.urls')),
     # Direct favicon routes for better browser compatibility
     path('favicon.ico', views.serve_favicon),
     path('favicon.svg', views.serve_favicon_svg),

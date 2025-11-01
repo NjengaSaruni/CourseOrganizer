@@ -1,0 +1,21 @@
+{
+  "appId": "com.riverlearn.courseorganizer",
+  "appName": "Course Organizer",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true,
+    "allowNavigation": [
+      "*"
+    ]
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#2A68AF",
+      "showSpinner": true,
+      "spinnerColor": "#ffffff"
+    }
+  }
+}
+

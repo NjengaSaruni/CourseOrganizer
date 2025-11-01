@@ -1,0 +1,94 @@
+.login-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+  padding: 2rem 1rem;
+}
+
+.logo-section {
+  text-align: center;
+  margin-bottom: 3rem;
+
+  ion-img {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+  }
+
+  h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--ion-color-primary);
+    margin: 0.5rem 0;
+  }
+
+  .subtitle {
+    color: var(--ion-color-medium);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+}
+
+form {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.form-item {
+  margin-bottom: 1rem;
+  --border-color: var(--ion-color-light);
+  --border-width: 1px;
+  --border-style: solid;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.error-message {
+  color: var(--ion-color-danger);
+  font-size: 0.85rem;
+  margin-left: 1rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.login-button {
+  margin-top: 1.5rem;
+  --border-radius: 8px;
+  height: 48px;
+  font-weight: 600;
+}
+
+.register-section {
+  text-align: center;
+  margin-top: 2rem;
+
+  p {
+    color: var(--ion-color-medium);
+    margin-bottom: 0.5rem;
+  }
+
+  ion-button {
+    --color: var(--ion-color-primary);
+    font-weight: 500;
+  }
+}
+
+// UoN Theme Colors
+:host {
+  --ion-color-primary: #2A68AF;
+  --ion-color-primary-rgb: 42, 104, 175;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #255d9a;
+  --ion-color-primary-tint: #3f77b7;
+
+  --ion-color-navy: #122B40;
+  --ion-color-navy-rgb: 18, 43, 64;
+  --ion-color-navy-contrast: #ffffff;
+  --ion-color-navy-contrast-rgb: 255, 255, 255;
+  --ion-color-navy-shade: #0f2336;
+  --ion-color-navy-tint: #2a4053;
+}
+
