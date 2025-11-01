@@ -10,11 +10,12 @@ import { ButtonComponent } from '../../../shared/button/button.component';
 import { ChatAutocompleteComponent, AutocompleteItem } from '../../../shared/chat-autocomplete/chat-autocomplete.component';
 import { ChatMessageRendererComponent } from '../../../shared/chat-message-renderer/chat-message-renderer.component';
 import { getActiveReference, insertReference } from '../../../core/message-parser.util';
+import { SafeUrlPipe } from '../../../shared/safe-url.pipe';
 
 @Component({
   selector: 'app-study-group-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent, ChatAutocompleteComponent, ChatMessageRendererComponent],
+  imports: [CommonModule, FormsModule, PageLayoutComponent, ButtonComponent, ChatAutocompleteComponent, ChatMessageRendererComponent, SafeUrlPipe],
   template: `
     <app-page-layout [pageTitle]="group()?.name || 'Study Group'" [pageSubtitle]="group()?.description || ''">
     <div class="min-h-screen bg-gray-50">
@@ -488,50 +489,283 @@ import { getActiveReference, insertReference } from '../../../core/message-parse
                   </button>
                 </div>
 
-                <!-- Materials Grid -->
-                <div *ngIf="materials().length > 0" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  <div *ngFor="let material of materials()" 
-                       class="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                    <!-- Material Icon & Title -->
-                    <div class="flex items-start space-x-3 mb-3">
-                      <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
-                        <svg class="w-5 h-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" [innerHTML]="getMaterialIcon(material.material_type)"></svg>
-                      </div>
-                      <div class="flex-1 min-w-0">
-                        <h4 class="text-sm font-semibold text-gray-900 truncate">{{ material.title }}</h4>
-                        <p class="text-xs text-gray-600">{{ getMaterialTypeLabel(material.material_type) }}</p>
+                <!-- Materials Grouped by Type -->
+                <div *ngIf="materials().length > 0" class="space-y-8">
+                  <!-- Images Section -->
+                  <div *ngIf="getMaterialsByType('image').length > 0">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Images ({{ getMaterialsByType('image').length }})
+                      </h4>
+                    </div>
+                    <!-- Image Grid -->
+                    <div class="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                      <div *ngFor="let material of getMaterialsByType('image')"
+                           class="group relative aspect-square bg-gray-100 rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-gray-400 transition-all"
+                           (click)="imagePreviewId = material.id">
+                        <img [src]="material.file_url_full || material.file_url"
+                             [alt]="material.title"
+                             class="w-full h-full object-cover"
+                             (error)="$event.target.style.display='none'">
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <p class="text-xs text-white font-medium truncate">{{ material.title }}</p>
+                        </div>
                       </div>
                     </div>
+                  </div>
 
-                    <!-- Description -->
-                    <p *ngIf="material.description" class="text-sm text-gray-600 mb-3 line-clamp-2">{{ material.description }}</p>
+                  <!-- PDFs Section -->
+                  <div *ngIf="getMaterialsByType('pdf').length > 0">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                        PDF Documents ({{ getMaterialsByType('pdf').length }})
+                      </h4>
+                    </div>
+                    <div class="space-y-4">
+                      <div *ngFor="let material of getMaterialsByType('pdf')"
+                           class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                        <!-- PDF Header -->
+                        <div class="p-4 border-b border-gray-200">
+                          <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                              <h5 class="text-base font-semibold text-gray-900 mb-1">{{ material.title }}</h5>
+                              <p *ngIf="material.description" class="text-sm text-gray-600 mb-2 line-clamp-2">{{ material.description }}</p>
+                              <div class="flex items-center text-xs text-gray-500">
+                                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                </svg>
+                                <span>{{ material.uploaded_by_name }}</span>
+                                <span class="mx-2">•</span>
+                                <span>{{ material.created_at | date:'short' }}</span>
+                              </div>
+                            </div>
+                            <div class="ml-4 flex gap-2">
+                              <app-button 
+                                variant="primary"
+                                size="sm"
+                                (clicked)="expandedPdfId = expandedPdfId === material.id ? null : material.id"
+                                [iconLeft]="getPdfToggleIcon(material.id)">
+                                {{ expandedPdfId === material.id ? 'Collapse' : 'View' }}
+                              </app-button>
+                              <a [href]="material.file_url_full || material.file_url"
+                                 target="_blank"
+                                 rel="noopener"
+                                 class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                                <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                </svg>
+                                Open
+                              </a>
+                              <app-button 
+                                variant="ghost"
+                                size="sm"
+                                (clicked)="deleteMaterial(material.id)"
+                                iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'>
+                                Delete
+                              </app-button>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- PDF Viewer (Inline) -->
+                        <div *ngIf="expandedPdfId === material.id" class="border-t border-gray-200">
+                          <div class="h-[70vh] bg-gray-50">
+                            <iframe *ngIf="getMaterialFileUrl(material)"
+                                    [src]="getMaterialFileUrl(material) | safeUrl"
+                                    class="w-full h-full border-0"
+                                    title="PDF Viewer - {{ material.title }}"></iframe>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                    <!-- Metadata -->
-                    <div class="flex items-center text-xs text-gray-500 mb-3">
-                      <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  <!-- Other Document Types Section -->
+                  <div *ngIf="getMaterialsByType('doc').length > 0 || getMaterialsByType('ppt').length > 0">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Documents ({{ getMaterialsByType('doc').length + getMaterialsByType('ppt').length }})
+                      </h4>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div *ngFor="let material of getMaterialsByType('doc').concat(getMaterialsByType('ppt'))"
+                           class="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-lg transition-all duration-200">
+                        <div class="flex items-start space-x-3 mb-3">
+                          <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" [innerHTML]="getMaterialIcon(material.material_type)"></svg>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <h5 class="text-sm font-semibold text-gray-900 truncate">{{ material.title }}</h5>
+                            <p class="text-xs text-gray-600">{{ getMaterialTypeLabel(material.material_type) }}</p>
+                          </div>
+                        </div>
+                        <p *ngIf="material.description" class="text-sm text-gray-600 mb-3 line-clamp-2">{{ material.description }}</p>
+                        <div class="flex items-center text-xs text-gray-500 mb-3">
+                          <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                          </svg>
+                          <span>{{ material.uploaded_by_name }}</span>
+                          <span class="mx-2">•</span>
+                          <span>{{ material.created_at | date:'short' }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                          <a [href]="material.file_url_full || material.file_url"
+                             target="_blank"
+                             rel="noopener"
+                             class="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download
+                          </a>
+                          <app-button 
+                            variant="ghost"
+                            size="sm"
+                            (clicked)="deleteMaterial(material.id)"
+                            iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'>
+                            Delete
+                          </app-button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Videos Section -->
+                  <div *ngIf="getMaterialsByType('video').length > 0">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        Videos ({{ getMaterialsByType('video').length }})
+                      </h4>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div *ngFor="let material of getMaterialsByType('video')"
+                           class="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-lg transition-all duration-200">
+                        <div class="flex items-start space-x-3 mb-3">
+                          <div class="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" [innerHTML]="getMaterialIcon(material.material_type)"></svg>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <h5 class="text-sm font-semibold text-gray-900 truncate">{{ material.title }}</h5>
+                            <p class="text-xs text-gray-600">Video</p>
+                          </div>
+                        </div>
+                        <p *ngIf="material.description" class="text-sm text-gray-600 mb-3 line-clamp-2">{{ material.description }}</p>
+                        <div class="flex items-center text-xs text-gray-500 mb-3">
+                          <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                          </svg>
+                          <span>{{ material.uploaded_by_name }}</span>
+                          <span class="mx-2">•</span>
+                          <span>{{ material.created_at | date:'short' }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                          <a [href]="material.file_url_full || material.file_url"
+                             target="_blank"
+                             rel="noopener"
+                             class="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Play
+                          </a>
+                          <app-button 
+                            variant="ghost"
+                            size="sm"
+                            (clicked)="deleteMaterial(material.id)"
+                            iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'>
+                            Delete
+                          </app-button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Other Materials Section -->
+                  <div *ngIf="getMaterialsByType('other').length > 0 || getMaterialsByType('notes').length > 0 || getMaterialsByType('assignment').length > 0">
+                    <div class="flex items-center justify-between mb-4">
+                      <h4 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Other Files ({{ getMaterialsByType('other').length + getMaterialsByType('notes').length + getMaterialsByType('assignment').length }})
+                      </h4>
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      <div *ngFor="let material of getMaterialsByType('other').concat(getMaterialsByType('notes')).concat(getMaterialsByType('assignment'))"
+                           class="bg-white rounded-2xl border border-gray-200 p-4 hover:shadow-lg transition-all duration-200">
+                        <div class="flex items-start space-x-3 mb-3">
+                          <div class="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" [innerHTML]="getMaterialIcon(material.material_type)"></svg>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                            <h5 class="text-sm font-semibold text-gray-900 truncate">{{ material.title }}</h5>
+                            <p class="text-xs text-gray-600">{{ getMaterialTypeLabel(material.material_type) }}</p>
+                          </div>
+                        </div>
+                        <p *ngIf="material.description" class="text-sm text-gray-600 mb-3 line-clamp-2">{{ material.description }}</p>
+                        <div class="flex items-center text-xs text-gray-500 mb-3">
+                          <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                          </svg>
+                          <span>{{ material.uploaded_by_name }}</span>
+                          <span class="mx-2">•</span>
+                          <span>{{ material.created_at | date:'short' }}</span>
+                        </div>
+                        <div class="flex gap-2">
+                          <a [href]="material.file_url_full || material.file_url"
+                             target="_blank"
+                             rel="noopener"
+                             class="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Download
+                          </a>
+                          <app-button 
+                            variant="ghost"
+                            size="sm"
+                            (clicked)="deleteMaterial(material.id)"
+                            iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'>
+                            Delete
+                          </app-button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Image Preview Modal -->
+                <div *ngIf="imagePreviewId !== null && getMaterialById(imagePreviewId!)" 
+                     class="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                     (click)="imagePreviewId = null">
+                  <div class="relative max-w-7xl max-h-full" (click)="$event.stopPropagation()">
+                    <img *ngIf="getMaterialFileUrl(getMaterialById(imagePreviewId!)!)"
+                         [src]="getMaterialFileUrl(getMaterialById(imagePreviewId!)!)"
+                         [alt]="getMaterialById(imagePreviewId!)?.title"
+                         class="max-w-full max-h-[90vh] object-contain rounded-lg">
+                    <button 
+                      (click)="imagePreviewId = null"
+                      class="absolute top-4 right-4 p-2 bg-white/90 rounded-full hover:bg-white transition-colors">
+                      <svg class="w-6 h-6 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                       </svg>
-                      <span>{{ material.uploaded_by_name }}</span>
-                      <span class="mx-2">•</span>
-                      <span>{{ material.created_at | date:'short' }}</span>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="flex gap-2">
-                      <app-button 
-                        variant="primary"
-                        size="sm"
-                        (clicked)="downloadMaterial(material)"
-                        iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>'>
-                        View
-                      </app-button>
-                      <app-button 
-                        variant="ghost"
-                        size="sm"
-                        (clicked)="deleteMaterial(material.id)"
-                        iconLeft='<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>'>
-                        Delete
-                      </app-button>
+                    </button>
+                    <div class="absolute bottom-4 left-4 right-4 bg-black/60 backdrop-blur-sm rounded-lg p-4">
+                      <h5 class="text-white font-semibold mb-1">{{ getMaterialById(imagePreviewId!)?.title }}</h5>
+                      <p *ngIf="getMaterialById(imagePreviewId!)?.description" class="text-white/80 text-sm">{{ getMaterialById(imagePreviewId!)?.description }}</p>
                     </div>
                   </div>
                 </div>
@@ -706,6 +940,10 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
     material_type: 'pdf' as 'notes' | 'assignment' | 'video' | 'other' | 'pdf' | 'doc' | 'ppt' | 'image',
   };
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
+  
+  // PDF viewer state
+  expandedPdfId: number | null = null;
+  imagePreviewId: number | null = null;
 
   ngOnInit() {
     // Subscribe to route parameter changes to handle navigation between groups
@@ -1499,6 +1737,25 @@ export class StudyGroupDetailComponent implements OnInit, OnDestroy {
     } else {
       alert('No file available for download');
     }
+  }
+
+  getMaterialsByType(type: string): GroupMaterial[] {
+    return this.materials().filter(m => m.material_type === type);
+  }
+
+  getMaterialById(id: number): GroupMaterial | undefined {
+    return this.materials().find(m => m.id === id);
+  }
+
+  getPdfToggleIcon(materialId: number): string {
+    if (this.expandedPdfId === materialId) {
+      return '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>';
+    }
+    return '<svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>';
+  }
+
+  getMaterialFileUrl(material: GroupMaterial): string {
+    return material.file_url_full || material.file_url || '';
   }
 }
 
